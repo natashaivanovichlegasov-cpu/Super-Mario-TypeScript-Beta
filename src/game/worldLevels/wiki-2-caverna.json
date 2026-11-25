@@ -1,9 +1,9 @@
 {
   "format": "smb-custom-level",
   "version": 1,
-  "exportedAt": "2026-11-25T21:46:38.087Z",
+  "exportedAt": "2026-11-25T21:50:27.682Z",
   "level": {
-    "id": "custom-1795643104993-6k61",
+    "id": "custom-1795643375011-rvb1",
     "name": "W-2",
     "theme": "underground",
     "biomeLabel": "WIKIWORLDWEB · CAVERNA",
@@ -8371,16 +8371,6 @@
         "type": "piranha",
         "x": 1768,
         "y": 160
-      },
-      {
-        "type": "goomba",
-        "x": 1920,
-        "y": 192
-      },
-      {
-        "type": "goomba",
-        "x": 1984,
-        "y": 192
       }
     ],
     "coins": [
@@ -8452,8 +8442,8 @@
           "width": 32,
           "height": 16
         },
-        "toLevel": "hex:00D0",
-        "targetHex": "00D0",
+        "toLevel": "hex:0200",
+        "targetHex": "0200",
         "toPos": {
           "x": 32,
           "y": 0
@@ -8468,13 +8458,6 @@
         "x": 1184,
         "respawnPos": {
           "x": 1184,
-          "y": 192
-        }
-      },
-      {
-        "x": 1920,
-        "respawnPos": {
-          "x": 1920,
           "y": 192
         }
       }
