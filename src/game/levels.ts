@@ -1042,51 +1042,231 @@ export function createWorldGhostHouse(): LevelData {
   };
 }
 
-// Procedural Endless Level Generator with Cyclic Biomes (1 Overworld -> 2 Caverna -> 3 Água -> 4 Castelo com Boss) & Progressive Difficulty
-export function createEndlessLevel(
-  seed: number = Date.now(),
-  endlessStage: number = 1
-): LevelData {
-  const stage = Math.max(1, Math.floor(endlessStage));
-  const normalizedSeed = Math.abs(Math.floor(seed)) % 10000000;
-  const cycleIndex = (stage - 1) % 4; // 0: Overworld, 1: Caverna, 2: Água, 3: Castelo
-  const cycleNumber = Math.floor((stage - 1) / 4) + 1;
-  const diffRatio = Math.min(1, (stage - 1) / 14); // Scales smoothly across cycles
+// Endless Mode (R1.19.35S.7): 5-Biome Cyclic World Seed & On-Demand Chunk Streaming
+// Cycle: 1 Overworld -> 2 Caverna -> 3 Água -> 4 Mansão dos Fantasmas -> 5 Castelo (+ Boss)
+export const ENDLESS_BIOME_CYCLE = [
+  'overworld',
+  'underground',
+  'underwater',
+  'ghost_house',
+  'castle',
+] as const;
 
-  // Deterministic PRNG (Mulberry32-style mixed with seed + stage)
-  let s = (normalizedSeed + stage * 7919) >>> 0;
-  const rand = () => {
+export const ENDLESS_CHUNK_WIDTH = 16; // 16 tiles = 256px (1 NES screen per chunk)
+export const ENDLESS_INITIAL_CHUNKS = 3; // Only first 3 chunks (48 tiles) materialized upfront
+
+export interface EndlessChunkPayload {
+  chunkIndex: number;
+  startCol: number;
+  endCol: number;
+  enemies: { type: EnemyType; x: number; y: number }[];
+  coins: Point[];
+  wCoins: { x: number; y: number; index: number }[];
+  floatingPlatforms: FloatingPlatformSpec[];
+  checkpoints: { x: number; respawnPos: Point; visible?: boolean }[];
+  pipeWarps: NonNullable<LevelData['pipeWarps']>;
+}
+
+export interface CreateEndlessLevelOptions {
+  eagerAllChunks?: boolean;
+  initialChunks?: number;
+}
+
+export function normalizeEndlessSeed(seedInput?: number | string): number {
+  if (typeof seedInput === 'number') {
+    if (!Number.isFinite(seedInput)) {
+      return (Math.abs(Math.floor(Date.now())) % 9999999) + 1;
+    }
+    const mod = Math.abs(Math.floor(seedInput)) % 10000000;
+    return mod === 0 ? 1001 : mod;
+  }
+  if (typeof seedInput === 'string') {
+    const trimmed = seedInput.trim();
+    if (!trimmed) {
+      return (Math.abs(Math.floor(Date.now())) % 9999999) + 1;
+    }
+    if (/^\d+$/.test(trimmed)) {
+      const mod = Math.abs(parseInt(trimmed, 10)) % 10000000;
+      return mod === 0 ? 1001 : mod;
+    }
+    // Deterministic FNV-1a 32-bit hash for alphanumeric seeds (e.g. "MARIO-77")
+    let h = 0x811c9dc5;
+    const upper = trimmed.toUpperCase();
+    for (let i = 0; i < upper.length; i++) {
+      h ^= upper.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    const mod = (h >>> 0) % 10000000;
+    return mod === 0 ? 1001 : mod;
+  }
+  return (Math.abs(Math.floor(Date.now())) % 9999999) + 1;
+}
+
+export function formatEndlessSeed(seed: number): string {
+  return String(normalizeEndlessSeed(seed)).padStart(7, '0');
+}
+
+export function hashEndlessChunkSeed(
+  seed: number | string,
+  endlessStage: number,
+  chunkIndex: number
+): number {
+  const normSeed = normalizeEndlessSeed(seed);
+  const stage = Math.max(1, Math.floor(endlessStage));
+  const chunk = Math.max(0, Math.floor(chunkIndex));
+  let h = (normSeed ^ Math.imul(stage, 0x9e3779b1) ^ Math.imul(chunk + 1, 0x85ebca6b)) >>> 0;
+  h = Math.imul(h ^ (h >>> 16), 0x85ebca6b) >>> 0;
+  h = Math.imul(h ^ (h >>> 13), 0xc2b2ae35) >>> 0;
+  return (h ^ (h >>> 16)) >>> 0;
+}
+
+function createEndlessPrng(seed32: number): () => number {
+  let s = seed32 >>> 0;
+  return () => {
     s = (s + 0x6d2b79f5) | 0;
     let t = Math.imul(s ^ (s >>> 15), 1 | s);
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
   };
+}
 
-  // Strict infinite cycle: 1 Overworld -> 2 Caverna (underground) -> 3 Água (underwater) -> 4 Castelo (castle + boss) -> repeats harder!
-  const theme: 'overworld' | 'underground' | 'underwater' | 'castle' =
-    cycleIndex === 0
-      ? 'overworld'
-      : cycleIndex === 1
-      ? 'underground'
-      : cycleIndex === 2
-      ? 'underwater'
-      : 'castle';
+interface EndlessLayoutSpec {
+  stage: number;
+  normalizedSeed: number;
+  seedCode: string;
+  cycleIndex: number;
+  cycleNumber: number;
+  theme: LevelData['theme'];
+  biomeLabel: string;
+  totalChunks: number;
+  width: number;
+  finishChunkCount: number;
+  finishStartChunk: number;
+  levelId: string;
+  flagXTile: number;
+  castleXTile: number;
+  dryFinishStartX?: number;
+  cpChunks: [number, number];
+  wCoinChunks: number[];
+}
 
-  const biomeLabelMap = {
+function getEndlessLayoutSpec(
+  seedInput: number | string,
+  endlessStage: number
+): EndlessLayoutSpec {
+  const stage = Math.max(1, Math.floor(endlessStage));
+  const normalizedSeed = normalizeEndlessSeed(seedInput);
+  const seedCode = formatEndlessSeed(normalizedSeed);
+  const cycleIndex = (stage - 1) % ENDLESS_BIOME_CYCLE.length;
+  const cycleNumber = Math.floor((stage - 1) / ENDLESS_BIOME_CYCLE.length) + 1;
+  const theme = ENDLESS_BIOME_CYCLE[cycleIndex];
+
+  const biomeLabelMap: Record<(typeof ENDLESS_BIOME_CYCLE)[number], string> = {
     overworld: 'OVERWORLD',
     underground: 'CAVERNA',
     underwater: 'ÁGUA',
+    ghost_house: 'MANSÃO FANTASMA',
     castle: 'CASTELO',
-  } as const;
+  };
 
-  const bgColor =
-    theme === 'overworld'
-      ? '#5c94fc'
-      : theme === 'underground'
-      ? '#000000'
-      : theme === 'underwater'
-      ? '#1840b8'
-      : '#140406';
+  const totalChunks = Math.min(22, 13 + Math.floor((stage - 1) * 0.65));
+  const width = totalChunks * ENDLESS_CHUNK_WIDTH;
+  const finishChunkCount = theme === 'underwater' || theme === 'ghost_house' ? 3 : 2;
+  const finishStartChunk = totalChunks - finishChunkCount;
+  const levelId = `endless-${stage}-${normalizedSeed}`;
+
+  let flagXTile = (finishStartChunk + 1) * ENDLESS_CHUNK_WIDTH - 2;
+  let castleXTile = (finishStartChunk + 1) * ENDLESS_CHUNK_WIDTH + 5;
+  let dryFinishStartX: number | undefined = undefined;
+
+  if (theme === 'castle') {
+    flagXTile = 99999;
+    castleXTile = width - 7;
+  } else if (theme === 'underwater') {
+    const dryShoreStartTile = (finishStartChunk + 1) * ENDLESS_CHUNK_WIDTH;
+    flagXTile = dryShoreStartTile + 13;
+    castleXTile = (finishStartChunk + 2) * ENDLESS_CHUNK_WIDTH + 4;
+    dryFinishStartX = dryShoreStartTile * 16;
+  } else if (theme === 'ghost_house') {
+    const dryCourtyardStartTile = (finishStartChunk + 1) * ENDLESS_CHUNK_WIDTH;
+    flagXTile = dryCourtyardStartTile + 8;
+    castleXTile = (finishStartChunk + 2) * ENDLESS_CHUNK_WIDTH + 4;
+    dryFinishStartX = dryCourtyardStartTile * 16;
+  }
+
+  const cp1Chunk = Math.max(2, Math.floor(finishStartChunk * 0.38));
+  const cp2Chunk = Math.max(cp1Chunk + 1, Math.min(finishStartChunk - 1, Math.floor(finishStartChunk * 0.72)));
+
+  const rawWChunks = [
+    1,
+    Math.max(3, Math.floor(finishStartChunk * 0.34)),
+    Math.max(5, Math.floor(finishStartChunk * 0.66)),
+    Math.max(7, finishStartChunk - 1),
+  ];
+  const wCoinChunks: number[] = [];
+  for (const c of rawWChunks) {
+    let clamped = Math.max(1, Math.min(finishStartChunk - 1, c));
+    while (wCoinChunks.includes(clamped) && clamped < finishStartChunk - 1) {
+      clamped++;
+    }
+    if (!wCoinChunks.includes(clamped)) {
+      wCoinChunks.push(clamped);
+    }
+  }
+
+  return {
+    stage,
+    normalizedSeed,
+    seedCode,
+    cycleIndex,
+    cycleNumber,
+    theme,
+    biomeLabel: `CICLO ${cycleNumber} - ${biomeLabelMap[theme]}`,
+    totalChunks,
+    width,
+    finishChunkCount,
+    finishStartChunk,
+    levelId,
+    flagXTile,
+    castleXTile,
+    dryFinishStartX,
+    cpChunks: [cp1Chunk, cp2Chunk],
+    wCoinChunks,
+  };
+}
+
+export function materializeEndlessChunk(
+  level: LevelData,
+  chunkIndex: number
+): EndlessChunkPayload | null {
+  const stage = level.endlessStage ?? 1;
+  const seed = level.seed ?? 1001;
+  const chunkWidth = level.chunkWidth ?? ENDLESS_CHUNK_WIDTH;
+  const layout = getEndlessLayoutSpec(seed, stage);
+
+  if (chunkIndex < 0 || chunkIndex >= layout.totalChunks) {
+    return null;
+  }
+
+  const generatedSet = new Set(level.generatedChunkIndices ?? []);
+  if (generatedSet.has(chunkIndex)) {
+    return null;
+  }
+
+  const grid = level.tiles;
+  const width = level.width;
+  const startCol = chunkIndex * chunkWidth;
+  const endCol = Math.min(width, startCol + chunkWidth);
+  const span = endCol - startCol;
+  const theme = layout.theme;
+
+  const rand = createEndlessPrng(hashEndlessChunkSeed(layout.normalizedSeed, stage, chunkIndex));
+  const stageDiff = Math.min(1, (stage - 1) / 14);
+  const chunkProgress =
+    layout.finishStartChunk > 2
+      ? Math.max(0, Math.min(1, (chunkIndex - 1) / (layout.finishStartChunk - 2)))
+      : 0;
+  const localDiff = Math.min(1, stageDiff * 0.65 + chunkProgress * 0.35);
 
   const groundTileType: TileType =
     theme === 'underground'
@@ -1095,6 +1275,8 @@ export function createEndlessLevel(
       ? 'castle_stone'
       : theme === 'underwater'
       ? 'sea_ground'
+      : theme === 'ghost_house'
+      ? 'ghost_floor'
       : 'ground';
 
   const brickTileType: TileType =
@@ -1104,46 +1286,72 @@ export function createEndlessLevel(
       ? 'hard_block'
       : theme === 'underwater'
       ? 'coral'
+      : theme === 'ghost_house'
+      ? 'ghost_brick'
       : 'brick';
 
-  const width = Math.min(340, 200 + (stage - 1) * 12);
-  const height = 15;
-  const grid = createEmptyGrid(width, height);
+  const ceilingTileType: TileType | null =
+    theme === 'underground'
+      ? 'underground_brick'
+      : theme === 'castle'
+      ? 'castle_stone'
+      : theme === 'ghost_house'
+      ? 'ghost_brick'
+      : null;
+
+  const setTile = (row: number, col: number, type: TileType, content: ItemContent = 'none', invisible = false) => {
+    if (row < 0 || row >= level.height || col < 0 || col >= width) return;
+    grid[row][col] = {
+      type,
+      content,
+      bumpOffset: 0,
+      bumpVel: 0,
+      ...(invisible ? { invisible: true } : {}),
+    };
+  };
+
+  const fillCeiling = (fromCol: number, count: number) => {
+    if (!ceilingTileType) return;
+    for (let c = 0; c < count; c++) {
+      const col = fromCol + c;
+      if (col < 0 || col >= width) continue;
+      setTile(0, col, ceilingTileType);
+      setTile(1, col, ceilingTileType);
+    }
+  };
+
+  const placeGroundSpan = (fromCol: number, count: number) => {
+    for (let c = 0; c < count; c++) {
+      const col = fromCol + c;
+      if (col < 0 || col >= width) continue;
+      setTile(13, col, groundTileType);
+      setTile(14, col, groundTileType);
+    }
+    fillCeiling(fromCol, count);
+  };
+
+  const placePit = (fromCol: number, gapLen: number) => {
+    fillCeiling(fromCol, gapLen);
+    if (theme === 'castle') {
+      for (let c = 0; c < gapLen; c++) {
+        const col = fromCol + c;
+        if (col < 0 || col >= width) continue;
+        setTile(13, col, 'lava');
+        setTile(14, col, 'lava');
+      }
+      if (gapLen >= 2 && rand() < 0.58 + localDiff * 0.36) {
+        const bubbleCol = fromCol + Math.floor(gapLen / 2);
+        enemies.push({ type: 'lava_bubble', x: bubbleCol * 16 + 8, y: 13 * 16 });
+      }
+    }
+  };
+
   const enemies: { type: EnemyType; x: number; y: number }[] = [];
   const coins: Point[] = [];
-
-  const placeGroundSpan = (startX: number, spanLen: number) => {
-    for (let i = 0; i < spanLen && startX + i < width; i++) {
-      grid[13][startX + i] = { type: groundTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-      grid[14][startX + i] = { type: groundTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-      if (theme === 'underground' || theme === 'castle') {
-        grid[0][startX + i] = { type: theme === 'castle' ? 'castle_stone' : brickTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-        grid[1][startX + i] = { type: theme === 'castle' ? 'castle_stone' : brickTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-      }
-    }
-  };
-
-  const placePit = (startX: number, gapLen: number) => {
-    for (let i = 0; i < gapLen && startX + i < width; i++) {
-      if (theme === 'castle') {
-        grid[0][startX + i] = { type: 'castle_stone', content: 'none', bumpOffset: 0, bumpVel: 0 };
-        grid[1][startX + i] = { type: 'castle_stone', content: 'none', bumpOffset: 0, bumpVel: 0 };
-        grid[13][startX + i] = { type: 'lava', content: 'none', bumpOffset: 0, bumpVel: 0 };
-        grid[14][startX + i] = { type: 'lava', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      } else if (theme === 'underground') {
-        grid[0][startX + i] = { type: brickTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-        grid[1][startX + i] = { type: brickTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-      }
-    }
-    if (theme === 'castle' && gapLen >= 2 && rand() < 0.6 + diffRatio * 0.35) {
-      const bubbleX = startX + Math.floor(gapLen / 2);
-      enemies.push({ type: 'lava_bubble', x: bubbleX * 16 + 8, y: 13 * 16 });
-    }
-  };
-
-  const pickPowerUp = (): 'coin' => {
-    return 'coin';
-  };
+  const wCoins: { x: number; y: number; index: number }[] = [];
+  const floatingPlatforms: FloatingPlatformSpec[] = [];
+  const checkpoints: { x: number; respawnPos: Point; visible?: boolean }[] = [];
+  const pipeWarps: NonNullable<LevelData['pipeWarps']> = [];
 
   const spawnProfile = EnemySpawnManager.getProfile(stage, theme);
 
@@ -1155,465 +1363,689 @@ export function createEndlessLevel(
   };
 
   const spawnEnemyPack = (txSlots: number[], tyTile: number) => {
-    const specs = EnemySpawnManager.generateChunkSpawns(stage, theme, rand, txSlots, tyTile);
+    const specs = EnemySpawnManager.generateChunkSpawns(
+      stage,
+      theme,
+      rand,
+      txSlots,
+      tyTile,
+      localDiff * 0.85
+    );
     enemies.push(...specs);
   };
 
-  let x = 0;
-  // Starting safe zone
-  placeGroundSpan(0, 16);
-  x = 16;
-
-  const finishZoneStart =
-    theme === 'castle' ? width - 30 : theme === 'underwater' ? width - 42 : width - 26;
-
-  // Weighted chunk selection that scales hazard complexity with stage & cycle
-  while (x < finishZoneStart) {
-    const remaining = finishZoneStart - x;
-    if (remaining < 10) {
-      placeGroundSpan(x, remaining);
-      x += remaining;
-      break;
+  // Clear this chunk slice before writing
+  for (let ty = 0; ty < level.height; ty++) {
+    for (let tx = startCol; tx < endCol; tx++) {
+      grid[ty][tx] = null;
     }
+  }
+
+  if (chunkIndex === 0) {
+    // Safe starting zone
+    placeGroundSpan(startCol, span);
+    if (theme === 'ghost_house') {
+      for (let y = 2; y <= 12; y++) {
+        setTile(y, startCol, 'ghost_brick');
+      }
+    }
+    setTile(9, startCol + 9, brickTileType);
+    setTile(9, startCol + 10, 'question', 'coin');
+    setTile(9, startCol + 11, brickTileType);
+    coins.push(
+      { x: (startCol + 9) * 16 + 8, y: 7 * 16 },
+      { x: (startCol + 10) * 16 + 8, y: 7 * 16 },
+      { x: (startCol + 11) * 16 + 8, y: 7 * 16 }
+    );
+  } else if (chunkIndex < layout.finishStartChunk) {
+    // Interior procedural chunk: always guarantee 2-tile entry & exit anchor floor (seamless boundary continuity)
+    placeGroundSpan(startCol, 2);
+    placeGroundSpan(endCol - 2, 2);
 
     const r = rand();
     let chunkType: number;
-    if (r < 0.24 - diffRatio * 0.1) chunkType = 0; // Flat terrain + blocks + patrols
-    else if (r < 0.40) chunkType = 1; // Pipe obstacle(s) + Piranha
-    else if (r < 0.56 + diffRatio * 0.08) chunkType = 2; // Abyss / Lava pit jump
-    else if (r < 0.68 + diffRatio * 0.12) chunkType = 3; // Stepping stone pillars over abyss/lava
-    else if (r < 0.82) chunkType = 4; // Staircase / Split Canyon
-    else if (r < 0.92) chunkType = 5; // Two-tier sky bridge
-    else chunkType = 6; // Elevated platforms over abyss/lava
+    if (theme === 'ghost_house') {
+      if (r < 0.22 - localDiff * 0.08) chunkType = 0; // Haunted library + ? coin + ghosts
+      else if (r < 0.42) chunkType = 1; // Gothic pillars & attic shelf
+      else if (r < 0.62) chunkType = 5; // Floating ferry platforms over haunted chasm
+      else if (r < 0.78) chunkType = 3; // Stepping stone pedestals over chasm
+      else if (r < 0.90) chunkType = 6; // Dual-tier balcony hall
+      else chunkType = 4; // Split stairs + chasm
+    } else if (theme === 'underwater') {
+      if (r < 0.24 - localDiff * 0.08) chunkType = 0; // Seabed coral canopy + fish patrol
+      else if (r < 0.48 + localDiff * 0.1) chunkType = 1; // Coral reef gates & narrow swim tunnels
+      else if (r < 0.68) chunkType = 2; // Deep ocean trench + coin treasure
+      else if (r < 0.85) chunkType = 3; // Coral spires
+      else chunkType = 6; // Suspended coral arches
+    } else {
+      if (r < 0.22 - localDiff * 0.1) chunkType = 0; // Flat patrol + block canopy
+      else if (r < 0.39) chunkType = 1; // Pipes + Piranha / Castle pillars
+      else if (r < 0.56 + localDiff * 0.07) chunkType = 2; // Abyss / Lava pit jump
+      else if (r < 0.70 + localDiff * 0.09) chunkType = 3; // Stepping stone pillars
+      else if (r < 0.82) chunkType = 4; // Staircase / Split canyon
+      else if (r < 0.92) chunkType = 5; // Moving ferry bridge over chasm/lava
+      else chunkType = 6; // Two-tier sky bridge
+    }
 
     if (chunkType === 0) {
-      const len = Math.min(remaining, 8 + Math.floor(rand() * 6));
-      placeGroundSpan(x, len);
-
-      const mid = x + Math.floor(len / 2);
-      if (len >= 7) {
-        grid[9][mid - 1] = { type: brickTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-        grid[9][mid] = { type: 'question', content: pickPowerUp(), bumpOffset: 0, bumpVel: 0 };
-        grid[9][mid + 1] = { type: brickTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
+      // Flat terrain + blocks + optional ceiling stalactites in cave/castle/ghost + patrols
+      placeGroundSpan(startCol + 2, span - 4);
+      const mid = startCol + 8;
+      setTile(9, mid - 2, brickTileType);
+      setTile(9, mid - 1, 'question', 'coin');
+      setTile(9, mid, brickTileType);
+      setTile(9, mid + 1, 'question', 'coin');
+      setTile(9, mid + 2, brickTileType);
+      if (rand() > 0.65) {
+        setTile(5, mid, 'question', 'coin', true);
       }
-
-      if (rand() > 0.72) {
-        grid[5][x + 2] = { type: 'question', content: 'coin', bumpOffset: 0, bumpVel: 0, invisible: true };
-      }
-
-      const slots = len >= 9 ? [x + 2, x + len - 3, mid] : [x + 2, x + len - 2];
-      if (len >= 11 && diffRatio > 0.3 && rand() < spawnProfile.clusterChance) {
-        spawnEnemyPack([x + 2, x + len - 3], 12);
-        if (rand() < spawnProfile.baseSpawnChance * 0.7) {
-          spawnEnemy(mid, 8);
+      if (ceilingTileType && localDiff > 0.32 && rand() < 0.55) {
+        setTile(2, startCol + 4, ceilingTileType);
+        setTile(2, startCol + 11, ceilingTileType);
+        if (localDiff > 0.68) {
+          setTile(3, startCol + 4, ceilingTileType);
         }
-      } else {
-        spawnEnemyPack(slots, 12);
       }
-      x += len;
+      coins.push(
+        { x: (mid - 1) * 16 + 8, y: 7 * 16 },
+        { x: (mid + 1) * 16 + 8, y: 7 * 16 }
+      );
+      const slots =
+        localDiff >= 0.4 ? [startCol + 4, mid, startCol + 12] : [startCol + 4, startCol + 11];
+      spawnEnemyPack(slots, 12);
     } else if (chunkType === 1) {
-      const doublePipe = remaining >= 12 && rand() < 0.22 + diffRatio * 0.5;
-      const pLen = doublePipe ? 11 : 7;
-      placeGroundSpan(x, pLen);
-
-      if (theme === 'castle') {
-        // Castle pillars instead of green pipes
-        const h1 = 2 + Math.floor(rand() * 2);
-        for (let py = 13 - h1; py <= 12; py++) {
-          grid[py][x + 2] = { type: 'hard_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
-          grid[py][x + 3] = { type: 'hard_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
+      // Biome signature obstacle: Pipes / Coral Reef Gates / Gothic Pillars / Castle Columns
+      placeGroundSpan(startCol + 2, span - 4);
+      if (theme === 'underwater') {
+        // Upper and lower coral reefs forming a swim gate that tightens with difficulty
+        const topDepth = localDiff > 0.55 ? 4 : 3;
+        const botHeight = localDiff > 0.45 ? 3 : 2;
+        for (let bx = startCol + 4; bx <= startCol + 5; bx++) {
+          for (let py = 0; py <= topDepth; py++) setTile(py, bx, 'coral');
+          for (let py = 13 - botHeight; py <= 12; py++) setTile(py, bx, 'coral');
         }
-        spawnEnemy(x + 5, 12);
+        for (let bx = startCol + 10; bx <= startCol + 11; bx++) {
+          for (let py = 0; py <= 2 + Math.floor(localDiff * 2); py++) setTile(py, bx, 'coral');
+          for (let py = 11; py <= 12; py++) setTile(py, bx, 'coral');
+        }
+        coins.push(
+          { x: (startCol + 7) * 16 + 8, y: 7 * 16 },
+          { x: (startCol + 8) * 16 + 8, y: 7 * 16 }
+        );
+        spawnEnemyPack([startCol + 7, startCol + 13], 8);
+      } else if (theme === 'castle') {
+        const h1 = 2 + Math.floor(rand() * 2);
+        const h2 = 2 + Math.floor(rand() * 2);
+        for (let py = 13 - h1; py <= 12; py++) {
+          setTile(py, startCol + 4, 'hard_block');
+          setTile(py, startCol + 5, 'hard_block');
+        }
+        for (let py = 13 - h2; py <= 12; py++) {
+          setTile(py, startCol + 10, 'hard_block');
+          setTile(py, startCol + 11, 'hard_block');
+        }
+        if (localDiff >= 0.35) {
+          for (let oy = 2; oy <= 3; oy++) {
+            setTile(oy, startCol + 7, 'castle_stone');
+            setTile(oy, startCol + 8, 'castle_stone');
+          }
+        }
+        spawnEnemyPack([startCol + 7, startCol + 13], 12);
+      } else if (theme === 'ghost_house') {
+        for (let py = 2; py <= 4; py++) {
+          setTile(py, startCol + 4, 'ghost_brick');
+          setTile(py, startCol + 11, 'ghost_brick');
+        }
+        for (let px = startCol + 6; px <= startCol + 9; px++) {
+          setTile(8, px, 'ghost_brick');
+        }
+        setTile(12, startCol + 5, 'ghost_brick');
+        setTile(11, startCol + 5, 'ghost_brick');
+        coins.push(
+          { x: (startCol + 7) * 16 + 8, y: 6 * 16 },
+          { x: (startCol + 8) * 16 + 8, y: 6 * 16 }
+        );
+        spawnEnemyPack([startCol + 7, startCol + 12], 12);
+        if (rand() < 0.7 + localDiff * 0.25) {
+          spawnEnemy(startCol + 8, 6, 'boo');
+        }
       } else {
-        const pipeH1 = 2 + Math.floor(rand() * 3);
-        placePipe(grid, x + 2, 12, pipeH1);
-        const piranhaChance = spawnProfile.piranhaChance;
-        if (theme !== 'underwater' && pipeH1 >= 2 && rand() < piranhaChance) {
+        // Overworld / Underground pipes + piranha
+        const pipeH1 = 2 + Math.floor(rand() * 2 + localDiff * 0.8);
+        placePipe(grid, startCol + 4, 12, Math.min(4, pipeH1));
+        const piranhaChance = Math.min(0.96, spawnProfile.piranhaChance + localDiff * 0.2);
+        if (rand() < piranhaChance) {
           enemies.push({
             type: 'piranha',
-            x: (x + 2) * 16 + 8,
-            y: (13 - pipeH1) * 16,
+            x: (startCol + 4) * 16 + 8,
+            y: (13 - Math.min(4, pipeH1)) * 16,
           });
-        } else if (theme === 'underwater' && rand() < spawnProfile.baseSpawnChance) {
-          spawnEnemy(x + 3, 9);
         }
-
-        if (doublePipe) {
-          const pipeH2 = 2 + Math.floor(rand() * 3);
-          placePipe(grid, x + 7, 12, pipeH2);
-          if (theme !== 'underwater' && rand() < piranhaChance) {
+        if (rand() < 0.35 + localDiff * 0.5) {
+          const pipeH2 = 2 + Math.floor(rand() * 2);
+          placePipe(grid, startCol + 10, 12, pipeH2);
+          if (rand() < piranhaChance) {
             enemies.push({
               type: 'piranha',
-              x: (x + 7) * 16 + 8,
+              x: (startCol + 10) * 16 + 8,
               y: (13 - pipeH2) * 16,
             });
           }
-          if (rand() < spawnProfile.clusterChance) {
-            spawnEnemy(x + 5, 12);
-          }
         }
+        spawnEnemyPack([startCol + 7, startCol + 13], 12);
       }
-      x += pLen;
     } else if (chunkType === 2) {
-      const maxGap = stage >= 5 ? 5 : stage >= 2 ? 4 : 3;
-      const minGap = stage >= 4 ? 3 : 2;
-      const gap = Math.min(remaining - 4, minGap + Math.floor(rand() * (maxGap - minGap + 1)));
+      // Abyss / Lava / Deep Sea Trench jumps (always safe jump width <= 4, or 5 on high diff with safety coin arc)
+      const gap1 = localDiff >= 0.55 ? 4 : stage >= 2 ? 3 : 2;
+      placeGroundSpan(startCol + 2, 2);
+      placePit(startCol + 4, gap1);
+      for (let c = 0; c < gap1; c++) {
+        coins.push({ x: (startCol + 4 + c) * 16 + 8, y: 9 * 16 });
+      }
+      const midStart = startCol + 4 + gap1;
+      const afterMid = endCol - 2;
+      const midWidth = Math.max(2, afterMid - midStart);
 
-      if (gap >= 2) {
-        placePit(x, gap);
-        for (let c = 0; c < gap; c++) {
-          coins.push({ x: (x + c) * 16 + 8, y: 9 * 16 });
+      if (midWidth >= 6 && localDiff >= 0.35 && rand() < 0.65) {
+        const landLen = 3;
+        placeGroundSpan(midStart, landLen);
+        spawnEnemy(midStart + 1, 12);
+        const gap2 = afterMid - (midStart + landLen);
+        if (gap2 >= 2 && gap2 <= 4) {
+          placePit(midStart + landLen, gap2);
+          coins.push({ x: (midStart + landLen + 1) * 16 + 8, y: 9 * 16 });
+        } else {
+          placeGroundSpan(midStart + landLen, Math.max(0, gap2));
         }
-        if (rand() > 0.68) {
-          grid[8][x - 1] = { type: 'question', content: 'coin', bumpOffset: 0, bumpVel: 0, invisible: true };
-        }
-        x += gap;
-        const landLen = Math.min(remaining - gap, 3);
-        placeGroundSpan(x, landLen);
-        if (rand() < spawnProfile.baseSpawnChance * 0.78) {
-          spawnEnemy(x + 1, 12);
-        }
-        x += landLen;
       } else {
-        placeGroundSpan(x, 4);
-        x += 4;
+        placeGroundSpan(midStart, midWidth);
+        if (midWidth >= 3) {
+          spawnEnemyPack([midStart + 1, midStart + midWidth - 1], 12);
+        }
       }
     } else if (chunkType === 3) {
-      const pillarCount = Math.min(3 + Math.floor(diffRatio * 2), Math.floor(remaining / 5));
-      if (pillarCount >= 2) {
-        for (let p = 0; p < pillarCount; p++) {
-          const gap = 2 + (diffRatio > 0.35 && rand() > 0.4 ? 1 : 0);
-          placePit(x, gap);
-          x += gap;
-          const pillarW = diffRatio > 0.5 && rand() > 0.4 ? 1 : 2;
-          const pillarY = 10 + Math.floor(rand() * 3);
-          placePit(x, pillarW);
-          for (let px = 0; px < pillarW && x + px < finishZoneStart; px++) {
-            for (let py = pillarY; py <= 14; py++) {
-              grid[py][x + px] = { type: 'hard_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
-            }
+      // Stepping Stone Pillars over Abyss / Lava / Trench
+      placeGroundSpan(startCol + 2, 1);
+      let cursor = startCol + 3;
+      const pillars = localDiff >= 0.45 ? 3 : 2;
+      for (let p = 0; p < pillars; p++) {
+        const gap = p === 0 ? 2 : localDiff >= 0.5 && rand() > 0.4 ? 3 : 2;
+        if (cursor + gap + 2 > endCol - 2) break;
+        placePit(cursor, gap);
+        cursor += gap;
+        const pW = localDiff >= 0.55 && rand() > 0.45 ? 1 : 2;
+        const pY = 10 + Math.floor(rand() * 3);
+        placePit(cursor, pW);
+        for (let px = 0; px < pW; px++) {
+          for (let py = pY; py <= 14; py++) {
+            setTile(py, cursor + px, theme === 'underwater' ? 'coral' : 'hard_block');
           }
-          coins.push({ x: x * 16 + 8, y: (pillarY - 2) * 16 });
-          x += pillarW;
         }
-        const safeSpan = Math.min(4, finishZoneStart - x);
-        if (safeSpan > 0) {
-          placeGroundSpan(x, safeSpan);
-          x += safeSpan;
-        }
-      } else {
-        placeGroundSpan(x, 5);
-        x += 5;
+        coins.push({ x: cursor * 16 + 8, y: (pY - 2) * 16 });
+        cursor += pW;
+      }
+      if (cursor < endCol - 2) {
+        placePit(cursor, endCol - 2 - cursor);
+      }
+      if (localDiff >= 0.3) {
+        spawnEnemy(startCol + 8, theme === 'ghost_house' ? 7 : 8);
       }
     } else if (chunkType === 4) {
-      const stSize = Math.min(3 + Math.floor(rand() * (2 + diffRatio)), 5);
-      const hasCenterPit = stage >= 2 && rand() < 0.25 + diffRatio * 0.55;
-      const pitW = hasCenterPit ? (diffRatio > 0.45 ? 3 : 2) : 0;
-      const totalNeeded = stSize * 2 + pitW + 3;
-
-      if (totalNeeded <= remaining) {
-        placeGroundSpan(x, stSize + 1);
-        for (let sIdx = 1; sIdx <= stSize; sIdx++) {
+      // Staircase / Split Canyon
+      const stSize = localDiff >= 0.5 ? 3 : 2;
+      const pitW = localDiff >= 0.35 ? 3 : 2;
+      placeGroundSpan(startCol + 2, stSize);
+      for (let sIdx = 1; sIdx <= stSize; sIdx++) {
+        for (let sy = 13 - sIdx; sy <= 12; sy++) {
+          setTile(sy, startCol + 1 + sIdx, 'hard_block');
+        }
+      }
+      const pitStart = startCol + 2 + stSize;
+      placePit(pitStart, pitW);
+      for (let c = 0; c < pitW; c++) {
+        coins.push({ x: (pitStart + c) * 16 + 8, y: (11 - stSize) * 16 });
+      }
+      const descStart = pitStart + pitW;
+      const descSpan = Math.max(0, endCol - 2 - descStart);
+      placeGroundSpan(descStart, descSpan);
+      for (let sIdx = stSize; sIdx >= 1; sIdx--) {
+        const col = descStart + (stSize - sIdx);
+        if (col < endCol - 2) {
           for (let sy = 13 - sIdx; sy <= 12; sy++) {
-            grid[sy][x + sIdx] = { type: 'hard_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
+            setTile(sy, col, 'hard_block');
           }
         }
-        x += stSize + 1;
-
-        if (pitW > 0) {
-          placePit(x, pitW);
-          for (let c = 0; c < pitW; c++) {
-            coins.push({ x: (x + c) * 16 + 8, y: (11 - stSize) * 16 });
-          }
-          x += pitW;
-        }
-
-        placeGroundSpan(x, stSize + 2);
-        for (let sIdx = stSize; sIdx >= 1; sIdx--) {
-          const col = x + (stSize - sIdx);
-          for (let sy = 13 - sIdx; sy <= 12; sy++) {
-            grid[sy][col] = { type: 'hard_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
-          }
-        }
-        if (rand() < 0.45 + diffRatio * 0.4) {
-          spawnEnemy(x + stSize, 12);
-        }
-        x += stSize + 2;
-      } else {
-        placeGroundSpan(x, remaining);
-        x += remaining;
+      }
+      if (descStart + stSize < endCol - 1) {
+        spawnEnemy(descStart + stSize, 12);
       }
     } else if (chunkType === 5) {
-      const bLen = Math.min(remaining, 9 + Math.floor(rand() * 4));
-      placeGroundSpan(x, bLen);
-      for (let i = 1; i < bLen - 1; i++) {
-        const isQ = i === Math.floor(bLen / 2);
-        grid[8][x + i] = {
-          type: isQ ? 'question' : brickTileType,
-          content: isQ ? pickPowerUp() : 'none',
-          bumpOffset: 0,
-          bumpVel: 0,
-        };
-        coins.push({ x: (x + i) * 16 + 8, y: 6 * 16 });
+      // Moving Ferry Platforms over Wide Abyss / Lava Chasm (especially awesome in Ghost House & Castle!)
+      placeGroundSpan(startCol + 2, 1);
+      placeGroundSpan(endCol - 3, 1);
+      const chasmStart = startCol + 3;
+      const chasmLen = 10;
+      placePit(chasmStart, chasmLen);
+
+      const speedBase = 0.032 + localDiff * 0.022;
+      floatingPlatforms.push(
+        {
+          x: (startCol + 5) * 16,
+          y: 10 * 16,
+          width: 44,
+          axis: rand() > 0.45 ? 'horizontal' : 'vertical',
+          range: 24,
+          speed: speedBase,
+          phase: 0,
+        },
+        {
+          x: (startCol + 10) * 16,
+          y: 9 * 16,
+          width: 44,
+          axis: theme === 'ghost_house' ? 'bob' : 'horizontal',
+          range: 22,
+          speed: speedBase * 1.08,
+          phase: 1.6,
+        }
+      );
+      coins.push(
+        { x: (startCol + 6) * 16 + 8, y: 7 * 16 },
+        { x: (startCol + 8) * 16 + 8, y: 6 * 16 },
+        { x: (startCol + 10) * 16 + 8, y: 7 * 16 }
+      );
+      if (theme === 'ghost_house') {
+        spawnEnemy(startCol + 8, 6, 'boo');
+      } else if (localDiff >= 0.25) {
+        spawnEnemy(startCol + 8, 7, 'paratroopa');
       }
-      spawnEnemy(x + 2, 12);
-      if (cycleNumber >= 2 || rand() < spawnProfile.clusterChance) {
-        spawnEnemy(x + Math.floor(bLen / 2), 7);
-      }
-      if (bLen >= 10 && rand() < spawnProfile.clusterChance) {
-        spawnEnemy(x + bLen - 3, 12);
-      }
-      x += bLen;
     } else {
-      const platCount = Math.min(3, Math.floor((remaining - 3) / 6));
-      if (platCount >= 2) {
-        placeGroundSpan(x, 2);
-        x += 2;
-        for (let p = 0; p < platCount; p++) {
-          placePit(x, 2);
-          x += 2;
-          const pW = 4;
-          const pY = p % 2 === 0 ? 10 : 8;
-          placePit(x, pW);
-          for (let i = 0; i < pW && x + i < finishZoneStart; i++) {
-            grid[pY][x + i] = {
-              type: i === 1 && rand() > 0.5 ? 'question' : brickTileType,
-              content: i === 1 ? 'coin' : 'none',
-              bumpOffset: 0,
-              bumpVel: 0,
-            };
-          }
-          if (rand() < spawnProfile.clusterChance * 0.75) {
-            spawnEnemy(x + 2, pY - 1);
-          }
-          x += pW;
+      // Two-tier sky bridge / Haunted attic gallery
+      placeGroundSpan(startCol + 2, span - 4);
+      for (let i = 3; i <= 12; i++) {
+        const isQ = i === 6 || i === 9;
+        setTile(8, startCol + i, isQ ? 'question' : brickTileType, isQ ? 'coin' : 'none');
+        if (i % 2 === 0) {
+          coins.push({ x: (startCol + i) * 16 + 8, y: 6 * 16 });
         }
-        const tailLen = Math.min(3, finishZoneStart - x);
-        if (tailLen > 0) {
-          placeGroundSpan(x, tailLen);
-          x += tailLen;
+      }
+      spawnEnemyPack([startCol + 5, startCol + 11], 12);
+      if (localDiff >= 0.25 || layout.cycleNumber >= 2) {
+        spawnEnemy(startCol + 8, 7);
+      }
+    }
+
+    // Checkpoints guaranteed on solid anchor floor (startCol + 1)
+    if (chunkIndex === layout.cpChunks[0] || chunkIndex === layout.cpChunks[1]) {
+      const cpX = (startCol + 1) * 16;
+      checkpoints.push({
+        x: cpX,
+        respawnPos: { x: cpX, y: theme === 'underwater' ? 160 : 192 },
+      });
+    }
+
+    // Deterministic W-Coin placement on designated interior chunks
+    const wCoinIdx = layout.wCoinChunks.indexOf(chunkIndex);
+    if (wCoinIdx !== -1) {
+      const wxCol = startCol + 8;
+      // Pick first clear 2x2 row around sky/swim altitude
+      let chosenRow = 5;
+      for (const candidateRow of [5, 6, 4, 7, 10]) {
+        const clear2x2 =
+          !grid[candidateRow]?.[wxCol] &&
+          !grid[candidateRow]?.[wxCol + 1] &&
+          !grid[candidateRow + 1]?.[wxCol] &&
+          !grid[candidateRow + 1]?.[wxCol + 1];
+        if (clear2x2) {
+          chosenRow = candidateRow;
+          break;
         }
-      } else {
-        placeGroundSpan(x, 5);
-        x += 5;
       }
+      wCoins.push({
+        x: wxCol * 16 - 2,
+        y: chosenRow * 16 - 2,
+        index: wCoinIdx,
+      });
     }
-  }
-
-  // Build Finish Area: Castle stages end with Bowser Bridge + Axe; others end with Flagpole + Castle!
-  let flagXTile = width - 18;
-  let castleXTile = width - 12;
-
-  const levelId = `endless-${stage}-${normalizedSeed}`;
-  let pipeWarps: LevelData['pipeWarps'] = undefined;
-  let dryFinishStartX: number | undefined = undefined;
-
-  if (theme === 'castle') {
-    // Approach step up onto Boss Bridge
-    const approachEnd = Math.min(width - 25, Math.max(x + 2, finishZoneStart + 3));
-    placeGroundSpan(x, approachEnd - x + 1);
-    for (let sx = Math.max(x, approachEnd - 2); sx <= approachEnd; sx++) {
-      grid[12][sx] = { type: 'castle_stone', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
-
-    const bridgeStart = approachEnd + 1;
-    const axeTile = width - 11;
-    for (let bx = bridgeStart; bx < axeTile; bx++) {
-      grid[0][bx] = { type: 'castle_stone', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      grid[1][bx] = { type: 'castle_stone', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      grid[12][bx] = { type: 'bridge', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      grid[13][bx] = { type: 'lava', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      grid[14][bx] = { type: 'lava', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
-    // Overhead platform above Bowser on bridge
-    const platMid = Math.floor((bridgeStart + axeTile) / 2);
-    for (let ox = platMid - 2; ox <= platMid + 2; ox++) {
-      grid[7][ox] = { type: 'castle_stone', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
-    // Axe + solid anchor block & overhead doorway wall
-    for (let wy = 0; wy <= 8; wy++) {
-      grid[wy][axeTile] = { type: 'castle_stone', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
-    grid[12][axeTile] = { type: 'hard_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    grid[11][axeTile] = { type: 'axe', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    grid[13][axeTile] = { type: 'lava', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    grid[14][axeTile] = { type: 'lava', content: 'none', bumpOffset: 0, bumpVel: 0 };
-
-    // Spawn Bowser Boss on the bridge!
-    const bowserXTile = Math.max(bridgeStart + 5, axeTile - 6);
-    enemies.push({ type: 'bowser', x: bowserXTile * 16, y: 12 * 16 - 24 });
-
-    // Victory chamber after Axe
-    placeGroundSpan(axeTile + 1, width - (axeTile + 1));
-    castleXTile = width - 7;
-    for (let cx = castleXTile; cx <= Math.min(width - 2, castleXTile + 4); cx++) {
-      for (let cy = 8; cy <= 12; cy++) {
-        grid[cy][cx] = { type: 'castle_brick', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      }
-      if (cx % 2 === 0) {
-        grid[7][cx] = { type: 'castle_crenel', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      }
-    }
-    grid[11][castleXTile + 2] = { type: 'castle_door', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    grid[12][castleXTile + 2] = { type: 'castle_door', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    for (let y = 2; y <= 12; y++) {
-      grid[y][width - 1] = { type: 'castle_stone', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
-    flagXTile = 99999;
-  } else if (theme === 'underwater') {
-    // Underwater exit warp pipe -> coral barrier wall -> dry shore emergence pipe -> staircase -> flagpole -> castle
-    const warpPipeTile = width - 38;
-    const barrierStartTile = width - 33;
-    const dryShoreStartTile = width - 30;
-    const emergePipeTile = width - 25;
-    const stairsStartTile = width - 21;
-    flagXTile = width - 14;
-    castleXTile = width - 10;
-    dryFinishStartX = dryShoreStartTile * 16;
-
-    // Clear any stray tiles in the finish zone (rows 0..12) so pipe & castle path stay unobstructed
-    for (let cx = Math.min(x, warpPipeTile - 1); cx < width; cx++) {
-      for (let cy = 0; cy <= 12; cy++) {
-        grid[cy][cx] = null;
-      }
-    }
-
-    // Underwater seabed up to the dry shore boundary
-    for (let sx = x; sx < dryShoreStartTile; sx++) {
-      grid[13][sx] = { type: 'sea_ground', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      grid[14][sx] = { type: 'sea_ground', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
-
-    // Underwater warp pipe + coin guide above it
-    placePipe(grid, warpPipeTile, 12, 3, true);
-    coins.push({ x: warpPipeTile * 16 + 16, y: 8 * 16 });
-
-    // Solid coral barrier wall dividing ocean from dry shore exit
-    for (let bx = barrierStartTile; bx < dryShoreStartTile; bx++) {
-      for (let by = 0; by <= 12; by++) {
-        grid[by][bx] = { type: 'coral', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      }
-    }
-
-    // Dry outdoor surface finish ground
-    for (let gx = dryShoreStartTile; gx < width; gx++) {
-      grid[13][gx] = { type: 'ground', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      grid[14][gx] = { type: 'ground', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
-
-    // Surface emergence pipe on dry shore
-    placePipe(grid, emergePipeTile, 12, 2);
-
-    // Small staircase leading to flagpole
-    for (let s = 1; s <= 4; s++) {
-      const sx = stairsStartTile + (s - 1);
-      for (let sy = 13 - s; sy <= 12; sy++) {
-        grid[sy][sx] = { type: 'hard_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      }
-    }
-
-    // Flagpole
-    grid[12][flagXTile] = { type: 'hard_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    for (let y = 3; y <= 11; y++) {
-      grid[y][flagXTile] = { type: 'pole', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
-    grid[2][flagXTile] = { type: 'pole_top', content: 'none', bumpOffset: 0, bumpVel: 0 };
-
-    // Castle
-    for (let cx = castleXTile; cx <= Math.min(width - 2, castleXTile + 5); cx++) {
-      for (let cy = 8; cy <= 12; cy++) {
-        grid[cy][cx] = { type: 'castle_brick', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      }
-      if (cx % 2 === 0) {
-        grid[7][cx] = { type: 'castle_crenel', content: 'none', bumpOffset: 0, bumpVel: 0 };
-      }
-    }
-    grid[11][castleXTile + 2] = { type: 'castle_door', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    grid[12][castleXTile + 2] = { type: 'castle_door', content: 'none', bumpOffset: 0, bumpVel: 0 };
-
-    pipeWarps = [
-      {
-        from: { x: warpPipeTile * 16, y: 9 * 16, width: 32, height: 16 },
-        toLevel: levelId,
-        toPos: { x: emergePipeTile * 16 + 8, y: 11 * 16 - 16 },
-        type: 'down',
-      },
-    ];
   } else {
-    // End castle area (always safe ground)
-    for (; x < width; x++) {
-      grid[13][x] = { type: groundTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-      grid[14][x] = { type: groundTileType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
+    // Finish Region Chunks (chunkIndex >= layout.finishStartChunk)
+    const offsetChunk = chunkIndex - layout.finishStartChunk;
 
-    // Flagpole
-    flagXTile = width - 18;
-    grid[12][flagXTile] = { type: 'hard_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    for (let y = 3; y <= 11; y++) {
-      grid[y][flagXTile] = { type: 'pole', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    }
-    grid[2][flagXTile] = { type: 'pole_top', content: 'none', bumpOffset: 0, bumpVel: 0 };
+    if (theme === 'castle') {
+      if (offsetChunk === 0) {
+        // Approach step + Bowser Boss Bridge start + Bowser!
+        placeGroundSpan(startCol, 4);
+        for (let sx = startCol + 1; sx <= startCol + 3; sx++) {
+          setTile(12, sx, 'castle_stone');
+        }
+        const bridgeStart = startCol + 4;
+        fillCeiling(bridgeStart, endCol - bridgeStart);
+        for (let bx = bridgeStart; bx < endCol; bx++) {
+          setTile(12, bx, 'bridge');
+          setTile(13, bx, 'lava');
+          setTile(14, bx, 'lava');
+        }
+        // Overhead stone platform above bridge
+        for (let ox = startCol + 8; ox <= startCol + 12; ox++) {
+          setTile(7, ox, 'castle_stone');
+        }
+        // Spawn Bowser on the bridge
+        enemies.push({ type: 'bowser', x: (startCol + 12) * 16, y: 12 * 16 - 24 });
+      } else {
+        // Bridge continuation + Axe + Victory Chamber + Castle
+        const axeTile = startCol + 5;
+        fillCeiling(startCol, axeTile - startCol);
+        for (let bx = startCol; bx < axeTile; bx++) {
+          setTile(12, bx, 'bridge');
+          setTile(13, bx, 'lava');
+          setTile(14, bx, 'lava');
+        }
+        for (let wy = 0; wy <= 8; wy++) {
+          setTile(wy, axeTile, 'castle_stone');
+        }
+        setTile(12, axeTile, 'hard_block');
+        setTile(11, axeTile, 'axe');
+        setTile(13, axeTile, 'lava');
+        setTile(14, axeTile, 'lava');
 
-    // Castle
-    castleXTile = width - 12;
-    for (let cx = castleXTile; cx <= castleXTile + 5; cx++) {
-      for (let cy = 8; cy <= 12; cy++) {
-        grid[cy][cx] = { type: 'castle_brick', content: 'none', bumpOffset: 0, bumpVel: 0 };
+        placeGroundSpan(axeTile + 1, endCol - (axeTile + 1));
+        const cxTile = layout.castleXTile;
+        for (let cx = cxTile; cx <= Math.min(endCol - 2, cxTile + 4); cx++) {
+          for (let cy = 8; cy <= 12; cy++) {
+            setTile(cy, cx, 'castle_brick');
+          }
+          if (cx % 2 === 0) {
+            setTile(7, cx, 'castle_crenel');
+          }
+        }
+        setTile(11, cxTile + 2, 'castle_door');
+        setTile(12, cxTile + 2, 'castle_door');
+        for (let y = 2; y <= 12; y++) {
+          setTile(y, endCol - 1, 'castle_stone');
+        }
       }
-      if (cx % 2 === 0) {
-        grid[7][cx] = { type: 'castle_crenel', content: 'none', bumpOffset: 0, bumpVel: 0 };
+    } else if (theme === 'underwater') {
+      const warpPipeTile = layout.finishStartChunk * chunkWidth + 6;
+      const barrierStartTile = layout.finishStartChunk * chunkWidth + 11;
+      const dryShoreStartTile = (layout.finishStartChunk + 1) * chunkWidth;
+      const emergePipeTile = dryShoreStartTile + 3;
+
+      if (offsetChunk === 0) {
+        // Underwater exit warp pipe -> solid coral barrier dividing ocean from dry shore
+        for (let sx = startCol; sx < endCol; sx++) {
+          setTile(13, sx, 'sea_ground');
+          setTile(14, sx, 'sea_ground');
+        }
+        placePipe(grid, warpPipeTile, 12, 3, true);
+        coins.push({ x: warpPipeTile * 16 + 16, y: 8 * 16 });
+        for (let bx = barrierStartTile; bx < endCol; bx++) {
+          for (let by = 0; by <= 12; by++) {
+            setTile(by, bx, 'coral');
+          }
+        }
+        pipeWarps.push({
+          from: { x: warpPipeTile * 16, y: 9 * 16, width: 32, height: 16 },
+          toLevel: layout.levelId,
+          toPos: { x: emergePipeTile * 16 + 8, y: 11 * 16 - 16 },
+          type: 'down',
+        });
+      } else if (offsetChunk === 1) {
+        // Dry outdoor surface shore: emergence pipe -> staircase -> flagpole
+        for (let gx = startCol; gx < endCol; gx++) {
+          setTile(13, gx, 'ground');
+          setTile(14, gx, 'ground');
+        }
+        placePipe(grid, emergePipeTile, 12, 2);
+        const stairsStart = emergePipeTile + 4;
+        for (let s = 1; s <= 4; s++) {
+          const sx = stairsStart + (s - 1);
+          for (let sy = 13 - s; sy <= 12; sy++) {
+            setTile(sy, sx, 'hard_block');
+          }
+        }
+        const fTile = layout.flagXTile;
+        setTile(12, fTile, 'hard_block');
+        for (let y = 3; y <= 11; y++) {
+          setTile(y, fTile, 'pole');
+        }
+        setTile(2, fTile, 'pole_top');
+      } else {
+        // Dry shore castle courtyard
+        for (let gx = startCol; gx < endCol; gx++) {
+          setTile(13, gx, 'ground');
+          setTile(14, gx, 'ground');
+        }
+        const cxTile = layout.castleXTile;
+        for (let cx = cxTile; cx <= Math.min(endCol - 2, cxTile + 5); cx++) {
+          for (let cy = 8; cy <= 12; cy++) {
+            setTile(cy, cx, 'castle_brick');
+          }
+          if (cx % 2 === 0) {
+            setTile(7, cx, 'castle_crenel');
+          }
+        }
+        setTile(11, cxTile + 2, 'castle_door');
+        setTile(12, cxTile + 2, 'castle_door');
+      }
+    } else if (theme === 'ghost_house') {
+      const ghostDoorTile = layout.finishStartChunk * chunkWidth + 11;
+      const mansionWallTile = (layout.finishStartChunk + 1) * chunkWidth - 1;
+      const dryCourtyardStartTile = (layout.finishStartChunk + 1) * chunkWidth;
+      const emergeDoorTile = dryCourtyardStartTile + 2;
+
+      if (offsetChunk === 0) {
+        // Haunted Mansion Finale Hall + Steps + Exit Door leading outside!
+        placeGroundSpan(startCol, span);
+        for (let step = 0; step < 4; step++) {
+          const sx = startCol + 4 + step;
+          for (let y = 12 - step; y <= 12; y++) {
+            setTile(y, sx, 'hard_block');
+          }
+        }
+        setTile(11, ghostDoorTile, 'ghost_door_top');
+        setTile(12, ghostDoorTile, 'ghost_door_bottom');
+        for (let wy = 2; wy <= 12; wy++) {
+          setTile(wy, mansionWallTile, 'ghost_brick');
+        }
+        pipeWarps.push({
+          from: { x: ghostDoorTile * 16, y: 11 * 16, width: 16, height: 32 },
+          toLevel: layout.levelId,
+          toPos: { x: emergeDoorTile * 16, y: 12 * 16 },
+          type: 'door',
+        });
+      } else if (offsetChunk === 1) {
+        // Outside the Mansion Courtyard ("Fora da Mansão") -> Emergence Door + Flagpole
+        for (let gx = startCol; gx < endCol; gx++) {
+          setTile(13, gx, 'ground');
+          setTile(14, gx, 'ground');
+        }
+        for (let py = 9; py <= 12; py++) {
+          setTile(py, dryCourtyardStartTile, 'ghost_brick');
+        }
+        setTile(9, emergeDoorTile, 'ghost_brick');
+        setTile(10, emergeDoorTile, 'ghost_brick');
+        setTile(11, emergeDoorTile, 'ghost_door_top');
+        setTile(12, emergeDoorTile, 'ghost_door_bottom');
+
+        const fTile = layout.flagXTile;
+        setTile(12, fTile, 'hard_block');
+        for (let y = 3; y <= 11; y++) {
+          setTile(y, fTile, 'pole');
+        }
+        setTile(2, fTile, 'pole_top');
+      } else {
+        // Exterior Courtyard Castle
+        for (let gx = startCol; gx < endCol; gx++) {
+          setTile(13, gx, 'ground');
+          setTile(14, gx, 'ground');
+        }
+        const cxTile = layout.castleXTile;
+        for (let cx = cxTile; cx <= Math.min(endCol - 2, cxTile + 5); cx++) {
+          for (let cy = 8; cy <= 12; cy++) {
+            setTile(cy, cx, 'castle_brick');
+          }
+          if (cx % 2 === 0) {
+            setTile(7, cx, 'castle_crenel');
+          }
+        }
+        setTile(11, cxTile + 2, 'castle_door');
+        setTile(12, cxTile + 2, 'castle_door');
+      }
+    } else {
+      // Overworld & Underground standard finish (stairs + flagpole + castle)
+      if (offsetChunk === 0) {
+        placeGroundSpan(startCol, span);
+        const stairsStart = startCol + 4;
+        for (let s = 1; s <= 4; s++) {
+          for (let sy = 13 - s; sy <= 12; sy++) {
+            setTile(sy, stairsStart + (s - 1), 'hard_block');
+          }
+        }
+        const fTile = layout.flagXTile;
+        setTile(12, fTile, 'hard_block');
+        for (let y = 3; y <= 11; y++) {
+          setTile(y, fTile, 'pole');
+        }
+        setTile(2, fTile, 'pole_top');
+      } else {
+        for (let gx = startCol; gx < endCol; gx++) {
+          setTile(13, gx, groundTileType);
+          setTile(14, gx, groundTileType);
+        }
+        const cxTile = layout.castleXTile;
+        for (let cx = cxTile; cx <= Math.min(endCol - 2, cxTile + 5); cx++) {
+          for (let cy = 8; cy <= 12; cy++) {
+            setTile(cy, cx, 'castle_brick');
+          }
+          if (cx % 2 === 0) {
+            setTile(7, cx, 'castle_crenel');
+          }
+        }
+        setTile(11, cxTile + 2, 'castle_door');
+        setTile(12, cxTile + 2, 'castle_door');
       }
     }
-    grid[11][castleXTile + 2] = { type: 'castle_door', content: 'none', bumpOffset: 0, bumpVel: 0 };
-    grid[12][castleXTile + 2] = { type: 'castle_door', content: 'none', bumpOffset: 0, bumpVel: 0 };
   }
 
-  // Safe checkpoints guaranteed on solid ground
-  const findSafeCheckpointX = (targetTile: number): number => {
-    for (let offset = 0; offset < 25; offset++) {
-      const tx = Math.min(finishZoneStart - 4, targetTile + offset);
-      const curr = grid[13][tx];
-      const next = grid[13][tx + 1];
-      if (curr && curr.type !== 'lava' && next && next.type !== 'lava' && !grid[12][tx]) {
-        return tx;
-      }
+  // Persist generated chunk content onto the LevelData containers
+  if (!level.generatedChunkIndices) {
+    level.generatedChunkIndices = [];
+  }
+  level.generatedChunkIndices.push(chunkIndex);
+
+  level.enemies.push(...enemies);
+  level.coins.push(...coins);
+  if (wCoins.length > 0) {
+    if (!level.wCoins) level.wCoins = [];
+    for (const wc of wCoins) {
+      level.wCoins.push({ x: wc.x, y: wc.y });
     }
-    return 4;
-  };
-
-  const cp1 = findSafeCheckpointX(Math.floor(width * 0.35));
-  const cp2 = findSafeCheckpointX(Math.floor(width * 0.68));
-
-  const timeLimit = Math.max(180, 420 - (cycleNumber - 1) * 30 - cycleIndex * 10);
-  const enemySpeedMultiplier = spawnProfile.speedMultiplier;
+  }
+  if (floatingPlatforms.length > 0) {
+    if (!level.floatingPlatforms) level.floatingPlatforms = [];
+    level.floatingPlatforms.push(...floatingPlatforms);
+  }
+  if (checkpoints.length > 0) {
+    if (!level.checkpoints) level.checkpoints = [];
+    level.checkpoints.push(...checkpoints);
+  }
+  if (pipeWarps.length > 0) {
+    if (!level.pipeWarps) level.pipeWarps = [];
+    level.pipeWarps.push(...pipeWarps);
+  }
 
   return {
-    id: levelId,
+    chunkIndex,
+    startCol,
+    endCol,
+    enemies,
+    coins,
+    wCoins,
+    floatingPlatforms,
+    checkpoints,
+    pipeWarps,
+  };
+}
+
+export function materializeAllEndlessChunks(level: LevelData): EndlessChunkPayload[] {
+  const totalChunks = level.totalChunks ?? Math.ceil(level.width / (level.chunkWidth ?? ENDLESS_CHUNK_WIDTH));
+  const payloads: EndlessChunkPayload[] = [];
+  for (let ci = 0; ci < totalChunks; ci++) {
+    const p = materializeEndlessChunk(level, ci);
+    if (p) payloads.push(p);
+  }
+  return payloads;
+}
+
+// Procedural Endless Level Generator with 5 Cyclic Biomes + World Seed + On-Demand Chunk Streaming
+export function createEndlessLevel(
+  seed: number | string = Date.now(),
+  endlessStage: number = 1,
+  options: CreateEndlessLevelOptions = {}
+): LevelData {
+  const layout = getEndlessLayoutSpec(seed, endlessStage);
+  const { stage, normalizedSeed, seedCode, cycleIndex, cycleNumber, theme, biomeLabel, totalChunks, width } =
+    layout;
+  const height = 15;
+  const grid = createEmptyGrid(width, height);
+
+  const bgColor =
+    theme === 'overworld'
+      ? '#5c94fc'
+      : theme === 'underground'
+      ? '#000000'
+      : theme === 'underwater'
+      ? '#1840b8'
+      : theme === 'ghost_house'
+      ? '#120822'
+      : '#140406';
+
+  const spawnProfile = EnemySpawnManager.getProfile(stage, theme);
+  const timeLimit = Math.max(180, 420 - (cycleNumber - 1) * 30 - cycleIndex * 10);
+
+  const level: LevelData = {
+    id: layout.levelId,
     name: `INF-${stage}`,
     theme,
-    biomeLabel: `CICLO ${cycleNumber} - ${biomeLabelMap[theme]}`,
+    biomeLabel,
     width,
     height,
     tiles: grid,
-    enemies,
-    coins,
+    enemies: [],
+    coins: [],
+    wCoins: [],
+    floatingPlatforms: [],
+    checkpoints: [],
     marioStart: { x: 40, y: theme === 'underwater' ? 144 : 192 },
-    flagX: flagXTile * 16,
-    castleX: (castleXTile + 2) * 16,
-    dryFinishStartX,
-    pipeWarps,
+    flagX: layout.flagXTile * 16,
+    castleX: (layout.castleXTile + 2) * 16,
+    dryFinishStartX: layout.dryFinishStartX,
     bgColor,
     timeLimit,
     endlessStage: stage,
     cycleNumber,
     seed: normalizedSeed,
-    enemySpeedMultiplier,
-    checkpoints: [
-      { x: cp1 * 16, respawnPos: { x: cp1 * 16, y: theme === 'underwater' ? 160 : 192 } },
-      { x: cp2 * 16, respawnPos: { x: cp2 * 16, y: theme === 'underwater' ? 160 : 192 } },
-    ],
+    seedCode,
+    isChunkStreamed: true,
+    chunkWidth: ENDLESS_CHUNK_WIDTH,
+    totalChunks,
+    generatedChunkIndices: [],
+    endlessDifficultyLevel: Number((1 + (stage - 1) * 0.25).toFixed(2)),
+    enemySpeedMultiplier: spawnProfile.speedMultiplier,
   };
+
+  // Materialize only the initial chunks around Mario's start (unless eagerAllChunks is requested);
+  // remaining chunks are calculated on-demand by the engine as the player approaches!
+  const initialCount = options.eagerAllChunks
+    ? totalChunks
+    : Math.max(1, Math.min(totalChunks, options.initialChunks ?? ENDLESS_INITIAL_CHUNKS));
+
+  for (let ci = 0; ci < initialCount; ci++) {
+    materializeEndlessChunk(level, ci);
+  }
+
+  return level;
 }
+
 
 export const SINGLEPLAYER_WORLD_COUNT = 7;
 export const SINGLEPLAYER_STAGES_PER_WORLD = 5;

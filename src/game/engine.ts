@@ -48,6 +48,10 @@ import {
   createWorldGhostHouse,
   createWorld1_4,
   createEndlessLevel,
+  materializeEndlessChunk,
+  normalizeEndlessSeed,
+  formatEndlessSeed,
+  ENDLESS_CHUNK_WIDTH,
   createSingleplayerLevel,
   SINGLEPLAYER_WORLD_COUNT,
   SINGLEPLAYER_STAGES_PER_WORLD,
@@ -227,6 +231,7 @@ export class GameEngine {
     smwNodeId?: string;
     smwWorldName?: string;
     endlessStage?: number;
+    seed?: number;
     isCustom?: boolean;
     onYoshi?: boolean;
   } | null = null;
@@ -234,6 +239,7 @@ export class GameEngine {
   // Intermission & Endless Stage Tracking
   public intermissionTimer: number = 0;
   public endlessStage: number = 0;
+  public endlessSeed: number = 0;
   public onLevelChanged?: (level: LevelData) => void;
 
   // Checkpoint State
@@ -579,6 +585,7 @@ export class GameEngine {
       this.endlessStage = 0;
     } else if (resolvedLevel.endlessStage !== undefined) {
       this.endlessStage = resolvedLevel.endlessStage;
+      this.endlessSeed = normalizeEndlessSeed(resolvedLevel.seed ?? (this.endlessSeed || Date.now()));
     } else if (
       resolvedLevel.id === 'world-1-1' ||
       resolvedLevel.id === 'world-1-2' ||
@@ -587,6 +594,45 @@ export class GameEngine {
       resolvedLevel.isCustom
     ) {
       this.endlessStage = 0;
+    }
+
+    if (resolvedLevel.endlessStage !== undefined && resolvedLevel.endlessStage > 0) {
+      this.stats.endlessSeed = this.endlessSeed;
+      this.stats.endlessSeedCode = formatEndlessSeed(this.endlessSeed);
+      this.stats.endlessBiome = resolvedLevel.biomeLabel;
+      this.stats.endlessChunksGenerated = resolvedLevel.generatedChunkIndices?.length ?? 0;
+      this.stats.endlessTotalChunks = resolvedLevel.totalChunks;
+    } else {
+      this.stats.endlessSeed = undefined;
+      this.stats.endlessSeedCode = undefined;
+      this.stats.endlessBiome = undefined;
+      this.stats.endlessChunksGenerated = undefined;
+      this.stats.endlessTotalChunks = undefined;
+    }
+
+    // If respawning at an advanced checkpoint in a chunk-streamed endless level, materialize up to checkpoint before spawning entities
+    if (isRespawn && this.activeCheckpoint && resolvedLevel.isChunkStreamed) {
+      const cpChunkWidthPx = (resolvedLevel.chunkWidth ?? ENDLESS_CHUNK_WIDTH) * GameEngine.TILE_SIZE;
+      const cpTotalChunks =
+        resolvedLevel.totalChunks ?? Math.ceil(resolvedLevel.width / (resolvedLevel.chunkWidth ?? ENDLESS_CHUNK_WIDTH));
+      const maxCpChunk = Math.min(cpTotalChunks - 1, Math.floor((this.activeCheckpoint.x + 256) / cpChunkWidthPx));
+      for (let ci = 0; ci <= maxCpChunk; ci++) {
+        materializeEndlessChunk(resolvedLevel, ci);
+      }
+      if (
+        resolvedLevel.theme === 'underground' ||
+        resolvedLevel.theme === 'ghost_house' ||
+        resolvedLevel.theme === 'castle'
+      ) {
+        const row0 = resolvedLevel.tiles[0];
+        const row1 = resolvedLevel.tiles[1];
+        for (let tx = 0; tx < resolvedLevel.width; tx++) {
+          const hasRow0 = Boolean(row0?.[tx] && this.isSolidTile(row0[tx]!.type));
+          const hasRow1 = Boolean(row1?.[tx] && this.isSolidTile(row1[tx]!.type));
+          this.ceilingTileColumns[tx] = hasRow0 || hasRow1;
+        }
+      }
+      this.stats.endlessChunksGenerated = resolvedLevel.generatedChunkIndices?.length ?? 0;
     }
 
     const levelWidthPx = this.level.width * GameEngine.TILE_SIZE;
@@ -689,7 +735,7 @@ export class GameEngine {
         ? 6
         : newLevel.singleplayerWorld !== undefined
         ? 3 + newLevel.singleplayerWorld
-        : 5 + Math.floor(((newLevel.endlessStage || 1) - 1) / 4) * 2;
+        : 5 + Math.floor(((newLevel.endlessStage || 1) - 1) / 5) * 2;
     this.enemySpawnManager.reset(newLevel.endlessStage ?? 0, newLevel.theme);
 
     // Load enemies (avoid spawning enemies directly on top of Mario's respawn position)
@@ -698,37 +744,7 @@ export class GameEngine {
         if (!isRespawn || !this.activeCheckpoint) return true;
         return Math.abs(e.x - this.activeCheckpoint.x) > 20;
       })
-      .map(e => ({
-        id: this.nextEntityId++,
-        type: e.type,
-        x: e.x,
-        y: e.y,
-        vx: EnemySpawnManager.getInitialVelocity(e.type, speedMult, -1),
-        vy: e.type === 'paratroopa' ? -2.8 : 0,
-        width: e.type === 'bowser' ? 24 : 16,
-        height:
-          e.type === 'bowser'
-            ? 24
-            : e.type === 'koopa' ||
-              e.type === 'red_koopa' ||
-              e.type === 'paratroopa' ||
-              e.type === 'hammer_bro' ||
-              e.type === 'dry_bones'
-            ? 24
-            : 16,
-        alive: true,
-        state: 'walk' as const,
-        stateTimer: 0,
-        facing: 'left' as const,
-        animFrame: 0,
-        animTimer: 0,
-        pipeOriginY: e.type === 'piranha' || e.type === 'lava_bubble' ? e.y : undefined,
-        hp: e.type === 'bowser' ? bowserHp : undefined,
-        hitFlashTimer: 0,
-        originX: e.x,
-        fireTimer: e.type === 'bowser' ? 50 : e.type === 'hammer_bro' ? 42 : undefined,
-        bossName: e.type === 'bowser' ? newLevel.bossName : undefined,
-      }));
+      .map(e => this.buildEnemyFromPlacement(e, speedMult, bowserHp, newLevel.bossName));
 
     // R1.16.1RZ.4: Yoshi (only from custom editor/debug; NEVER spawns inside castles)
     this.yoshis = [];
@@ -797,13 +813,14 @@ export class GameEngine {
       resolvedLevel.id === 'secret-vault' ||
       resolvedLevel.id === 'smw-wiki-1-secret' ||
       Boolean(resolvedLevel.isCustom);
-    const stageWCoins =
-      resolvedLevel.wCoins !== undefined
-        ? resolvedLevel.wCoins.slice(0, 4)
-        : skipDefaultWCoins
-        ? []
-        : computeStageWCoins(resolvedLevel);
-    this.wCoinsTotal = stageWCoins.length;
+    const stageWCoins = resolvedLevel.isChunkStreamed
+      ? (resolvedLevel.wCoins ?? []).slice(0, 4)
+      : resolvedLevel.wCoins !== undefined
+      ? resolvedLevel.wCoins.slice(0, 4)
+      : skipDefaultWCoins
+      ? []
+      : computeStageWCoins(resolvedLevel);
+    this.wCoinsTotal = resolvedLevel.isChunkStreamed && !skipDefaultWCoins ? 4 : stageWCoins.length;
     this.wCoinsCollected = this.collectedWCoinIndices.size;
     this.stats.wCoinsTotal = this.wCoinsTotal;
     this.stats.wCoinsCollected = this.wCoinsCollected;
@@ -872,9 +889,272 @@ export class GameEngine {
     }
   }
 
+  public setEndlessSeed(seedInput: number | string) {
+    this.endlessSeed = normalizeEndlessSeed(seedInput);
+  }
+
+  private buildEnemyFromPlacement(
+    e: { type: EnemyType; x: number; y: number },
+    speedMult: number,
+    bowserHp: number,
+    bossName?: string
+  ): Enemy {
+    return {
+      id: this.nextEntityId++,
+      type: e.type,
+      x: e.x,
+      y: e.y,
+      vx: EnemySpawnManager.getInitialVelocity(e.type, speedMult, -1),
+      vy: e.type === 'paratroopa' ? -2.8 : 0,
+      width: e.type === 'bowser' ? 24 : 16,
+      height:
+        e.type === 'bowser'
+          ? 24
+          : e.type === 'koopa' ||
+            e.type === 'red_koopa' ||
+            e.type === 'paratroopa' ||
+            e.type === 'hammer_bro' ||
+            e.type === 'dry_bones'
+          ? 24
+          : 16,
+      alive: true,
+      state: 'walk' as const,
+      stateTimer: 0,
+      facing: 'left' as const,
+      animFrame: 0,
+      animTimer: 0,
+      pipeOriginY: e.type === 'piranha' || e.type === 'lava_bubble' ? e.y : undefined,
+      hp: e.type === 'bowser' ? bowserHp : undefined,
+      hitFlashTimer: 0,
+      originX: e.x,
+      fireTimer: e.type === 'bowser' ? 50 : e.type === 'hammer_bro' ? 42 : undefined,
+      bossName: e.type === 'bowser' ? bossName : undefined,
+    };
+  }
+
+  public streamEndlessChunksIfNeeded(): number {
+    return this.streamEndlessChunksAround(this.marioX);
+  }
+
+  public streamEndlessChunksAround(targetX: number): number {
+    if (!this.level || !this.level.isChunkStreamed || this.isBonusStageActive) {
+      return 0;
+    }
+
+    const chunkWidthTiles = this.level.chunkWidth ?? ENDLESS_CHUNK_WIDTH;
+    const chunkWidthPx = chunkWidthTiles * GameEngine.TILE_SIZE;
+    const totalChunks = this.level.totalChunks ?? Math.ceil(this.level.width / chunkWidthTiles);
+    const lookAheadX = Math.max(targetX + 256, this.camera.x + GameEngine.NES_WIDTH + 192);
+    let maxNeededChunk = Math.min(totalChunks - 1, Math.floor(lookAheadX / chunkWidthPx));
+
+    const finishChunkCount =
+      this.level.theme === 'underwater' || this.level.theme === 'ghost_house' ? 3 : 2;
+    const finishStartChunk = totalChunks - finishChunkCount;
+    if (maxNeededChunk >= finishStartChunk) {
+      // Materialize all finish chunks together so warps/doors/flagpole/axe/castle are immediately ready
+      maxNeededChunk = totalChunks - 1;
+    }
+
+    const speedMult = this.level.enemySpeedMultiplier ?? 1;
+    const bowserHp = 5 + Math.floor(((this.level.endlessStage || 1) - 1) / 5) * 2;
+    let streamedCount = 0;
+
+    for (let ci = 0; ci <= maxNeededChunk; ci++) {
+      const payload = materializeEndlessChunk(this.level, ci);
+      if (!payload) continue;
+      streamedCount++;
+
+      // Update ceiling tile lookup columns for newly materialized slice
+      if (
+        this.level.theme === 'underground' ||
+        this.level.theme === 'ghost_house' ||
+        this.level.theme === 'castle'
+      ) {
+        const row0 = this.level.tiles[0];
+        const row1 = this.level.tiles[1];
+        for (let tx = payload.startCol; tx < payload.endCol; tx++) {
+          const hasRow0 = Boolean(row0?.[tx] && this.isSolidTile(row0[tx]!.type));
+          const hasRow1 = Boolean(row1?.[tx] && this.isSolidTile(row1[tx]!.type));
+          this.ceilingTileColumns[tx] = hasRow0 || hasRow1;
+        }
+      }
+
+      // Inject newly materialized enemies
+      for (const e of payload.enemies) {
+        this.enemies.push(this.buildEnemyFromPlacement(e, speedMult, bowserHp, this.level.bossName));
+      }
+
+      // Inject newly materialized coins
+      for (const c of payload.coins) {
+        this.items.push({
+          id: this.nextEntityId++,
+          type: 'coin',
+          x: c.x,
+          y: c.y,
+          vx: 0,
+          vy: 0,
+          width: 16,
+          height: 16,
+          grounded: true,
+          collected: false,
+          emerging: false,
+          emergeY: c.y,
+        });
+      }
+
+      // Inject newly materialized W-Coins
+      for (const wc of payload.wCoins) {
+        if (this.collectedWCoinIndices.has(wc.index)) continue;
+        this.items.push({
+          id: this.nextEntityId++,
+          type: 'w_coin',
+          x: wc.x,
+          y: wc.y,
+          vx: 0,
+          vy: 0,
+          width: 20,
+          height: 26,
+          grounded: false,
+          collected: false,
+          emerging: false,
+          emergeY: wc.y,
+          wCoinIndex: wc.index,
+        });
+      }
+
+      // Inject newly materialized floating platforms
+      for (const fp of payload.floatingPlatforms) {
+        const phase = fp.phase ?? 0;
+        const offset = Math.sin(phase) * fp.range;
+        const initX = fp.axis === 'horizontal' ? fp.x + offset : fp.x;
+        const initY = fp.axis === 'vertical' || fp.axis === 'bob' ? fp.y + offset : fp.y;
+        this.floatingPlatforms.push({
+          id: this.nextEntityId++,
+          originX: fp.x,
+          originY: fp.y,
+          x: initX,
+          y: initY,
+          prevX: initX,
+          prevY: initY,
+          dx: 0,
+          dy: 0,
+          width: fp.width,
+          height: fp.height ?? 10,
+          axis: fp.axis,
+          range: fp.range,
+          speed: fp.speed,
+          timer: phase,
+        });
+      }
+
+      // Generate deterministic scenery for this chunk slice
+      this.appendBackgroundSceneryForRange(payload.startCol * GameEngine.TILE_SIZE, payload.endCol * GameEngine.TILE_SIZE);
+    }
+
+    if (streamedCount > 0) {
+      this.stats.endlessChunksGenerated = this.level.generatedChunkIndices?.length ?? 0;
+    }
+
+    return streamedCount;
+  }
+
+  private appendBackgroundSceneryForRange(minX: number, maxX: number) {
+    if (this.level.useBonusBackdrop || this.level.smwNodeId?.startsWith('wiki-switch-')) {
+      return;
+    }
+    const seedBase = Math.abs(Math.floor((this.level.seed ?? 1001) + minX * 31)) >>> 0;
+    const pseudo = (offset: number) => {
+      const v = Math.sin(seedBase + offset * 12.9898) * 43758.5453;
+      return v - Math.floor(v);
+    };
+
+    if (this.level.theme === 'underwater') {
+      const waterEnd = this.level.dryFinishStartX ?? this.level.width * 16;
+      if (minX < waterEnd) {
+        const spanEnd = Math.min(maxX, waterEnd - 16);
+        for (let x = minX + 24; x < spanEnd; x += 128) {
+          this.sceneries.push({
+            type: pseudo(x) > 0.5 ? 'seaweed_tall' : 'seaweed_short',
+            x: x + pseudo(x + 1) * 20,
+            y: 13 * 16,
+          });
+        }
+      }
+      if (
+        this.level.dryFinishStartX !== undefined &&
+        this.level.dryFinishStartX >= minX &&
+        this.level.dryFinishStartX < maxX
+      ) {
+        this.sceneries.push(
+          { type: 'cloud_med', x: this.level.dryFinishStartX + 48, y: 36 },
+          { type: 'bush_small', x: this.level.dryFinishStartX + 24, y: 13 * 16 }
+        );
+      }
+      return;
+    }
+
+    if (this.level.theme === 'ghost_house') {
+      const mansionEnd = Math.min(
+        this.level.dryFinishStartX ?? this.level.width * 16,
+        Math.max(200, this.level.width * 16 - 240)
+      );
+      if (minX < mansionEnd) {
+        for (let x = Math.max(48, minX + 16); x < Math.min(maxX, mansionEnd); x += 140) {
+          this.sceneries.push({ type: 'ghost_window', x, y: 44 });
+          this.sceneries.push({ type: 'ghost_chandelier', x: x + 68, y: 32 });
+          if (Math.floor(x / 140) % 2 === 0) {
+            this.sceneries.push({ type: 'ghost_portrait', x: x + 104, y: 74 });
+          }
+          this.sceneries.push({ type: 'ghost_mist', x: x + 16, y: 196 });
+        }
+      }
+      if (
+        this.level.dryFinishStartX !== undefined &&
+        this.level.dryFinishStartX >= minX &&
+        this.level.dryFinishStartX < maxX
+      ) {
+        this.sceneries.push(
+          { type: 'cloud_med', x: this.level.dryFinishStartX + 48, y: 36 },
+          { type: 'bush_small', x: this.level.dryFinishStartX + 24, y: 13 * 16 }
+        );
+      }
+      return;
+    }
+
+    if (this.level.theme === 'overworld') {
+      for (let x = minX; x < maxX; x += 220) {
+        this.sceneries.push(
+          {
+            type: pseudo(x + 2) > 0.5 ? 'cloud_med' : 'cloud_large',
+            x: x + pseudo(x + 3) * 32,
+            y: 24 + pseudo(x + 4) * 32,
+          },
+          {
+            type: pseudo(x + 5) > 0.5 ? 'hill_large' : 'hill_small',
+            x: x + 60,
+            y: 13 * 16,
+          },
+          {
+            type: pseudo(x + 6) > 0.4 ? 'bush_large' : 'bush_small',
+            x: x + 110,
+            y: 13 * 16,
+          }
+        );
+      }
+    }
+  }
+
   private generateBackgroundScenery() {
     this.sceneries = [];
     if (this.level.useBonusBackdrop || this.level.smwNodeId?.startsWith('wiki-switch-')) {
+      return;
+    }
+    if (this.level.isChunkStreamed) {
+      const chunkWidthPx = (this.level.chunkWidth ?? ENDLESS_CHUNK_WIDTH) * GameEngine.TILE_SIZE;
+      const generated = this.level.generatedChunkIndices ?? [];
+      for (const ci of generated) {
+        this.appendBackgroundSceneryForRange(ci * chunkWidthPx, (ci + 1) * chunkWidthPx);
+      }
       return;
     }
     if (this.level.theme === 'underwater') {
@@ -1288,6 +1568,9 @@ export class GameEngine {
     ) {
       this.dropReservePowerUp(true);
     }
+
+    // Stream upcoming Endless Mode chunks on-demand as Mario/camera approaches
+    this.streamEndlessChunksIfNeeded();
 
     // Update Floating Platforms (and carry Mario smoothly if riding one)
     this.updateFloatingPlatforms();
@@ -3202,7 +3485,7 @@ export class GameEngine {
         if (e.fireTimer !== undefined) {
           e.fireTimer--;
           if (e.fireTimer <= 0) {
-            const cycleCount = Math.floor(((this.level.endlessStage || 1) - 1) / 4);
+            const cycleCount = Math.floor(((this.level.endlessStage || 1) - 1) / 5);
             e.fireTimer = Math.max(48, 108 - cycleCount * 14);
             if (Math.abs(this.marioX - e.x) < 230 && this.bridgeCollapseQueue.length === 0) {
               const dir = e.facing === 'left' ? -1 : 1;
@@ -6648,6 +6931,7 @@ export class GameEngine {
       smwNodeId: this.level.smwNodeId,
       smwWorldName: this.level.smwWorldName,
       endlessStage: this.level.endlessStage,
+      seed: this.level.seed,
       isCustom: this.level.isCustom,
       onYoshi: this.marioOnYoshi,
     };
@@ -6877,6 +7161,7 @@ export class GameEngine {
       this.level.smwNodeId = this.bonusReturnLevelMeta.smwNodeId;
       this.level.smwWorldName = this.bonusReturnLevelMeta.smwWorldName;
       this.level.endlessStage = this.bonusReturnLevelMeta.endlessStage;
+      this.level.seed = this.bonusReturnLevelMeta.seed;
       this.level.isCustom = this.bonusReturnLevelMeta.isCustom;
       if (this.bonusReturnLevelMeta.onYoshi) {
         this.marioOnYoshi = true;
@@ -7279,11 +7564,18 @@ export class GameEngine {
     } else if (this.level.id === 'world-ghost') {
       this.loadLevel(createWorld1_4(), true, false);
     } else if (this.level.id === 'world-1-4') {
-      // After beating Castle 1-4, continue infinitely through Cycle 2+ (Overworld -> Caverna -> Água -> Castelo)
-      this.loadLevel(createEndlessLevel(Date.now(), 5), true, false);
+      // After beating Castle 1-4, continue infinitely through Cycle 2+ (5-biome seeded cycle)
+      const seed = this.endlessSeed > 0 ? this.endlessSeed : normalizeEndlessSeed(Date.now());
+      this.endlessSeed = seed;
+      this.loadLevel(createEndlessLevel(seed, 6), true, false);
     } else {
       const nextStage = (this.endlessStage || 0) + 1;
-      this.loadLevel(createEndlessLevel(Date.now(), nextStage), true, false);
+      const seed =
+        this.endlessSeed > 0
+          ? this.endlessSeed
+          : normalizeEndlessSeed(this.level.seed ?? Date.now());
+      this.endlessSeed = seed;
+      this.loadLevel(createEndlessLevel(seed, nextStage), true, false);
     }
   }
 
@@ -7982,6 +8274,14 @@ export class GameEngine {
       const iconY = 118;
       ctx.drawImage(this.atlas.marioSmallIdle, iconX, iconY);
       ctx.fillText(`x  ${this.stats.lives}`, iconX + 36, iconY + 12);
+
+      if (this.level.endlessStage && this.level.seed !== undefined) {
+        ctx.fillStyle = '#58f898';
+        ctx.font = '6px "Press Start 2P", monospace';
+        ctx.fillText(`SEED: ${formatEndlessSeed(this.level.seed)}`, GameEngine.NES_WIDTH / 2, 152);
+        ctx.font = '8px "Press Start 2P", monospace';
+        ctx.fillStyle = '#ffffff';
+      }
 
       ctx.textAlign = 'left';
       return;

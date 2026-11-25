@@ -5767,6 +5767,7 @@ export const GameCanvas: React.FC = () => {
         smartTvAutoRun={smartTvAutoRun}
         onToggleSmartTvAutoRun={toggleSmartTvAutoRun}
         isModeAndEditorLocked={isModeAndEditorLocked}
+        currentEndlessSeedCode={stats.endlessSeedCode}
       />
 
       {/* Leaderboard / Placar Modal */}

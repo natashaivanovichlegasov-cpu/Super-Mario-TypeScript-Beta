@@ -25,6 +25,19 @@ export interface UpdateEntry {
 
 export const GAME_UPDATES: UpdateEntry[] = [
   {
+    uid: 'R1.19.35S.7',
+    version: 'R1.19.35S.7',
+    label: 'Correção · Seed & Chunks no Modo Infinito',
+    title: 'Sistema de Seed Repetível e Geração Sob Demanda por Chunks nos 5 Biomas do Modo Infinito',
+    isFix: true,
+    items: [
+      'Ciclo do Modo Infinito ampliado para os 5 biomas completos: 1 Overworld → 2 Caverna → 3 Água → 4 Mansão dos Fantasmas (com Boo, Dry Bones e Porta de saída externa) → 5 Castelo com Bowser.',
+      'Implementado sistema de Seed determinístico compartilhado entre todos os biomas e ciclos: a mesma seed gera exatamente o mesmo mundo repetível, mantendo a semente ao avançar de fase.',
+      'Streaming sob demanda por Chunks (16 colunas por pedaço): em vez de pré-gerar o mapa inteiro na memória, o jogo calcula cada chunk dinamicamente conforme o jogador se aproxima, escalando velocidade, abismos, plataformas móveis, recifes, lava e densidade de inimigos.',
+      'Adicionado seletor/campo de Seed (numérica ou texto) e botão de seed aleatória na aba de Modo Sem Fim em Configurações, além da exibição da Seed na tela de apresentação da fase.',
+    ],
+  },
+  {
     uid: 'R1.19.5RT.7',
     version: 'R1.19.5RT.7',
     label: 'Correção · Lista Hex & Warps JSON',

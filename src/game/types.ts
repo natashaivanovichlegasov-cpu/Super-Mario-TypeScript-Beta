@@ -305,6 +305,12 @@ export interface LevelData {
   endlessStage?: number;
   cycleNumber?: number;
   seed?: number;
+  seedCode?: string;
+  isChunkStreamed?: boolean;
+  chunkWidth?: number;
+  totalChunks?: number;
+  generatedChunkIndices?: number[];
+  endlessDifficultyLevel?: number;
   enemySpeedMultiplier?: number;
   biomeLabel?: string;
   bossName?: string;
@@ -382,6 +388,11 @@ export interface GameStats {
   wCoinsCollected?: number;
   wCoinsTotal?: number;
   onYoshi?: boolean;
+  endlessSeed?: number;
+  endlessSeedCode?: string;
+  endlessBiome?: string;
+  endlessChunksGenerated?: number;
+  endlessTotalChunks?: number;
 }
 
 export type BonusBlockFace = '1up' | 'mushroom' | 'flower' | 'feather' | 'leaf' | 'femboy';

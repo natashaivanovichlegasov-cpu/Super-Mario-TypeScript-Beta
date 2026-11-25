@@ -49,7 +49,7 @@ export class EnemySpawnManager {
 
   public static getCycleNumber(stage: number): number {
     const safeStage = Math.max(1, Math.floor(stage));
-    return Math.floor((safeStage - 1) / 4) + 1;
+    return Math.floor((safeStage - 1) / 5) + 1;
   }
 
   public static getProfile(stage: number, theme: LevelData['theme']): SpawnDifficultyProfile {
@@ -58,7 +58,7 @@ export class EnemySpawnManager {
     const diffRatio = Math.min(1, (safeStage - 1) / 14);
 
     // Speed ramps up steadily with both stage and cycle
-    const speedMultiplier = Number((1 + Math.min(1.25, (safeStage - 1) * 0.085 + (cycleNumber - 1) * 0.04)).toFixed(2));
+    const speedMultiplier = Number((1 + Math.min(1.25, (safeStage - 1) * 0.08 + (cycleNumber - 1) * 0.05)).toFixed(2));
 
     // Spawn density & pack frequency grow each cycle
     const baseSpawnChance = Math.min(0.97, 0.58 + (cycleNumber - 1) * 0.11 + diffRatio * 0.12);
@@ -66,10 +66,10 @@ export class EnemySpawnManager {
     const piranhaChance = Math.min(0.95, 0.35 + (cycleNumber - 1) * 0.16 + diffRatio * 0.25);
 
     // Runtime dynamic spawn frequency increases (shorter cooldown frames as cycle increases)
-    // Cycle 1: ~360-300 frames (5-6s), Cycle 2: ~240 frames (4s), Cycle 3: ~165 frames (2.75s), Cycle 4+: ~110 frames (~1.8s)
+    // Cycle 1: ~375-315 frames, Cycle 2: ~297-240 frames, Cycle 3: ~219-165 frames, Cycle 4+: ~105 frames
     const dynamicIntervalFrames = Math.max(
       105,
-      Math.round(375 - (cycleNumber - 1) * 78 - ((safeStage - 1) % 4) * 14)
+      Math.round(375 - (cycleNumber - 1) * 78 - ((safeStage - 1) % 5) * 12)
     );
 
     const maxDynamicActive = Math.min(12, 4 + cycleNumber * 2);
@@ -276,10 +276,13 @@ export class EnemySpawnManager {
     theme: LevelData['theme'],
     rand: () => number,
     txOptions: number[],
-    tyTile: number
+    tyTile: number,
+    chunkDifficultyBoost: number = 0
   ): { type: EnemyType; x: number; y: number }[] {
     const profile = EnemySpawnManager.getProfile(stage, theme);
-    if (rand() >= profile.baseSpawnChance || txOptions.length === 0) {
+    const boostedBase = Math.min(0.98, profile.baseSpawnChance + chunkDifficultyBoost * 0.14);
+    const boostedCluster = Math.min(0.88, profile.clusterChance + chunkDifficultyBoost * 0.16);
+    if (rand() >= boostedBase || txOptions.length === 0) {
       return [];
     }
 
@@ -287,13 +290,17 @@ export class EnemySpawnManager {
     const primaryType = EnemySpawnManager.pickEnemyType(stage, theme, rand, { allowAerial: true });
     spawned.push(EnemySpawnManager.createSpawnSpec(primaryType, txOptions[0], tyTile, rand));
 
-    // Additional cluster enemies as cycles progress
-    if (txOptions.length >= 2 && rand() < profile.clusterChance) {
+    // Additional cluster enemies as cycles and chunk progress advance
+    if (txOptions.length >= 2 && rand() < boostedCluster) {
       const secondType = EnemySpawnManager.pickEnemyType(stage, theme, rand, { allowAerial: true });
       spawned.push(EnemySpawnManager.createSpawnSpec(secondType, txOptions[1], tyTile, rand));
     }
 
-    if (txOptions.length >= 3 && profile.cycleNumber >= 2 && rand() < profile.clusterChance * 0.65) {
+    if (
+      txOptions.length >= 3 &&
+      (profile.cycleNumber >= 2 || chunkDifficultyBoost >= 0.45) &&
+      rand() < boostedCluster * 0.65
+    ) {
       const thirdType = EnemySpawnManager.pickEnemyType(stage, theme, rand, { allowAerial: true });
       spawned.push(EnemySpawnManager.createSpawnSpec(thirdType, txOptions[2], tyTile, rand));
     }

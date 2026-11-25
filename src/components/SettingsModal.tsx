@@ -3,10 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React from 'react';
-import { Volume2, VolumeX, Music, RotateCcw, X, Gamepad2, Keyboard, Compass, ShieldAlert, Monitor, Maximize2, Minimize2, Hammer, Crown, Map as MapIcon, Bug, Tv, FolderOpen, Lock } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Volume2, VolumeX, Music, RotateCcw, X, Gamepad2, Keyboard, Compass, ShieldAlert, Monitor, Maximize2, Minimize2, Hammer, Crown, Map as MapIcon, Bug, Tv, FolderOpen, Lock, Shuffle } from 'lucide-react';
 import { LevelData, GameDifficulty, ResolutionScale } from '../game/types.ts';
-import { createWorld1_1, createSecretVault, createWorld1_2, createWorld2_2, createWorldGhostHouse, createWorld1_4, createEndlessLevel } from '../game/levels.ts';
+import { createWorld1_1, createSecretVault, createWorld1_2, createWorld2_2, createWorldGhostHouse, createWorld1_4, createEndlessLevel, normalizeEndlessSeed, formatEndlessSeed } from '../game/levels.ts';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -43,6 +43,7 @@ interface SettingsModalProps {
   smartTvAutoRun?: boolean;
   onToggleSmartTvAutoRun?: () => void;
   isModeAndEditorLocked?: boolean;
+  currentEndlessSeedCode?: string;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -80,7 +81,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   smartTvAutoRun = false,
   onToggleSmartTvAutoRun,
   isModeAndEditorLocked = false,
+  currentEndlessSeedCode,
 }) => {
+  const [endlessSeedInput, setEndlessSeedInput] = useState<string>(() =>
+    currentEndlessSeedCode || formatEndlessSeed(Date.now())
+  );
+
+  useEffect(() => {
+    if (isOpen && currentEndlessSeedCode) {
+      setEndlessSeedInput(currentEndlessSeedCode);
+    }
+  }, [isOpen, currentEndlessSeedCode]);
+
   if (!isOpen) return null;
 
   return (
@@ -213,19 +225,64 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 <span className="text-[10px] text-stone-400">Lava, Ponte e Rei Koopa</span>
               </button>
 
-              <button
-                type="button"
-                disabled={isModeAndEditorLocked}
-                onClick={() => {
-                  if (isModeAndEditorLocked) return;
-                  onSelectLevel(createEndlessLevel(Date.now(), 1));
-                  onClose();
-                }}
-                className="col-span-2 px-3 py-2.5 rounded-lg bg-stone-800 hover:bg-stone-700 border border-stone-700 hover:border-emerald-400 disabled:opacity-45 disabled:hover:bg-stone-800 disabled:hover:border-stone-700 disabled:cursor-not-allowed font-medium text-left transition flex flex-col cursor-pointer"
-              >
-                <span className="font-bold text-emerald-400">Modo Sem Fim (Cíclico)</span>
-                <span className="text-[10px] text-stone-400">1 Overworld → 2 Caverna → 3 Água → 4 Castelo</span>
-              </button>
+              <div className="col-span-2 p-3 rounded-lg bg-stone-800/90 border border-stone-700 hover:border-emerald-400/70 transition space-y-2">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <span className="block font-bold text-emerald-400">Modo Sem Fim (Cíclico + Seed)</span>
+                    <span className="text-[10px] text-stone-400 block">
+                      1 Overworld → 2 Caverna → 3 Água → 4 Mansão → 5 Castelo
+                    </span>
+                  </div>
+                  {currentEndlessSeedCode && (
+                    <span className="text-[10px] font-mono text-emerald-300 shrink-0">
+                      Atual: {currentEndlessSeedCode}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <label className="text-[10px] font-mono text-stone-300 shrink-0" htmlFor="endless-seed-input">
+                    SEED:
+                  </label>
+                  <input
+                    id="endless-seed-input"
+                    type="text"
+                    value={endlessSeedInput}
+                    disabled={isModeAndEditorLocked}
+                    maxLength={24}
+                    placeholder="Ex: 0012345 ou MARIO77"
+                    onChange={e => setEndlessSeedInput(e.target.value)}
+                    className="flex-1 min-w-0 px-2 py-1 rounded bg-stone-900 border border-stone-600 focus:border-emerald-400 focus:outline-none text-[11px] font-mono text-emerald-200 disabled:opacity-50"
+                  />
+                  <button
+                    type="button"
+                    disabled={isModeAndEditorLocked}
+                    title="Gerar Seed Aleatória"
+                    onClick={() => {
+                      const rnd = Math.floor(Math.random() * 9999999) + 1;
+                      setEndlessSeedInput(formatEndlessSeed(rnd));
+                    }}
+                    className="px-2 py-1 rounded bg-stone-700 hover:bg-stone-600 border border-stone-600 text-stone-200 text-[10px] font-mono flex items-center gap-1 disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                  >
+                    <Shuffle className="w-3 h-3 text-emerald-300" />
+                    <span className="hidden sm:inline">Aleatória</span>
+                  </button>
+                  <button
+                    type="button"
+                    disabled={isModeAndEditorLocked}
+                    onClick={() => {
+                      if (isModeAndEditorLocked) return;
+                      const numericSeed = normalizeEndlessSeed(endlessSeedInput);
+                      setEndlessSeedInput(formatEndlessSeed(numericSeed));
+                      onSelectLevel(createEndlessLevel(numericSeed, 1));
+                      onClose();
+                    }}
+                    className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-['Press_Start_2P',monospace] disabled:opacity-45 disabled:cursor-not-allowed cursor-pointer shrink-0"
+                  >
+                    JOGAR
+                  </button>
+                </div>
+              </div>
 
               {onStartSingleplayer && (
                 <button

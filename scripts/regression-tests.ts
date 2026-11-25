@@ -76,6 +76,13 @@ import {
   createWorldGhostHouse,
   createWorld1_4,
   createEndlessLevel,
+  materializeEndlessChunk,
+  materializeAllEndlessChunks,
+  normalizeEndlessSeed,
+  formatEndlessSeed,
+  ENDLESS_BIOME_CYCLE,
+  ENDLESS_CHUNK_WIDTH,
+  ENDLESS_INITIAL_CHUNKS,
   createSingleplayerLevel,
   createBlankCustomLevel,
   createSecretVault,
@@ -110,6 +117,7 @@ import {
   STAGE_W_COINS_COUNT,
 } from '../src/game/levels.ts';
 import { CameraSystem } from '../src/game/camera.ts';
+import { EnemySpawnManager } from '../src/game/enemySpawnManager.ts';
 import { AchievementManager } from '../src/game/achievements.ts';
 import {
   JOHANNNNES_CASTLE_1_BOSS_NAME,
@@ -5021,6 +5029,147 @@ async function runR116FixesTests() {
       }
     }
     assert.equal(seenHex.size, 255);
+  });
+
+  await test('R1.19.35S.7: Modo Infinito com 5 biomas (incl. Mansão), Seed repetível, Streaming sob demanda por Chunks e dificuldade progressiva', () => {
+    // 1. Ciclo de 5 biomas: Overworld -> Caverna -> Água -> Mansão dos Fantasmas -> Castelo
+    assert.deepEqual(
+      [...ENDLESS_BIOME_CYCLE],
+      ['overworld', 'underground', 'underwater', 'ghost_house', 'castle']
+    );
+    const seedNum = normalizeEndlessSeed('MARIO-77');
+    assert.equal(seedNum, normalizeEndlessSeed('mario-77'));
+    assert.equal(formatEndlessSeed(12345), '0012345');
+
+    const cycle1Themes = [1, 2, 3, 4, 5].map(s => createEndlessLevel(seedNum, s).theme);
+    assert.deepEqual(cycle1Themes, ['overworld', 'underground', 'underwater', 'ghost_house', 'castle']);
+    const cycle2Themes = [6, 7, 8, 9, 10].map(s => createEndlessLevel(seedNum, s).theme);
+    assert.deepEqual(cycle2Themes, ['overworld', 'underground', 'underwater', 'ghost_house', 'castle']);
+    assert.equal(EnemySpawnManager.getCycleNumber(1), 1);
+    assert.equal(EnemySpawnManager.getCycleNumber(5), 1);
+    assert.equal(EnemySpawnManager.getCycleNumber(6), 2);
+    assert.equal(EnemySpawnManager.getCycleNumber(10), 2);
+
+    // 2. Streaming sob demanda: ao criar a fase, apenas os chunks iniciais (0..2) estão materializados;
+    // chunks posteriores ficam vazios até o jogador se aproximar
+    const lazyStage1 = createEndlessLevel(seedNum, 1);
+    assert.equal(lazyStage1.isChunkStreamed, true);
+    assert.equal(lazyStage1.chunkWidth, ENDLESS_CHUNK_WIDTH);
+    assert.deepEqual(lazyStage1.generatedChunkIndices, [0, 1, 2]);
+    assert.ok(lazyStage1.tiles[13][0] !== null, 'Chunk 0 deve estar materializado inicialmente');
+    assert.equal(lazyStage1.tiles[13][ENDLESS_INITIAL_CHUNKS * ENDLESS_CHUNK_WIDTH], null, 'Chunk 3 não deve estar pré-gerado antes de o jogador se aproximar');
+    assert.equal(lazyStage1.tiles[13][(lazyStage1.totalChunks! - 1) * ENDLESS_CHUNK_WIDTH], null, 'Chunk final não deve estar pré-armazenado na inicialização');
+
+    // 3. Mesmo seed gera mundo idêntico; seed diferente gera mundo diferente (mesmo sob streaming)
+    const eagerA = createEndlessLevel('MARIO-77', 1, { eagerAllChunks: true });
+    const eagerB = createEndlessLevel('MARIO-77', 1, { eagerAllChunks: true });
+    const eagerDiff = createEndlessLevel('LUIGI-99', 1, { eagerAllChunks: true });
+    assert.equal(eagerA.seed, eagerB.seed);
+    assert.notEqual(eagerA.seed, eagerDiff.seed);
+    assert.deepEqual(eagerA.enemies, eagerB.enemies);
+    assert.deepEqual(eagerA.coins, eagerB.coins);
+    let tileDiffsSame = 0;
+    let tileDiffsOther = 0;
+    for (let tx = 0; tx < eagerA.width; tx++) {
+      for (let ty = 0; ty < eagerA.height; ty++) {
+        if (eagerA.tiles[ty][tx]?.type !== eagerB.tiles[ty][tx]?.type) tileDiffsSame++;
+        if (eagerA.tiles[ty][tx]?.type !== eagerDiff.tiles[ty][tx]?.type) tileDiffsOther++;
+      }
+    }
+    assert.equal(tileDiffsSame, 0, 'Mesma seed deve produzir exatamente os mesmos tiles em todos os chunks');
+    assert.ok(tileDiffsOther > 0, 'Seeds diferentes devem gerar layouts distintos');
+
+    // 4. Motor calcula cada chunk conforme o jogador avança e iguala a versão determinística completa
+    const streamEngine = createFreshEngine();
+    streamEngine.loadLevel(createEndlessLevel('MARIO-77', 1), true, false, false);
+    assert.equal(streamEngine.endlessSeed, seedNum);
+    assert.equal(streamEngine.stats.endlessSeed, seedNum);
+    assert.equal(streamEngine.level.generatedChunkIndices?.length, ENDLESS_INITIAL_CHUNKS);
+    const initialEnemyCount = streamEngine.enemies.length;
+
+    // Simula aproximação do Mario até o chunk 6 (col 96 -> x = 1536)
+    streamEngine.intermissionTimer = 0;
+    streamEngine.marioX = 6 * ENDLESS_CHUNK_WIDTH * 16;
+    streamEngine.camera.x = streamEngine.marioX - 80;
+    streamEngine.cameraX = streamEngine.camera.x;
+    streamEngine.update(16.67);
+
+    assert.ok((streamEngine.level.generatedChunkIndices?.length ?? 0) >= 7, 'Chunks até a aproximação devem ter sido calculados sob demanda');
+    assert.ok(streamEngine.level.tiles[13][6 * ENDLESS_CHUNK_WIDTH] !== null, 'Tile de chão do chunk 6 deve existir após aproximação');
+    assert.ok(streamEngine.enemies.length >= initialEnemyCount, 'Inimigos dos novos chunks devem ser injetados dinamicamente');
+
+    // Avança até o final e confirma que os tiles streamados coincidem 100% com eagerA
+    streamEngine.marioX = (streamEngine.level.width - 10) * 16;
+    streamEngine.camera.x = streamEngine.marioX - 160;
+    streamEngine.cameraX = streamEngine.camera.x;
+    streamEngine.update(16.67);
+    assert.equal(streamEngine.level.generatedChunkIndices?.length, streamEngine.level.totalChunks);
+    for (let tx = 0; tx < eagerA.width; tx++) {
+      for (let ty = 0; ty < eagerA.height; ty++) {
+        assert.equal(
+          streamEngine.level.tiles[ty][tx]?.type ?? null,
+          eagerA.tiles[ty][tx]?.type ?? null,
+          `Tile (${tx},${ty}) streamado deve coincidir exatamente com o determinístico da seed`
+        );
+      }
+    }
+
+    // 5. Todos os 5 biomas suportam seed + streaming + saída própria (Água -> cano superfície, Mansão -> porta externa, Castelo -> Bowser + Machado)
+    for (let s = 1; s <= 5; s++) {
+      const lvl = createEndlessLevel(777123, s, { eagerAllChunks: true });
+      assert.equal(lvl.seed, 777123);
+      // Conformidade R1.16.PX.4 em todos os 5 biomas
+      for (const row of lvl.tiles) {
+        for (const tile of row) {
+          if (tile && tile.type !== 'exclam_yellow') {
+            assert.equal(isPowerUpBoxContent(tile.content), false, `Bioma ${lvl.theme} não deve ter power-up em bloco não-[!]`);
+          }
+        }
+      }
+      if (lvl.theme === 'underwater') {
+        assert.ok(lvl.dryFinishStartX !== undefined && lvl.dryFinishStartX > 0, 'Água infinita deve ter transição de superfície');
+        assert.ok(lvl.pipeWarps?.some(pw => pw.type === 'down'), 'Água infinita deve ter cano de saída');
+      } else if (lvl.theme === 'ghost_house') {
+        assert.ok(lvl.dryFinishStartX !== undefined && lvl.dryFinishStartX > 0, 'Mansão infinita deve ter pátio externo');
+        assert.ok(lvl.pipeWarps?.some(pw => pw.type === 'door'), 'Mansão infinita deve ter porta de saída para fora da mansão');
+        assert.ok(lvl.enemies.some(e => e.type === 'boo' || e.type === 'dry_bones'), 'Mansão infinita deve gerar Boos/Dry Bones');
+      } else if (lvl.theme === 'castle') {
+        assert.ok(lvl.enemies.some(e => e.type === 'bowser'), 'Castelo infinito deve gerar Bowser na ponte');
+      }
+    }
+
+    // 6. Dificuldade progressiva entre ciclos e preservação da mesma seed ao avançar estágios
+    const p1 = EnemySpawnManager.getProfile(1, 'overworld');
+    const p6 = EnemySpawnManager.getProfile(6, 'overworld');
+    const p11 = EnemySpawnManager.getProfile(11, 'overworld');
+    assert.ok(p6.speedMultiplier > p1.speedMultiplier && p11.speedMultiplier > p6.speedMultiplier);
+    assert.ok(p6.baseSpawnChance > p1.baseSpawnChance);
+    assert.ok(p6.dynamicIntervalFrames < p1.dynamicIntervalFrames);
+
+    const chainEngine = createFreshEngine();
+    chainEngine.loadLevel(createEndlessLevel('SEED-CHAIN-55', 1), true, false, false);
+    const fixedSeed = chainEngine.endlessSeed;
+    for (const expectedTheme of ['underground', 'underwater', 'ghost_house', 'castle', 'overworld'] as const) {
+      chainEngine.advanceToNextLevel();
+      assert.equal(chainEngine.endlessSeed, fixedSeed, 'Seed deve permanecer igual entre os 5 biomas do Modo Infinito');
+      assert.equal(chainEngine.level.seed, fixedSeed);
+      assert.equal(chainEngine.level.theme, expectedTheme);
+    }
+
+    // 7. Garante também que materialização manual extra em qualquer chunk é idempotente
+    const idemp = createEndlessLevel(424242, 4); // ghost_house lazy
+    const firstMat = materializeEndlessChunk(idemp, 4);
+    const secondMat = materializeEndlessChunk(idemp, 4);
+    assert.ok(firstMat !== null);
+    assert.equal(secondMat, null, 'Re-materializar chunk já calculado deve ser idempotente (null)');
+    materializeAllEndlessChunks(idemp);
+    assert.equal(idemp.generatedChunkIndices?.length, idemp.totalChunks);
+
+    // 8. UI & UpdatesModal contêm seletor de Seed, 5 biomas e changelog R1.19.35S.7
+    const settingsSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/SettingsModal.tsx'), 'utf8');
+    assert.ok(settingsSrc.includes('endless-seed-input'));
+    assert.ok(settingsSrc.includes('4 Mansão'));
+    assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.19.35S.7'));
   });
 }
 
