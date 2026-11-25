@@ -1,13 +1,13 @@
 {
   "format": "smb-custom-level",
   "version": 1,
-  "exportedAt": "2026-11-23T13:33:34.238Z",
+  "exportedAt": "2026-11-25T21:40:10.188Z",
   "level": {
-    "id": "smw-wiki-2",
+    "id": "custom-1795642693876-epdu",
     "name": "W-2",
     "theme": "underground",
     "biomeLabel": "WIKIWORLDWEB · CAVERNA",
-    "width": 171,
+    "width": 180,
     "height": 15,
     "tiles": [
       [
@@ -887,31 +887,210 @@
           "bumpOffset": 0,
           "bumpVel": 0
         },
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        }
       ],
       [
         {
@@ -1790,6 +1969,367 @@
           "bumpOffset": 0,
           "bumpVel": 0
         },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_brick",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        }
+      ],
+      [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -1971,12 +2511,16 @@
         null,
         null,
         null,
-        {
-          "type": "pole_top",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -2149,12 +2693,16 @@
         null,
         null,
         null,
-        {
-          "type": "pole",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -2327,12 +2875,16 @@
         null,
         null,
         null,
-        {
-          "type": "pole",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -2505,12 +3057,16 @@
         null,
         null,
         null,
-        {
-          "type": "pole",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -2683,12 +3239,16 @@
         null,
         null,
         null,
-        {
-          "type": "pole",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -2861,45 +3421,18 @@
         null,
         null,
         null,
-        {
-          "type": "pole",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
         null,
         null,
         null,
         null,
         null,
-        {
-          "type": "castle_crenel",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
         null,
-        {
-          "type": "castle_crenel",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
         null,
-        {
-          "type": "castle_crenel",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
         null,
         null,
         null,
         null,
         null,
-        null
-      ],
-      [
         null,
         null,
         null,
@@ -2909,198 +3442,6 @@
         null,
         null,
         null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        null,
-        {
-          "type": "pole",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        null,
-        null,
-        null,
-        null,
-        null,
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
         null,
         null,
         null,
@@ -3327,53 +3668,27 @@
         null,
         null,
         null,
-        {
-          "type": "pole",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
         null,
         null,
         null,
         null,
         null,
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -3615,53 +3930,27 @@
         null,
         null,
         null,
-        {
-          "type": "pole",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
         null,
         null,
         null,
         null,
         null,
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -3959,7 +4248,13 @@
         null,
         null,
         {
-          "type": "pole",
+          "type": "pipe_warp_top_left",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "pipe_warp_top_right",
           "content": "none",
           "bumpOffset": 0,
           "bumpVel": 0
@@ -3969,42 +4264,20 @@
         null,
         null,
         null,
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_door",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -4317,7 +4590,13 @@
         null,
         null,
         {
-          "type": "hard_block",
+          "type": "pipe_body_left",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "pipe_body_right",
           "content": "none",
           "bumpOffset": 0,
           "bumpVel": 0
@@ -4327,42 +4606,20 @@
         null,
         null,
         null,
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_door",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
-        {
-          "type": "castle_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
+        null,
         null,
         null,
         null,
@@ -4730,6 +4987,60 @@
         },
         {
           "type": "hard_block",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
           "content": "none",
           "bumpOffset": 0,
           "bumpVel": 0
@@ -5678,6 +5989,60 @@
         },
         {
           "type": "hard_block",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "underground_ground",
           "content": "none",
           "bumpOffset": 0,
           "bumpVel": 0
@@ -6387,21 +6752,32 @@
         "y": 144
       }
     ],
-    "marioStart": {
-      "x": 40,
-      "y": 192
-    },
-    "flagX": 2464,
-    "castleX": 2592,
-    "bgColor": "#000000",
-    "timeLimit": 390,
-    "seed": 1951962109,
-    "enemySpeedMultiplier": 1.0720588235294117,
-    "singleplayerWorld": 2,
-    "singleplayerStage": 3,
-    "isFinalCastle": false,
-    "smwNodeId": "wiki-2-caverna",
-    "smwWorldName": "Ilha WikiWorldWeb",
+    "carryables": [
+      {
+        "kind": "p_switch_cyan",
+        "x": 160,
+        "y": 192
+      }
+    ],
+    "pipeWarps": [
+      {
+        "from": {
+          "x": 2464,
+          "y": 160,
+          "width": 32,
+          "height": 16
+        },
+        "toLevel": "hex:00D0",
+        "targetHex": "00D0",
+        "toPos": {
+          "x": 32,
+          "y": 0
+        },
+        "type": "down",
+        "entryMode": "pipe",
+        "destPipeDir": "down"
+      }
+    ],
     "checkpoints": [
       {
         "x": 1184,
@@ -6418,13 +6794,19 @@
         }
       }
     ],
-    "carryables": [
-      {
-        "kind": "p_switch_cyan",
-        "x": 160,
-        "y": 192
-      }
-    ],
+    "hexId": "0106",
+    "enemySpeedMultiplier": 1.07,
+    "smwNodeId": "wiki-2-caverna",
+    "smwWorldName": "Ilha WikiWorldWeb",
+    "isFinalCastle": false,
+    "marioStart": {
+      "x": 40,
+      "y": 192
+    },
+    "flagX": 2112,
+    "castleX": 2208,
+    "bgColor": "#000000",
+    "timeLimit": 390,
     "isCustom": true
   }
 }
