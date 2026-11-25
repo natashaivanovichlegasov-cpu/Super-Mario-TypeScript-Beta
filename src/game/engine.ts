@@ -256,6 +256,7 @@ export class GameEngine {
   public heldShellEnemyId: number | null = null;
   public pSwitchBlueTimer: number = 0;
   private pSwitchTransformedBlocks: { tx: number; ty: number; origX: number; origY: number }[] = [];
+  public usedPSwitchKindsBeforeDeath: Set<'p_switch_blue' | 'p_switch_cyan'> = new Set();
   public keyholeClearTimer: number = 0;
   public keyholeTransitionActive: boolean = false;
   public keyholeTotalTimer: number = 0;
@@ -366,6 +367,7 @@ export class GameEngine {
   private customSubAreaOrigin: { levelTemplate: LevelData; returnPos: Point } | null = null;
   private customLevelRegistry: Map<string, LevelData> = new Map();
   private isWarpMapSwapActive: boolean = false;
+  private preserveUsedPSwitchesOnLoad: boolean = false;
   public customCampaignLevels: LevelData[] = [];
   public customCampaignIndex: number = 0;
   private keyCavePipeLipKeys: Set<string> = new Set();
@@ -573,6 +575,9 @@ export class GameEngine {
       this.isCampaignVictory = false;
       this.collectedWCoinIndices.clear();
       this.wCoinLifeAwardedThisStage = false;
+    }
+    if (isRespawn || !this.preserveUsedPSwitchesOnLoad) {
+      this.usedPSwitchKindsBeforeDeath.clear();
     }
     this.stats.reservePowerUp = this.reservePowerUp;
     this.bossFireballs = [];
@@ -4165,6 +4170,7 @@ export class GameEngine {
     this.isSpinJumping = false;
     this.spinJumpTimer = 0;
     this.marioState = 'dead';
+    this.usedPSwitchKindsBeforeDeath.clear();
     this.marioPower = 'small'; // Abyss or damage always removes power-ups
     this.marioOnYoshi = false;
     this.yoshiTongueTimer = 0;
@@ -5381,7 +5387,16 @@ export class GameEngine {
     }
 
     if (spec.id === 'key' || spec.id === 'p_switch_blue' || spec.id === 'p_switch_cyan') {
-      this.spawnCarryableObject(spec.id, px, py);
+      const spawned = this.spawnCarryableObject(spec.id, px, py);
+      if (!spawned) {
+        this.sound.playBump();
+        this.particleSystem.emitScoreText('BOTÃO JÁ USADO!', Math.max(8, px - 28), Math.max(20, py - 14), {
+          maxLife: 45,
+          vy: -1.0,
+          color: '#ff6868',
+        });
+        return false;
+      }
       this.sound.playPowerUpAppear();
       this.spawnPowerUpSparkles(px, py);
       return true;
@@ -5972,7 +5987,9 @@ export class GameEngine {
         }));
       }
       this.isWarpMapSwapActive = true;
+      this.preserveUsedPSwitchesOnLoad = true;
       this.loadLevel(subAreaLevel, false, false, false);
+      this.preserveUsedPSwitchesOnLoad = false;
       this.isWarpMapSwapActive = false;
       this.marioX = destPos.x;
       this.marioY = destPos.y;
@@ -5996,7 +6013,9 @@ export class GameEngine {
         const returnLevel = cloneLevelData(this.customSubAreaOrigin.levelTemplate);
         this.customSubAreaOrigin = null;
         this.isWarpMapSwapActive = true;
+        this.preserveUsedPSwitchesOnLoad = true;
         this.loadLevel(returnLevel, false, false, false);
+        this.preserveUsedPSwitchesOnLoad = false;
         this.isWarpMapSwapActive = false;
       }
 
@@ -6036,15 +6055,19 @@ export class GameEngine {
       if (resolved) {
         const { level: nextMap, redirectedToOverworld } = resolved;
         if (!isDoorWarp && targetLevelId === 'world-1-1' && !redirectedToOverworld) {
+          this.preserveUsedPSwitchesOnLoad = true;
           this.loadLevel(nextMap, false, false, !returningFromSubArea);
+          this.preserveUsedPSwitchesOnLoad = false;
         } else {
           this.isWarpMapSwapActive = true;
+          this.preserveUsedPSwitchesOnLoad = !redirectedToOverworld;
           this.loadLevel(
             nextMap,
             false,
             false,
             !isDoorWarp && !returningFromSubArea && !nextMap.isCustom && !redirectedToOverworld
           );
+          this.preserveUsedPSwitchesOnLoad = false;
           this.isWarpMapSwapActive = false;
         }
 
@@ -6334,7 +6357,43 @@ export class GameEngine {
     return this.heldCarryableId !== null || this.heldShellEnemyId !== null;
   }
 
-  public spawnCarryableObject(kind: CarryableKind, x: number, y: number): CarryableObject {
+  public isSwitchPalaceLevel(level: LevelData | null | undefined = this.level): boolean {
+    if (!level) return false;
+    if (level.smwNodeId?.startsWith('wiki-switch-')) return true;
+    if (level.id?.startsWith('smw-wiki-switch-') || level.id?.startsWith('wiki-switch-')) return true;
+    if (
+      level.hexId &&
+      ['0110', '0111', '0112', '0113', '0114'].includes(level.hexId.trim().toUpperCase())
+    ) {
+      return true;
+    }
+    if (Array.isArray(level.tiles)) {
+      for (const row of level.tiles) {
+        if (!Array.isArray(row)) continue;
+        for (const tile of row) {
+          if (tile && this.isAnySwitchTile(tile.type)) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  public isPSwitchBlockedBeforeDeath(kind: CarryableKind): boolean {
+    if (kind !== 'p_switch_blue' && kind !== 'p_switch_cyan') {
+      return false;
+    }
+    if (this.isSwitchPalaceLevel(this.level)) {
+      return false;
+    }
+    return this.usedPSwitchKindsBeforeDeath.has(kind);
+  }
+
+  public spawnCarryableObject(kind: CarryableKind, x: number, y: number): CarryableObject | null {
+    if (this.isPSwitchBlockedBeforeDeath(kind)) {
+      return null;
+    }
     const maxPxX = Math.max(0, this.level.width * GameEngine.TILE_SIZE - 16);
     const clampedX = Math.max(0, Math.min(maxPxX, Math.round(x)));
     const clampedY = Math.max(16, Math.min(GameEngine.NES_HEIGHT - 16, Math.round(y)));
@@ -6543,13 +6602,17 @@ export class GameEngine {
           }
         }
 
-        // Respawn at original spawn point if dropped into an abyss
+        // Respawn at original spawn point if dropped into an abyss (unless it's a P-Switch already locked until death)
         if (obj.y > GameEngine.NES_HEIGHT + 32) {
-          obj.x = obj.spawnX;
-          obj.y = obj.spawnY;
-          obj.vx = 0;
-          obj.vy = 0;
-          obj.grounded = false;
+          if (this.isPSwitchBlockedBeforeDeath(obj.kind)) {
+            obj.consumed = true;
+          } else {
+            obj.x = obj.spawnX;
+            obj.y = obj.spawnY;
+            obj.vx = 0;
+            obj.vy = 0;
+            obj.grounded = false;
+          }
         }
 
         // Mario interaction: stomp P-Switch OR pick up while holding Run
@@ -6625,6 +6688,12 @@ export class GameEngine {
     obj.vy = 0;
     if (this.heldCarryableId === obj.id) {
       this.heldCarryableId = null;
+    }
+    if (
+      (obj.kind === 'p_switch_blue' || obj.kind === 'p_switch_cyan') &&
+      !this.isSwitchPalaceLevel(this.level)
+    ) {
+      this.usedPSwitchKindsBeforeDeath.add(obj.kind);
     }
     this.marioVy = Math.min(this.marioVy, -3.5);
     this.sound.playBump();

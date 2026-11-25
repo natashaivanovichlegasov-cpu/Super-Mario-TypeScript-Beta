@@ -25,6 +25,18 @@ export interface UpdateEntry {
 
 export const GAME_UPDATES: UpdateEntry[] = [
   {
+    uid: 'R1.24.12X.8',
+    version: 'R1.24.12X.8',
+    label: 'Correção · Botões Azul e Ciano',
+    title: 'Bloqueio de Reaparecimento de Botões Azul e Ciano Antes da Morte (Exceto Palácios)',
+    isFix: true,
+    items: [
+      'Quando um Botão Azul ou Botão Ciano é acionado durante uma fase comum, esse botão não pode mais reaparecer (via retorno de subárea/cano/porta, abismo ou modo debug) até que o personagem morra na fase.',
+      'Ao morrer e renascer na fase (ou iniciar uma nova fase), o bloqueio é reiniciado e os botões voltam a aparecer normalmente.',
+      'Exceção aplicada aos Palácios dos Botões (Amarelo, Verde, Vermelho, Rosa e Azul), onde os botões continuam podendo aparecer normalmente mesmo após acionados.',
+    ],
+  },
+  {
     uid: 'R1.19.35S.7',
     version: 'R1.19.35S.7',
     label: 'Correção · Seed & Chunks no Modo Infinito',

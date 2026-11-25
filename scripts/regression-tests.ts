@@ -3017,7 +3017,7 @@ async function runR116FixesTests() {
     const coinTy = 10;
     blueEngine.level.tiles[coinTy][coinTx] = null;
     blueEngine.items.push(makeItem(9911, 'coin', coinTx * 16, coinTy * 16));
-    const blueSwitch = blueEngine.spawnCarryableObject('p_switch_blue', blueEngine.marioX + 14, yGround);
+    const blueSwitch = blueEngine.spawnCarryableObject('p_switch_blue', blueEngine.marioX + 14, yGround)!;
 
     // Segurar Corrida carrega o botão azul
     blueEngine.controls.run = true;
@@ -3062,7 +3062,7 @@ async function runR116FixesTests() {
     bossTarget.vx = 0;
     cyanEngine.enemies.push(goombaTarget, koopaTarget, bossTarget);
 
-    const cyanSwitch = cyanEngine.spawnCarryableObject('p_switch_cyan', 96, yGround);
+    const cyanSwitch = cyanEngine.spawnCarryableObject('p_switch_cyan', 96, yGround)!;
     cyanEngine.marioX = cyanSwitch.x;
     cyanEngine.marioY = cyanSwitch.y - 18;
     cyanEngine.marioVy = 4.0;
@@ -3079,7 +3079,7 @@ async function runR116FixesTests() {
     keyEngine.enemies = [];
     keyEngine.items = [];
     stepEngine(keyEngine, 5);
-    const keyObj = keyEngine.spawnCarryableObject('key', keyEngine.marioX + 10, yGround);
+    const keyObj = keyEngine.spawnCarryableObject('key', keyEngine.marioX + 10, yGround)!;
     const keyholeObj = keyEngine.spawnKeyhole(keyEngine.marioX + 64, yGround);
 
     keyEngine.controls.run = true;
@@ -3458,7 +3458,7 @@ async function runR116FixesTests() {
     stepEngine(engine, 5);
 
     const yGround = 12 * GameEngine.TILE_SIZE;
-    const keyObj = engine.spawnCarryableObject('key', engine.marioX + 12, yGround);
+    const keyObj = engine.spawnCarryableObject('key', engine.marioX + 12, yGround)!;
     const keyhole = engine.spawnKeyhole(engine.marioX + 64, yGround);
     engine.controls.run = true;
     engine.marioX = keyObj.x;
@@ -5170,6 +5170,139 @@ async function runR116FixesTests() {
     assert.ok(settingsSrc.includes('endless-seed-input'));
     assert.ok(settingsSrc.includes('4 Mansão'));
     assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.19.35S.7'));
+  });
+
+  await test('R1.24.12X.8: Botões Azul e Ciano usados não reaparecem antes de morrer, exceto nos Palácios dos Botões', () => {
+    // 1. Fase comum: usar Botão Azul bloqueia novo spawn antes de morrer, mas preserva Ciano não usado
+    const stageEngine = createFreshEngine();
+    stageEngine.enemies = [];
+    stageEngine.items = [];
+    stageEngine.toggleDebugMode(true);
+    stepEngine(stageEngine, 5);
+    const yGround = stageEngine.marioY;
+
+    const blue1 = stageEngine.spawnCarryableObject('p_switch_blue', stageEngine.marioX + 12, yGround);
+    assert.ok(blue1, 'Botão Azul inicial deve aparecer na fase');
+    stageEngine.marioX = blue1!.x;
+    stageEngine.marioY = blue1!.y - 18;
+    stageEngine.marioVy = 4.0;
+    stageEngine.update(16.67);
+    assert.equal(blue1!.pressed, true);
+    assert.equal(stageEngine.usedPSwitchKindsBeforeDeath.has('p_switch_blue'), true);
+
+    // Tentar criar outro Botão Azul antes de morrer deve ser bloqueado
+    assert.equal(stageEngine.spawnCarryableObject('p_switch_blue', 120, yGround), null);
+    stageEngine.debugPlaceIndex = GameEngine.DEBUG_PLACEABLES.findIndex(p => p.id === 'p_switch_blue');
+    assert.equal(stageEngine.placeDebugItemAt(120, yGround), false);
+
+    // Botão Ciano ainda não foi usado -> pode aparecer normalmente até ser usado
+    const cyan1 = stageEngine.spawnCarryableObject('p_switch_cyan', 140, yGround);
+    assert.ok(cyan1, 'Botão Ciano ainda não usado deve poder aparecer');
+    stageEngine.marioX = cyan1!.x;
+    stageEngine.marioY = cyan1!.y - 18;
+    stageEngine.marioVy = 4.0;
+    stageEngine.update(16.67);
+    assert.equal(cyan1!.pressed, true);
+    assert.equal(stageEngine.usedPSwitchKindsBeforeDeath.has('p_switch_cyan'), true);
+    assert.equal(stageEngine.spawnCarryableObject('p_switch_cyan', 150, yGround), null);
+
+    // 2. Retornar de subárea/warp sem morrer NÃO faz o botão usado reaparecer na fase
+    const warpEngine = createFreshEngine();
+    const w1Stage = createSmwWikiWorldStage('wiki-1-overworld');
+    warpEngine.startSmwStage(w1Stage, true);
+    warpEngine.intermissionTimer = 0;
+    warpEngine.enemies = [];
+    stepEngine(warpEngine, 5);
+    const w1Blue = warpEngine.carryables.find(c => c.kind === 'p_switch_blue');
+    assert.ok(w1Blue, 'W-1 deve iniciar com seu Botão Azul');
+    warpEngine.marioX = w1Blue!.x;
+    warpEngine.marioY = w1Blue!.y - 18;
+    warpEngine.marioVy = 4.0;
+    warpEngine.update(16.67);
+    assert.equal(w1Blue!.pressed, true);
+
+    // Simula entrada e saída por cano de subárea sem morrer
+    const toSecret = w1Stage.pipeWarps?.find(pw => pw.toLevel === 'smw-wiki-1-secret');
+    assert.ok(toSecret, 'W-1 deve possuir warp para subárea secreta');
+    (warpEngine as any).warpTarget = {
+      toLevel: toSecret!.toLevel,
+      toPos: { ...toSecret!.toPos },
+    };
+    (warpEngine as any).warpDir = 'down';
+    (warpEngine as any).finishPipeWarp();
+    assert.equal(warpEngine.level.id, 'smw-wiki-1-secret');
+
+    const backToW1 = warpEngine.level.pipeWarps?.[0];
+    assert.ok(backToW1, 'Subárea secreta deve possuir warp de volta para W-1');
+    (warpEngine as any).warpTarget = {
+      toLevel: backToW1!.toLevel,
+      toPos: { ...backToW1!.toPos },
+      targetHex: backToW1!.targetHex,
+    };
+    (warpEngine as any).warpDir = 'up';
+    (warpEngine as any).finishPipeWarp();
+    assert.equal(warpEngine.level.smwNodeId, 'wiki-1-overworld');
+    assert.equal(
+      warpEngine.carryables.some(c => c.kind === 'p_switch_blue'),
+      false,
+      'Botão Azul já usado não pode reaparecer ao retornar de subárea antes de morrer'
+    );
+
+    // 3. Após morrer na fase (killMario / respawn), os botões voltam a aparecer
+    warpEngine.killMario(false);
+    assert.equal(warpEngine.usedPSwitchKindsBeforeDeath.size, 0);
+    warpEngine.loadLevel(createSmwWikiWorldStage('wiki-1-overworld'), false, true, false);
+    assert.equal(
+      warpEngine.carryables.some(c => c.kind === 'p_switch_blue'),
+      true,
+      'Após morrer na fase, o Botão Azul deve voltar a aparecer no respawn'
+    );
+
+    // 4. Exceção: nos Palácios dos Botões, Azul e Ciano podem reaparecer mesmo antes de morrer
+    for (const palaceId of [
+      'wiki-switch-yellow',
+      'wiki-switch-green',
+      'wiki-switch-red',
+      'wiki-switch-pink',
+      'wiki-switch-blue',
+    ] as const) {
+      const palaceEngine = createFreshEngine();
+      palaceEngine.startSmwStage(createSmwWikiWorldStage(palaceId), true);
+      palaceEngine.intermissionTimer = 0;
+      palaceEngine.enemies = [];
+      palaceEngine.items = [];
+      stepEngine(palaceEngine, 25);
+      const palaceStartX = palaceEngine.marioX;
+      const palaceGroundY = palaceEngine.marioY;
+      assert.equal(palaceEngine.isSwitchPalaceLevel(), true, `${palaceId} deve ser reconhecido como Palácio dos Botões`);
+
+      const pBlue = palaceEngine.spawnCarryableObject('p_switch_blue', palaceStartX + 12, palaceGroundY);
+      assert.ok(pBlue);
+      palaceEngine.marioX = pBlue!.x;
+      palaceEngine.marioY = pBlue!.y - 18;
+      palaceEngine.marioVy = 4.0;
+      palaceEngine.update(16.67);
+      assert.equal(pBlue!.pressed, true);
+      assert.equal(palaceEngine.usedPSwitchKindsBeforeDeath.size, 0, `${palaceId} não deve bloquear botão azul`);
+      assert.ok(
+        palaceEngine.spawnCarryableObject('p_switch_blue', palaceStartX + 40, palaceGroundY),
+        `${palaceId} deve permitir novo Botão Azul antes de morrer`
+      );
+
+      const pCyan = palaceEngine.spawnCarryableObject('p_switch_cyan', palaceStartX + 72, palaceGroundY);
+      assert.ok(pCyan);
+      palaceEngine.marioX = pCyan!.x;
+      palaceEngine.marioY = pCyan!.y - 18;
+      palaceEngine.marioVy = 4.0;
+      palaceEngine.update(16.67);
+      assert.equal(pCyan!.pressed, true);
+      assert.ok(
+        palaceEngine.spawnCarryableObject('p_switch_cyan', palaceStartX + 104, palaceGroundY),
+        `${palaceId} deve permitir novo Botão Ciano antes de morrer`
+      );
+    }
+
+    assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.24.12X.8'));
   });
 }
 
