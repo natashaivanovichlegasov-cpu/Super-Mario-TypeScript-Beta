@@ -374,6 +374,175 @@
         "meta",
         "createdAt"
       ]
+    },
+    "CommunityLevel": {
+      "title": "CommunityLevel",
+      "description": "User-created custom Mario level published from the editor or JSON upload to Firebase Firestore.",
+      "type": "object",
+      "properties": {
+        "levelId": {
+          "type": "string",
+          "description": "Unique Firestore document ID for the community level",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorUid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the creator",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Creator public display name",
+          "minLength": 1,
+          "maxLength": 50
+        },
+        "authorPhotoUrl": {
+          "type": "string",
+          "description": "Creator avatar URL",
+          "minLength": 0,
+          "maxLength": 300
+        },
+        "title": {
+          "type": "string",
+          "description": "Level title displayed in Community Mode",
+          "minLength": 1,
+          "maxLength": 32
+        },
+        "description": {
+          "type": "string",
+          "description": "Optional creator notes or level description",
+          "minLength": 0,
+          "maxLength": 160
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["overworld", "underground", "underwater", "castle", "ghost_house"],
+          "description": "Visual and physics biome theme of the level"
+        },
+        "width": {
+          "type": "integer",
+          "description": "Level width in 16px tiles (20..240)"
+        },
+        "height": {
+          "type": "integer",
+          "description": "Level height in 16px tiles (15)"
+        },
+        "bgColor": {
+          "type": "string",
+          "description": "Sky or background color hex",
+          "minLength": 1,
+          "maxLength": 24
+        },
+        "musicTrack": {
+          "type": "string",
+          "description": "Music track override or auto",
+          "minLength": 1,
+          "maxLength": 24
+        },
+        "timeLimit": {
+          "type": "integer",
+          "description": "Stage timer in seconds (60..999)"
+        },
+        "enemySpeedMultiplier": {
+          "type": "number",
+          "description": "Enemy speed multiplier (0.5..3.0)"
+        },
+        "useBonusBackdrop": {
+          "type": "boolean",
+          "description": "Whether the SMW bonus backdrop is enabled"
+        },
+        "hexId": {
+          "type": "string",
+          "description": "Optional 4-digit hex code from Lunar Magic header",
+          "minLength": 0,
+          "maxLength": 8
+        },
+        "entryType": {
+          "type": "string",
+          "enum": ["normal", "pipe"],
+          "description": "Stage entry type"
+        },
+        "entryPipeDir": {
+          "type": "string",
+          "enum": ["up", "down", "left", "right"],
+          "description": "Pipe entry direction when entryType is pipe"
+        },
+        "marioStart": {
+          "type": "object",
+          "description": "Initial spawn coordinates { x, y }"
+        },
+        "flagX": {
+          "type": "number",
+          "description": "Flagpole/goal X coordinate"
+        },
+        "castleX": {
+          "type": "number",
+          "description": "Castle X coordinate"
+        },
+        "dryFinishStartX": {
+          "type": "number",
+          "description": "Dry exterior finish start X (-1 if unset)"
+        },
+        "playsCount": {
+          "type": "integer",
+          "description": "Total play count"
+        },
+        "clearsCount": {
+          "type": "integer",
+          "description": "Total clear count"
+        },
+        "published": {
+          "type": "boolean",
+          "description": "Whether the level is publicly listed in Community Mode"
+        },
+        "levelPayload": {
+          "type": "object",
+          "description": "Native Firestore maps and lists storing tiles (sparse blocks) and stage entities"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Publish server timestamp"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last update server timestamp"
+        }
+      },
+      "required": [
+        "levelId",
+        "authorUid",
+        "authorName",
+        "authorPhotoUrl",
+        "title",
+        "description",
+        "theme",
+        "width",
+        "height",
+        "bgColor",
+        "musicTrack",
+        "timeLimit",
+        "enemySpeedMultiplier",
+        "useBonusBackdrop",
+        "hexId",
+        "entryType",
+        "entryPipeDir",
+        "marioStart",
+        "flagX",
+        "castleX",
+        "dryFinishStartX",
+        "playsCount",
+        "clearsCount",
+        "published",
+        "levelPayload",
+        "createdAt",
+        "updatedAt"
+      ]
     }
   },
   "firestore": {
@@ -396,6 +565,10 @@
     "/rooms/{roomId}/events/{eventId}": {
       "schema": { "$ref": "#/entities/RoomEvent" },
       "description": "Gameplay events broadcast inside a multiplayer room."
+    },
+    "/community_levels/{levelId}": {
+      "schema": { "$ref": "#/entities/CommunityLevel" },
+      "description": "Public user-created custom levels uploaded from the editor or JSON files."
     }
   }
 }

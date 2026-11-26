@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-export type ActiveGameMode = 'classic' | 'smw_world_map' | 'singleplayer';
+export type ActiveGameMode = 'classic' | 'smw_world_map' | 'singleplayer' | 'community';
 
 export interface ModeAndEditorPolicyInput {
   hasStarted: boolean;

@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Volume2, VolumeX, Music, RotateCcw, X, Gamepad2, Keyboard, Compass, ShieldAlert, Monitor, Maximize2, Minimize2, Hammer, Crown, Map as MapIcon, Bug, Tv, FolderOpen, Lock, Shuffle } from 'lucide-react';
+import { Volume2, VolumeX, Music, RotateCcw, X, Gamepad2, Keyboard, Compass, ShieldAlert, Monitor, Maximize2, Minimize2, Hammer, Crown, Map as MapIcon, Bug, Tv, FolderOpen, Lock, Shuffle, Globe } from 'lucide-react';
 import { LevelData, GameDifficulty, ResolutionScale } from '../game/types.ts';
 import { createWorld1_1, createSecretVault, createWorld1_2, createWorld2_2, createWorldGhostHouse, createWorld1_4, createEndlessLevel, normalizeEndlessSeed, formatEndlessSeed } from '../game/levels.ts';
 
@@ -33,6 +33,7 @@ interface SettingsModalProps {
   onStartSingleplayer?: () => void;
   onStartSmwWorldMap?: () => void;
   onLoadSmwWorldProgress?: () => void;
+  onOpenCommunityMode?: () => void;
   smwSavedSlotsCount?: number;
   isDebugMode?: boolean;
   onToggleDebugMode?: () => void;
@@ -71,6 +72,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   onStartSingleplayer,
   onStartSmwWorldMap,
   onLoadSmwWorldProgress,
+  onOpenCommunityMode,
   smwSavedSlotsCount = 0,
   isDebugMode = false,
   onToggleDebugMode,
@@ -357,6 +359,33 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <span className="text-[9px] font-['Press_Start_2P',monospace] text-amber-200 shrink-0 inline-flex items-center gap-1">
                     {isModeAndEditorLocked && <Lock className="w-3 h-3" />}
                     {isModeAndEditorLocked ? 'BLOQUEADO' : 'CARREGAR'}
+                  </span>
+                </button>
+              )}
+
+              {onOpenCommunityMode && (
+                <button
+                  type="button"
+                  disabled={isModeAndEditorLocked}
+                  onClick={() => {
+                    if (isModeAndEditorLocked) return;
+                    onClose();
+                    onOpenCommunityMode();
+                  }}
+                  className="col-span-2 px-3 py-2.5 rounded-lg bg-indigo-950/75 hover:bg-indigo-900/85 border border-indigo-400/65 hover:border-sky-300 disabled:opacity-45 disabled:hover:bg-indigo-950/75 disabled:hover:border-indigo-400/65 disabled:cursor-not-allowed font-medium text-left transition flex items-center justify-between cursor-pointer"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <Globe className="w-4 h-4 text-sky-300 shrink-0" />
+                    <div>
+                      <span className="block font-bold text-sky-200">Modo Comunidade (Fases na Nuvem)</span>
+                      <span className="text-[10px] text-sky-100/75">
+                        Jogue fases JSON enviadas por outros jogadores no Firebase
+                      </span>
+                    </div>
+                  </div>
+                  <span className="text-[9px] font-['Press_Start_2P',monospace] text-sky-200 shrink-0 inline-flex items-center gap-1">
+                    {isModeAndEditorLocked && <Lock className="w-3 h-3" />}
+                    {isModeAndEditorLocked ? 'BLOQUEADO' : 'EXPLORAR'}
                   </span>
                 </button>
               )}

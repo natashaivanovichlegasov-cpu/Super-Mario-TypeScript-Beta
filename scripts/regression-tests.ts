@@ -143,6 +143,7 @@ import {
   saveSmwToSlot,
   deleteSmwSlot,
   applySmwSlotToProgress,
+  applySmwStageCompletion,
   resolveSmwDirectionalStep,
   isSmwNodeCleared,
   canExitSmwStageWithSelect,
@@ -166,6 +167,13 @@ import {
   getNextCommercialInRotation,
   getPrimaryWazzimaCommercial,
 } from '../src/game/commercials.ts';
+import {
+  buildCommunityLevelDocument,
+  firestoreDocToCommunityLevel,
+  COMMUNITY_MAX_BLOCKS,
+  COMMUNITY_TITLE_MAX_LEN,
+  COMMUNITY_DESC_MAX_LEN,
+} from '../src/game/communityLevels.ts';
 import type { Enemy, Item } from '../src/game/types.ts';
 
 function stepEngine(engine: GameEngine, frames: number, deltaMs = 16.67) {
@@ -1221,6 +1229,16 @@ async function runFirebaseAndPolicyIntegrityTests() {
     // 5. Batched event <= 64 chars parity
     assert.ok(rules.includes('data.meta is string && data.meta.size() <= 64'));
     assert.ok(mpTs.includes('currentLen + extra > 64'));
+
+    // 6. CommunityLevel keys in blueprint vs firestore.rules vs src/game/communityLevels.ts
+    const communityTs = fs.readFileSync(path.resolve(process.cwd(), 'src/game/communityLevels.ts'), 'utf8');
+    const communityBlueprintKeys = Object.keys(blueprint.entities.CommunityLevel.properties);
+    for (const key of communityBlueprintKeys) {
+      assert.ok(rules.includes(`'${key}'`), `Missing CommunityLevel key ${key} in firestore.rules`);
+      assert.ok(communityTs.includes(`${key}`), `Missing CommunityLevel key ${key} in communityLevels.ts`);
+    }
+    assert.ok(Boolean(blueprint.firestore['/community_levels/{levelId}']));
+    assert.ok(rules.includes('match /community_levels/{levelId}'));
   });
 }
 
@@ -4446,6 +4464,12 @@ async function runR116FixesTests() {
     assert.ok(cam.x + 256 <= dryX, `Câmera subaquática não pode vazar para superfície seca (cam.x=${cam.x})`);
     cam.centerOn(dryX + 64, levelPx, { minX: dryX, maxX: levelPx });
     assert.ok(cam.x >= dryX, `Câmera na superfície após sair do cano não pode vazar para área aquática (cam.x=${cam.x})`);
+    // Mesmo em pátio externo mais estreito que 256px, a câmera nunca volta para < dryX
+    const narrowLevelPx = dryX + 160;
+    cam.centerOn(dryX + 16, narrowLevelPx, { minX: dryX, maxX: narrowLevelPx });
+    assert.ok(cam.x >= dryX, `Câmera em saída estreita não pode vazar para esquerda de dryX (cam.x=${cam.x})`);
+    cam.follow(dryX + 4, -3, narrowLevelPx, { minX: dryX, maxX: narrowLevelPx });
+    assert.ok(cam.x >= dryX, `Camera follow em saída estreita não pode vazar para esquerda de dryX (cam.x=${cam.x})`);
 
     // 2. World 2-2 e Wiki-3 (Fase da Água) isolam a câmera e transitam para superfície com fade e overworld
     for (const waterLevel of [createWorld2_2(), createSmwWikiWorldStage('wiki-3-agua')]) {
@@ -4475,9 +4499,29 @@ async function runR116FixesTests() {
       (engine as any).finishPipeWarp();
       assert.equal(engine.marioState, 'pipe_exiting');
       assert.equal(engine.pipeExitDir, 'up');
+      assert.equal(engine.hasExitedToDryFinish, true);
       assert.ok(engine.marioX >= dryStart);
       assert.ok(engine.camera.x >= dryStart);
       assert.ok(engine.warpScreenFadeTimer > 0);
+
+      // Conclui saída do cano e tenta andar/pular para a esquerda: não pode voltar nem ver a tela da água
+      for (let i = 0; i < 40 && engine.marioState === 'pipe_exiting'; i++) {
+        engine.update(0.016);
+      }
+      assert.notEqual(engine.marioState, 'pipe_exiting');
+      engine.controls.left = true;
+      engine.controls.right = false;
+      for (let i = 0; i < 90; i++) {
+        engine.update(0.016);
+      }
+      assert.ok(
+        engine.marioX >= dryStart,
+        `${waterLevel.id}: Mario não pode voltar à esquerda de dryStart=${dryStart} (marioX=${engine.marioX})`
+      );
+      assert.ok(
+        engine.camera.x >= dryStart && engine.camera.renderX >= dryStart,
+        `${waterLevel.id}: câmera não pode mostrar fase aquática anterior (cam.x=${engine.camera.x}, renderX=${engine.camera.renderX}, dryStart=${dryStart})`
+      );
     }
 
     // 3. Editor possui pincel 'pipe_surface_exit' ('Cano Superfície (Fim)') e sprites horizontais
@@ -4635,9 +4679,25 @@ async function runR116FixesTests() {
 
       assert.notEqual(engine.marioState, 'pipe_entering');
       assert.equal(engine.level.id, ghostLevel.id);
+      assert.equal(engine.hasExitedToDryFinish, true);
       assert.ok(engine.marioX >= dryStart);
       assert.ok(engine.camera.x >= dryStart);
       assert.ok(engine.warpScreenFadeTimer > 0);
+
+      // Ao tentar andar para a esquerda fora da mansão, não pode voltar nem revelar a mansão fantasma
+      engine.controls.left = true;
+      engine.controls.right = false;
+      for (let i = 0; i < 90; i++) {
+        engine.update(0.016);
+      }
+      assert.ok(
+        engine.marioX >= dryStart,
+        `${ghostLevel.id}: Mario não pode voltar à esquerda da saída dryStart=${dryStart} (marioX=${engine.marioX})`
+      );
+      assert.ok(
+        engine.camera.x >= dryStart && engine.camera.renderX >= dryStart,
+        `${ghostLevel.id}: câmera não pode mostrar mansão fantasma anterior (cam.x=${engine.camera.x}, renderX=${engine.camera.renderX}, dryStart=${dryStart})`
+      );
     }
 
     // 3. Editor: colocar Porta Fora da Mansão (Fim) e Porta Para Outro Mapa, importar/exportar e transição real entre mapas customizados
@@ -5303,6 +5363,425 @@ async function runR116FixesTests() {
     }
 
     assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.24.12X.8'));
+  });
+
+  await test('R1.25.145.9: Bullet Bill desaparece após passar pela tela e não fica congelado ao voltar a câmera', () => {
+    // 1. Bullet Bill vindo da direita atravessa a tela, desaparece ao sair à esquerda e não reaparece congelado ao voltar a câmera
+    const engine = createFreshEngine();
+    const level = createBlankCustomLevel('BULLET-TEST', 'overworld', 90);
+    engine.loadLevel(level, false, false, false);
+    engine.intermissionTimer = 0;
+    engine.items = [];
+    engine.marioX = 340;
+    engine.marioY = 176;
+    engine.camera.snapTo(220, level.width * 16);
+    engine.cameraX = engine.camera.x;
+
+    const billLeft: Enemy = {
+      id: 9501,
+      type: 'bullet_bill',
+      x: engine.cameraX + GameEngine.NES_WIDTH + 10,
+      y: 96,
+      vx: -2.2,
+      vy: 0,
+      width: 16,
+      height: 16,
+      alive: true,
+      state: 'walk',
+      stateTimer: 0,
+      facing: 'left',
+      animFrame: 0,
+      animTimer: 0,
+    };
+    engine.enemies = [billLeft];
+
+    // Avança frames enquanto Mario está parado; Bullet Bill entra e atravessa toda a tela para a esquerda
+    let sawOnScreen = false;
+    for (let i = 0; i < 160; i++) {
+      engine.update(16.67);
+      if (engine.enemies.some(e => e.id === billLeft.id && e.stateTimer > 0)) {
+        sawOnScreen = true;
+      }
+      if (!engine.enemies.some(e => e.id === billLeft.id)) break;
+    }
+    assert.equal(sawOnScreen, true, 'Bullet Bill deve atravessar a tela antes de desaparecer');
+    assert.equal(
+      engine.enemies.some(e => e.id === billLeft.id),
+      false,
+      'Bullet Bill deve desaparecer da lista de inimigos após passar pela tela à esquerda'
+    );
+
+    // Volta a câmera para a esquerda: nenhum Bullet Bill congelado deve existir nem ser desenhado no canvas
+    engine.controls.left = true;
+    for (let i = 0; i < 80; i++) {
+      engine.update(16.67);
+    }
+    engine.controls.left = false;
+    assert.equal(engine.enemies.filter(e => e.type === 'bullet_bill').length, 0);
+
+    let drawnBulletCount = 0;
+    const mockCtx = {
+      save: () => {},
+      restore: () => {},
+      translate: () => {},
+      scale: () => {},
+      rotate: () => {},
+      drawImage: (img: unknown) => {
+        if (img === (engine as any).atlas.bulletBill) drawnBulletCount++;
+      },
+    } as unknown as CanvasRenderingContext2D;
+    (engine as any).renderEnemies(mockCtx);
+    assert.equal(drawnBulletCount, 0, 'Bullet Bill já passado não pode ser desenhado congelado ao voltar a tela');
+
+    // 2. Bullet Bill que já entrou na tela e sai pela direita (ex.: vx > 0 ou jogador recuando rápido) também desaparece
+    engine.marioX = 420;
+    engine.camera.snapTo(300, level.width * 16);
+    engine.cameraX = engine.camera.x;
+    const billRight: Enemy = {
+      id: 9502,
+      type: 'bullet_bill',
+      x: engine.cameraX + 120,
+      y: 96,
+      vx: 2.2,
+      vy: 0,
+      width: 16,
+      height: 16,
+      alive: true,
+      state: 'walk',
+      stateTimer: 0,
+      facing: 'right',
+      animFrame: 0,
+      animTimer: 0,
+    };
+    engine.enemies = [billRight];
+    for (let i = 0; i < 100; i++) {
+      engine.update(16.67);
+      if (engine.enemies.length === 0) break;
+    }
+    assert.equal(
+      engine.enemies.length,
+      0,
+      'Bullet Bill que passa pela direita da tela também deve desaparecer sem congelar'
+    );
+
+    // 3. Mesmo um inimigo morto sem estado flipped/squashed nunca é desenhado em renderEnemies
+    const deadZombieBill: Enemy = {
+      id: 9503,
+      type: 'bullet_bill',
+      x: engine.camera.renderX + 64,
+      y: 96,
+      vx: -2.2,
+      vy: 0,
+      width: 16,
+      height: 16,
+      alive: false,
+      state: 'walk',
+      stateTimer: 10,
+      facing: 'left',
+      animFrame: 0,
+      animTimer: 0,
+    };
+    engine.enemies = [deadZombieBill];
+    drawnBulletCount = 0;
+    (engine as any).renderEnemies(mockCtx);
+    assert.equal(drawnBulletCount, 0, 'renderEnemies não deve desenhar Bullet Bill com alive=false');
+
+    // 4. Bullet Bill ainda distante à frente aguarda aproximação antes de disparar
+    engine.marioX = 64;
+    engine.camera.snapTo(0, level.width * 16);
+    engine.cameraX = 0;
+    const farBill: Enemy = {
+      id: 9504,
+      type: 'bullet_bill',
+      x: 700,
+      y: 96,
+      vx: -2.2,
+      vy: 0,
+      width: 16,
+      height: 16,
+      alive: true,
+      state: 'walk',
+      stateTimer: 0,
+      facing: 'left',
+      animFrame: 0,
+      animTimer: 0,
+    };
+    engine.enemies = [farBill];
+    engine.update(16.67);
+    assert.equal(engine.enemies.length, 1);
+    assert.equal(engine.enemies[0].alive, true);
+    assert.equal(engine.enemies[0].x, 700);
+
+    assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.25.145.9'));
+  });
+
+  await test('R1.25..1O7.9: Upload de fases JSON no Firebase com Login Google e Novo Modo Comunidade', () => {
+    // 1. Constrói fase customizada completa no editor e verifica serialização nativa para Firestore + round-trip
+    const customStage = createBlankCustomLevel('FASE NUVEM TESTE COMUNIDADE LONGA', 'ghost_house', 70);
+    customStage.hexId = '00D7';
+    customStage.entryType = 'pipe';
+    customStage.entryPipeDir = 'right';
+    customStage.useBonusBackdrop = true;
+    customStage.musicTrack = 'ghost_house';
+    customStage.enemySpeedMultiplier = 1.3;
+    customStage.tiles[9][10] = { type: 'question', content: 'coin', coinsLeft: 3, bumpOffset: 0, bumpVel: 0 };
+    customStage.tiles[9][12] = { type: 'question', content: '1up', bumpOffset: 0, bumpVel: 0, invisible: true };
+    customStage.enemies.push({ type: 'boo', x: 240, y: 120 });
+    customStage.coins.push({ x: 160, y: 140 });
+    assert.equal(placeWCoinInLevel(customStage, 15, 8), true);
+    assert.equal(placeMidwayCheckpointInLevel(customStage, 30, 12), true);
+    assert.equal(
+      placeWarpPipeInLevel(customStage, 20, 12, {
+        dir: 'right',
+        toLevel: 'hex:00D0',
+        targetHex: '00D0',
+        toPos: { x: 48, y: 176 },
+        entryMode: 'pipe',
+        destPipeDir: 'right',
+      }),
+      true
+    );
+    customStage.keyholes = [{ x: 35 * 16, y: 12 * 16 }];
+    customStage.carryables = [{ kind: 'key', x: 32 * 16, y: 12 * 16 }];
+
+    // Simula upload após exportação/reimportação JSON do editor
+    const exportedJson = serializeLevelToFileJson(customStage);
+    const parsedFromJson = parseImportedLevelFile(exportedJson);
+
+    const docPayload = buildCommunityLevelDocument(
+      parsedFromJson,
+      { uid: 'google_uid_123', displayName: 'Criador Teste', photoUrl: 'https://example.com/avatar.png' },
+      { levelId: 'lvl_test_001', description: 'Desafio feito no editor para comunidade!' }
+    );
+
+    assert.equal(docPayload.levelId, 'lvl_test_001');
+    assert.equal(docPayload.authorUid, 'google_uid_123');
+    assert.equal(docPayload.authorName, 'Criador Teste');
+    assert.ok(docPayload.title.length <= COMMUNITY_TITLE_MAX_LEN);
+    assert.ok(docPayload.description.length <= COMMUNITY_DESC_MAX_LEN);
+    assert.equal(docPayload.theme, 'ghost_house');
+    assert.equal(docPayload.playsCount, 0);
+    assert.equal(docPayload.clearsCount, 0);
+    assert.equal(docPayload.published, true);
+    assert.ok(docPayload.levelPayload.blocks.length > 0 && docPayload.levelPayload.blocks.length <= COMMUNITY_MAX_BLOCKS);
+
+    // Nenhum valor undefined pode vazar para o Firestore (setDoc/updateDoc rejeitaria)
+    const assertNoUndefined = (obj: unknown, pathLabel: string) => {
+      if (obj === undefined) {
+        assert.fail(`Valor undefined encontrado em ${pathLabel}`);
+      }
+      if (Array.isArray(obj)) {
+        obj.forEach((item, idx) => assertNoUndefined(item, `${pathLabel}[${idx}]`));
+      } else if (obj && typeof obj === 'object') {
+        for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+          assertNoUndefined(v, `${pathLabel}.${k}`);
+        }
+      }
+    };
+    assertNoUndefined(docPayload, 'CommunityLevelDocument');
+
+    // Reconstrói registro como vindo do Firestore e valida fidelidade dos tiles/entidades
+    const record = firestoreDocToCommunityLevel('lvl_test_001', docPayload as unknown as Record<string, unknown>);
+    assert.equal(record.docId, 'lvl_test_001');
+    assert.equal(record.level.isCustom, true);
+    assert.equal(record.level.hexId, '00D7');
+    assert.equal(record.level.entryType, 'pipe');
+    assert.equal(record.level.entryPipeDir, 'right');
+    assert.equal(record.level.useBonusBackdrop, true);
+    assert.equal(record.level.tiles[9][10]?.coinsLeft, 3);
+    assert.equal(record.level.tiles[9][12]?.invisible, true);
+    assert.equal(record.level.wCoins?.length, 1);
+    assert.equal(record.level.checkpoints?.length, 1);
+    assert.equal(record.level.pipeWarps?.[0].targetHex, '00D0');
+    assert.equal(record.level.keyholes?.length, 1);
+    assert.equal(record.level.carryables?.length, 1);
+
+    // 2. Motor executa fase da comunidade em modo 'community', registra vitória no callback e reinicia no mesmo modo
+    const commEngine = createFreshEngine();
+    let clearedDocId = '';
+    commEngine.onCommunityStageCompleted = (docId) => {
+      clearedDocId = docId;
+    };
+    commEngine.playCommunityLevel(record.level, {
+      docId: record.docId,
+      authorName: record.authorName,
+    });
+    assert.equal(commEngine.gameMode, 'community');
+    assert.equal(commEngine.communityLevelId, 'lvl_test_001');
+    assert.equal(commEngine.communityLevelAuthor, 'Criador Teste');
+    assert.equal(commEngine.level.isCustom, true);
+    assert.equal(commEngine.isGameStarted, true);
+
+    commEngine.advanceToNextLevel();
+    assert.equal(commEngine.isCampaignVictory, true);
+    assert.equal(clearedDocId, 'lvl_test_001');
+
+    commEngine.restartGame();
+    assert.equal(commEngine.gameMode, 'community');
+    assert.equal(commEngine.communityLevelId, 'lvl_test_001');
+    assert.equal(commEngine.isCampaignVictory, false);
+
+    // 3. Verifica integração na UI (CommunityLevelsModal, Editor upload em nuvem, GameCanvas, SettingsModal e UpdatesModal)
+    const commModalSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/CommunityLevelsModal.tsx'), 'utf8');
+    const editorSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/LevelEditorModal.tsx'), 'utf8');
+    const canvasSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/GameCanvas.tsx'), 'utf8');
+    const settingsSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/SettingsModal.tsx'), 'utf8');
+
+    assert.ok(commModalSrc.includes('signInWithGoogle'));
+    assert.ok(commModalSrc.includes('uploadJsonLevelToFirebase'));
+    assert.ok(commModalSrc.includes('MODO COMUNIDADE'));
+    assert.ok(editorSrc.includes('uploadLevelToFirebase'));
+    assert.ok(editorSrc.includes('Publicar Nuvem'));
+    assert.ok(editorSrc.includes('signInWithGoogle'));
+    assert.ok(canvasSrc.includes('CommunityLevelsModal'));
+    assert.ok(canvasSrc.includes('COMUNIDADE'));
+    assert.ok(canvasSrc.includes('recordCommunityLevelClear'));
+    assert.ok(settingsSrc.includes('Modo Comunidade'));
+    assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.25..1O7.9'));
+  });
+
+  await test('R1.25.21X.9: Cano da Caverna (e qualquer troca de tela no Modo World) mantém o Modo World, abre próximo caminho e chaves abrem rotas alternativas', () => {
+    // 1. Caverna (W-2) possui cano para hex:0200 mantendo suas configurações originais
+    const cavernaStage = createSmwWikiWorldStage('wiki-2-caverna');
+    assert.equal(cavernaStage.smwNodeId, 'wiki-2-caverna');
+    const exitPipe = cavernaStage.pipeWarps?.find(pw => pw.targetHex === '0200' || pw.toLevel === 'hex:0200');
+    assert.ok(exitPipe, 'Caverna (W-2) deve manter o cano original para hex:0200');
+
+    const engine = createFreshEngine();
+    let completedEvent: { nodeId: string; secretExit?: boolean } | null = null;
+    engine.onSmwStageCompleted = (nodeId, meta) => {
+      completedEvent = { nodeId, secretExit: meta?.secretExit };
+    };
+    engine.startSmwStage(cavernaStage, true);
+    engine.intermissionTimer = 0;
+    engine.enemies = [];
+
+    // Simula entrada no cano da Caverna -> tela hex:0200
+    (engine as any).warpTarget = {
+      toLevel: exitPipe!.toLevel,
+      targetHex: exitPipe!.targetHex,
+      toPos: { ...exitPipe!.toPos },
+      entryMode: exitPipe!.entryMode,
+      destPipeDir: exitPipe!.destPipeDir,
+    };
+    (engine as any).warpDir = exitPipe!.type;
+    (engine as any).finishPipeWarp();
+
+    assert.equal(engine.level.hexId, '0200', 'Deve carregar a tela de destino hex:0200');
+    assert.equal(engine.gameMode, 'smw_world_map', 'Trocar de tela pelo cano NÃO pode sair do Modo World para o modo tradicional');
+    assert.equal(engine.getActiveSmwNodeId(), 'wiki-2-caverna', 'Tela hex:0200 deve permanecer vinculada ao nó wiki-2-caverna');
+    assert.equal(engine.level.smwNodeId, 'wiki-2-caverna');
+    assert.equal(engine.level.isCustom, false);
+    assert.equal(engine.endlessStage, 0);
+
+    // Cruza o Goal Gate e entra no castelo da tela 0200 -> conclui W-2 no Modo World em vez de ir para createEndlessLevel
+    engine.enemies = [];
+    engine.marioState = 'idle';
+    engine.marioGrounded = true;
+    engine.marioX = engine.level.flagX;
+    engine.marioY = 176;
+    stepEngine(engine, 2);
+    assert.equal(engine.marioState, 'castle_walk', 'Deve ativar o Goal Gate da tela 0200 normalmente');
+    engine.stats.time = 0;
+    stepEngine(engine, 260);
+
+    assert.deepEqual(
+      completedEvent,
+      { nodeId: 'wiki-2-caverna', secretExit: false },
+      'Finalizar a fase pela segunda tela (0200) deve concluir wiki-2-caverna no Modo World'
+    );
+    assert.equal(engine.gameMode, 'smw_world_map');
+    assert.equal(engine.endlessStage, 0);
+
+    // 2. Reiniciar após entrar na segunda tela (0200) também permanece no Modo World (wiki-2-caverna)
+    const restartEngine = createFreshEngine();
+    restartEngine.startSmwStage(createSmwWikiWorldStage('wiki-2-caverna'), true);
+    (restartEngine as any).warpTarget = {
+      toLevel: exitPipe!.toLevel,
+      targetHex: exitPipe!.targetHex,
+      toPos: { ...exitPipe!.toPos },
+      entryMode: exitPipe!.entryMode,
+      destPipeDir: exitPipe!.destPipeDir,
+    };
+    (restartEngine as any).warpDir = exitPipe!.type;
+    (restartEngine as any).finishPipeWarp();
+    assert.equal(restartEngine.level.hexId, '0200');
+    restartEngine.restartGame();
+    assert.equal(restartEngine.gameMode, 'smw_world_map');
+    assert.equal(restartEngine.getActiveSmwNodeId(), 'wiki-2-caverna');
+    assert.equal(restartEngine.level.smwNodeId, 'wiki-2-caverna');
+
+    // 3. Qualquer fase passada no Modo World abre o caminho para a próxima e chaves abrem rotas alternativas
+    let progress: SmwBetaProgress = {
+      clearedNodeIds: [],
+      secretClearedNodeIds: [],
+      selectedNodeId: 'wiki-1-overworld',
+      storySeen: true,
+      yellowSwitchUnlocked: false,
+    };
+
+    // Chave + fechadura em W-1 abre rota alternativa (Palácio Amarelo) mantendo W-2 bloqueada até saída normal
+    progress = applySmwStageCompletion(progress, 'wiki-1-overworld', { secretExit: true });
+    assert.equal(isSmwNodeUnlocked('wiki-switch-yellow', progress), true);
+    assert.equal(isSmwNodeUnlocked('wiki-2-caverna', progress), false);
+    assert.equal(progress.selectedNodeId, 'wiki-switch-yellow');
+
+    // Palácio Amarelo concluído
+    progress = applySmwStageCompletion(progress, 'wiki-switch-yellow', { secretExit: false });
+    assert.equal(progress.yellowSwitchUnlocked, true);
+
+    // Passando W-1..W-4 abre o caminho sequencial para W-2 -> W-3 -> W-4 -> W-5
+    progress = applySmwStageCompletion(progress, 'wiki-1-overworld', { secretExit: false });
+    assert.equal(isSmwNodeUnlocked('wiki-2-caverna', progress), true);
+    assert.equal(progress.selectedNodeId, 'wiki-2-caverna');
+
+    progress = applySmwStageCompletion(progress, 'wiki-2-caverna', { secretExit: false });
+    assert.equal(isSmwNodeUnlocked('wiki-3-agua', progress), true);
+    assert.equal(progress.selectedNodeId, 'wiki-3-agua');
+
+    progress = applySmwStageCompletion(progress, 'wiki-3-agua', { secretExit: false });
+    assert.equal(isSmwNodeUnlocked('wiki-4-mansao', progress), true);
+    assert.equal(progress.selectedNodeId, 'wiki-4-mansao');
+
+    // Mansão (W-4) mantém chave/fechadura funcionando e libera caminho para W-5
+    progress = applySmwStageCompletion(progress, 'wiki-4-mansao', { secretExit: true });
+    assert.ok(progress.secretClearedNodeIds?.includes('wiki-4-mansao'));
+    assert.equal(isSmwNodeUnlocked('wiki-5-castelo', progress), true);
+    assert.equal(progress.selectedNodeId, 'wiki-5-castelo');
+
+    progress = applySmwStageCompletion(progress, 'wiki-5-castelo', { secretExit: false });
+    assert.ok(progress.clearedNodeIds.includes('wiki-5-castelo'));
+
+    // 4. Testar fase personalizada no Editor com cano para hex:0200 também mantém o fluxo personalizado ao finalizar
+    const editorStage = createBlankCustomLevel('EDITOR-WARP-PIPE', 'underground', 80);
+    editorStage.pipeWarps = [
+      {
+        from: { x: 160, y: 160, width: 32, height: 16 },
+        toLevel: 'hex:0200',
+        targetHex: '0200',
+        toPos: { x: 32, y: 0 },
+        type: 'down',
+        entryMode: 'pipe',
+        destPipeDir: 'up',
+      },
+    ];
+    const editorEngine = createFreshEngine();
+    editorEngine.playCustomLevel(editorStage, true);
+    (editorEngine as any).warpTarget = {
+      toLevel: 'hex:0200',
+      targetHex: '0200',
+      toPos: { x: 32, y: 0 },
+      entryMode: 'pipe',
+      destPipeDir: 'up',
+    };
+    (editorEngine as any).warpDir = 'down';
+    (editorEngine as any).finishPipeWarp();
+    assert.equal(editorEngine.level.hexId, '0200');
+    editorEngine.advanceToNextLevel();
+    assert.equal(editorEngine.endlessStage, 0, 'Ao vencer fase do Editor via cano hex:0200 não pode cair no modo infinito/tradicional');
+    assert.equal(editorEngine.level.id, editorStage.id, 'Deve retornar à fase personalizada em edição');
+
+    assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.25.21X.9'));
   });
 }
 

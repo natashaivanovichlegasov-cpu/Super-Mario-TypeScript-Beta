@@ -1237,6 +1237,78 @@ export function isSmwNodeUnlocked(
 }
 
 /**
+ * R1.25.21X.9: Qualquer fase passada no Modo World abre o caminho para a próxima fase
+ * da rota principal, enquanto chaves/fechaduras (secretExit) abrem rotas alternativas
+ * mantendo as configurações originais de cada nó.
+ */
+export function applySmwStageCompletion(
+  prev: SmwBetaProgress,
+  nodeId: string,
+  meta?: { secretExit?: boolean }
+): SmwBetaProgress {
+  const currNode = SMW_WIKIWORLD_NODES.find(n => n.id === nodeId);
+  const isDevOnlyPalace = SMW_DEV_ONLY_SWITCH_PALACES.some(p => p.id === nodeId);
+  const secretBranchChild = SMW_WIKIWORLD_NODES.find(
+    n => n.unlocksAfterSecretNodeId === nodeId
+  );
+  const isSecretBranchOnlyExit = Boolean(meta?.secretExit && secretBranchChild);
+
+  const prevSecret = prev.secretClearedNodeIds ?? [];
+  const nextSecret =
+    meta?.secretExit && !prevSecret.includes(nodeId)
+      ? [...prevSecret, nodeId]
+      : prevSecret;
+  const nextCleared = isSecretBranchOnlyExit
+    ? prev.clearedNodeIds
+    : prev.clearedNodeIds.includes(nodeId)
+    ? prev.clearedNodeIds
+    : [...prev.clearedNodeIds, nodeId];
+
+  const nextNode =
+    nodeId === 'wiki-switch-yellow'
+      ? nextCleared.includes('wiki-1-overworld')
+        ? SMW_WIKIWORLD_NODES.find(n => n.id === 'wiki-2-caverna')
+        : SMW_WIKIWORLD_NODES.find(n => n.id === 'wiki-1-overworld')
+      : SMW_WIKIWORLD_NODES.find(n => n.unlocksAfterNodeId === nodeId) ??
+        (currNode && currNode.order < 4 ? SMW_WIKIWORLD_NODES[currNode.order + 1] : undefined);
+
+  const secretChildCompleted = Boolean(
+    secretBranchChild &&
+      (nextCleared.includes(secretBranchChild.id) ||
+        (secretBranchChild.id === 'wiki-switch-yellow' && prev.yellowSwitchUnlocked))
+  );
+
+  const nextSelected = isDevOnlyPalace
+    ? SMW_WIKIWORLD_NODES.some(n => n.id === prev.selectedNodeId)
+      ? prev.selectedNodeId
+      : 'wiki-1-overworld'
+    : isSecretBranchOnlyExit && secretBranchChild
+    ? !secretChildCompleted
+      ? secretBranchChild.id
+      : nodeId
+    : nextNode && !nextCleared.includes(nextNode.id)
+    ? nextNode.id
+    : nodeId;
+
+  return {
+    ...prev,
+    clearedNodeIds: nextCleared,
+    secretClearedNodeIds: nextSecret,
+    selectedNodeId: nextSelected,
+    yellowSwitchUnlocked:
+      prev.yellowSwitchUnlocked || nodeId === 'wiki-switch-yellow',
+    greenSwitchUnlocked:
+      Boolean(prev.greenSwitchUnlocked) || nodeId === 'wiki-switch-green',
+    redSwitchUnlocked:
+      Boolean(prev.redSwitchUnlocked) || nodeId === 'wiki-switch-red',
+    pinkSwitchUnlocked:
+      Boolean(prev.pinkSwitchUnlocked) || nodeId === 'wiki-switch-pink',
+    blueSwitchUnlocked:
+      Boolean(prev.blueSwitchUnlocked) || nodeId === 'wiki-switch-blue',
+  };
+}
+
+/**
  * R1.16.O0.4: Impede que o jogador jogue novamente o Palácio Interruptor Amarelo
  * após ele já ter sido concluído.
  */

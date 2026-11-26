@@ -151,6 +151,76 @@ service cloud.firestore {
         && data.createdAt is timestamp;
     }
 
+    function isValidCommunityLevelPayload(payload) {
+      return payload is map
+        && payload.keys().hasAll([
+          'blocks', 'enemies', 'coins', 'wCoins', 'floatingPlatforms',
+          'checkpoints', 'pipeWarps', 'keyholes', 'carryables', 'yoshis'
+        ])
+        && payload.keys().hasOnly([
+          'blocks', 'enemies', 'coins', 'wCoins', 'floatingPlatforms',
+          'checkpoints', 'pipeWarps', 'keyholes', 'carryables', 'yoshis'
+        ])
+        && payload.blocks is list && payload.blocks.size() <= 3600 && (payload.blocks.size() == 0 || payload.blocks[0] is map)
+        && payload.enemies is list && payload.enemies.size() <= 200 && (payload.enemies.size() == 0 || payload.enemies[0] is map)
+        && payload.coins is list && payload.coins.size() <= 300 && (payload.coins.size() == 0 || payload.coins[0] is map)
+        && payload.wCoins is list && payload.wCoins.size() <= 8 && (payload.wCoins.size() == 0 || payload.wCoins[0] is map)
+        && payload.floatingPlatforms is list && payload.floatingPlatforms.size() <= 40 && (payload.floatingPlatforms.size() == 0 || payload.floatingPlatforms[0] is map)
+        && payload.checkpoints is list && payload.checkpoints.size() <= 10 && (payload.checkpoints.size() == 0 || payload.checkpoints[0] is map)
+        && payload.pipeWarps is list && payload.pipeWarps.size() <= 24 && (payload.pipeWarps.size() == 0 || payload.pipeWarps[0] is map)
+        && payload.keyholes is list && payload.keyholes.size() <= 12 && (payload.keyholes.size() == 0 || payload.keyholes[0] is map)
+        && payload.carryables is list && payload.carryables.size() <= 20 && (payload.carryables.size() == 0 || payload.carryables[0] is map)
+        && payload.yoshis is list && payload.yoshis.size() <= 12 && (payload.yoshis.size() == 0 || payload.yoshis[0] is map);
+    }
+
+    function isValidCommunityLevel(data) {
+      return data.keys().hasAll([
+          'levelId', 'authorUid', 'authorName', 'authorPhotoUrl', 'title', 'description',
+          'theme', 'width', 'height', 'bgColor', 'musicTrack', 'timeLimit',
+          'enemySpeedMultiplier', 'useBonusBackdrop', 'hexId', 'entryType', 'entryPipeDir',
+          'marioStart', 'flagX', 'castleX', 'dryFinishStartX',
+          'playsCount', 'clearsCount', 'published', 'levelPayload', 'createdAt', 'updatedAt'
+        ])
+        && data.keys().hasOnly([
+          'levelId', 'authorUid', 'authorName', 'authorPhotoUrl', 'title', 'description',
+          'theme', 'width', 'height', 'bgColor', 'musicTrack', 'timeLimit',
+          'enemySpeedMultiplier', 'useBonusBackdrop', 'hexId', 'entryType', 'entryPipeDir',
+          'marioStart', 'flagX', 'castleX', 'dryFinishStartX',
+          'playsCount', 'clearsCount', 'published', 'levelPayload', 'createdAt', 'updatedAt'
+        ])
+        && isValidId(data.levelId)
+        && isValidId(data.authorUid)
+        && data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 50
+        && data.authorPhotoUrl is string && data.authorPhotoUrl.size() <= 300
+        && data.title is string && data.title.size() >= 1 && data.title.size() <= 32
+        && data.description is string && data.description.size() <= 160
+        && data.theme in ['overworld', 'underground', 'underwater', 'castle', 'ghost_house']
+        && data.width is int && data.width >= 20 && data.width <= 240
+        && data.height is int && data.height == 15
+        && data.bgColor is string && data.bgColor.size() >= 1 && data.bgColor.size() <= 24
+        && data.musicTrack is string && data.musicTrack.size() >= 1 && data.musicTrack.size() <= 24
+        && data.timeLimit is int && data.timeLimit >= 60 && data.timeLimit <= 999
+        && data.enemySpeedMultiplier is number && data.enemySpeedMultiplier >= 0.5 && data.enemySpeedMultiplier <= 3
+        && data.useBonusBackdrop is bool
+        && data.hexId is string && data.hexId.size() <= 8
+        && data.entryType in ['normal', 'pipe']
+        && data.entryPipeDir in ['up', 'down', 'left', 'right']
+        && data.marioStart is map
+        && data.marioStart.keys().hasAll(['x', 'y'])
+        && data.marioStart.keys().hasOnly(['x', 'y'])
+        && data.marioStart.x is number && data.marioStart.x >= 0 && data.marioStart.x <= 4000
+        && data.marioStart.y is number && data.marioStart.y >= 0 && data.marioStart.y <= 240
+        && data.flagX is number && data.flagX >= 0 && data.flagX <= 999999
+        && data.castleX is number && data.castleX >= 0 && data.castleX <= 999999
+        && data.dryFinishStartX is number && data.dryFinishStartX >= -1 && data.dryFinishStartX <= 4000
+        && data.playsCount is int && data.playsCount >= 0
+        && data.clearsCount is int && data.clearsCount >= 0
+        && data.published is bool
+        && isValidCommunityLevelPayload(data.levelPayload)
+        && data.createdAt is timestamp
+        && data.updatedAt is timestamp;
+    }
+
     // --- Collection Rules ---
 
     // Private User Profile (PII isolated strictly to owner)
@@ -252,6 +322,57 @@ service cloud.firestore {
         allow delete: if isVerified() && isValidRoomId(roomId) && isValidId(eventId)
           && (existing().uid == request.auth.uid || isRoomHost(roomId) || isRoomExpiredOrClosed(roomId));
       }
+    }
+
+    // Community Custom Levels (Cloud Uploaded via Google Auth)
+    match /community_levels/{levelId} {
+      allow get: if isValidId(levelId)
+        && (resource.data.published == true || isOwner(resource.data.authorUid));
+      allow list: if resource.data.published == true
+        || (isSignedIn() && resource.data.authorUid == request.auth.uid);
+      allow create: if isVerified() && isValidId(levelId)
+        && isValidCommunityLevel(incoming())
+        && incoming().levelId == levelId
+        && incoming().authorUid == request.auth.uid
+        && incoming().playsCount == 0
+        && incoming().clearsCount == 0
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+      allow update: if isVerified() && isValidId(levelId)
+        && isValidCommunityLevel(incoming())
+        && incoming().levelId == existing().levelId
+        && incoming().authorUid == existing().authorUid
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && (
+          // Tier 1: Author edits level content/metadata
+          (
+            existing().authorUid == request.auth.uid
+            && incoming().playsCount == existing().playsCount
+            && incoming().clearsCount == existing().clearsCount
+            && incoming().diff(existing()).affectedKeys().hasOnly([
+              'authorName', 'authorPhotoUrl', 'title', 'description',
+              'theme', 'width', 'height', 'bgColor', 'musicTrack', 'timeLimit',
+              'enemySpeedMultiplier', 'useBonusBackdrop', 'hexId', 'entryType', 'entryPipeDir',
+              'marioStart', 'flagX', 'castleX', 'dryFinishStartX',
+              'published', 'levelPayload', 'updatedAt'
+            ])
+          )
+          ||
+          // Tier 2: Any verified player increments playsCount or clearsCount by 1
+          (
+            existing().published == true
+            && incoming().diff(existing()).affectedKeys().hasOnly(['playsCount', 'updatedAt'])
+            && incoming().playsCount == existing().playsCount + 1
+          )
+          ||
+          (
+            existing().published == true
+            && incoming().diff(existing()).affectedKeys().hasOnly(['clearsCount', 'updatedAt'])
+            && incoming().clearsCount == existing().clearsCount + 1
+          )
+        );
+      allow delete: if isVerified() && isValidId(levelId) && existing().authorUid == request.auth.uid;
     }
   }
 }

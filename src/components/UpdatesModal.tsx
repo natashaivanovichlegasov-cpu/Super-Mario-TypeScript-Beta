@@ -25,6 +25,41 @@ export interface UpdateEntry {
 
 export const GAME_UPDATES: UpdateEntry[] = [
   {
+    uid: 'R1.25.21X.9',
+    version: 'R1.25.21X.9',
+    label: 'Correção · Modo World & Rotas / Canos',
+    title: 'Preservação do Modo World em Mudança de Tela por Cano e Abertura de Caminhos / Rotas Alternativas',
+    isFix: true,
+    items: [
+      'Corrigido o erro na Caverna (W-2) e em qualquer fase do Modo World com cano ou porta para outra tela (como o mapa Hex 0200): ao trocar de tela, o jogo agora preserva o Modo World e o nó de origem, concluindo a fase corretamente sem voltar ao modo tradicional/infinito.',
+      'Qualquer fase vencida no Modo World abre automaticamente o caminho para a próxima fase da ilha, enquanto chaves e fechaduras abrem rotas alternativas mantendo todas as configurações originais das fases.',
+      'Reiniciar ou perder vidas após atravessar um cano para outra tela no Modo World também mantém o jogador na fase correta do Modo World (e testes no Editor retornam corretamente ao fluxo personalizado).',
+    ],
+  },
+  {
+    uid: 'R1.25..1O7.9',
+    version: 'R1.25..1O7.9',
+    label: 'Recurso · Fases na Nuvem & Modo Comunidade',
+    title: 'Upload de Fases JSON no Firebase com Login Google e Novo Modo Comunidade',
+    isFix: true,
+    items: [
+      'Adicionado upload de fases na nuvem pelo Firebase Firestore com autenticação via Login Google, tanto para fases criadas no Editor ("Publicar Nuvem") quanto para arquivos JSON (.json / .smb.json).',
+      'Criado o novo Modo Comunidade na tela inicial e nas opções, permitindo buscar, filtrar por bioma, baixar JSON e jogar fases publicadas por outros jogadores.',
+      'Contadores automáticos de partidas e conclusões, edição de cópia no Editor e exclusão segura pelo próprio autor.',
+    ],
+  },
+  {
+    uid: 'R1.25.145.9',
+    version: 'R1.25.145.9',
+    label: 'Correção · Bullet Bill',
+    title: 'Desaparecimento do Bullet Bill Após Passar Pela Tela Sem Congelar ao Voltar',
+    isFix: true,
+    items: [
+      'Corrigido o erro em que o Bullet Bill ficava congelado em cena quando o jogador voltava a tela após ele passar pelos limites da câmera.',
+      'Após atravessar e sair da tela, o Bullet Bill é encerrado e removido automaticamente da fase, impedindo que reapareça parado ao recuar.',
+    ],
+  },
+  {
     uid: 'R1.24.12X.8',
     version: 'R1.24.12X.8',
     label: 'Correção · Botões Azul e Ciano',

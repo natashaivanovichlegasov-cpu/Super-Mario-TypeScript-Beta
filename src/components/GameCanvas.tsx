@@ -46,10 +46,19 @@ import {
   saveSmwToSlot,
   deleteSmwSlot,
   applySmwSlotToProgress,
+  applySmwStageCompletion,
   canExitSmwStageWithSelect,
 } from '../game/smwWorldMap.ts';
 import { getTopScore } from '../game/scoreboard.ts';
+import { CommunityLevelsModal } from './CommunityLevelsModal.tsx';
 import {
+  CommunityLevelRecord,
+  recordCommunityLevelClear,
+  recordCommunityLevelPlay,
+} from '../game/communityLevels.ts';
+import {
+  EDITOR_MAX_CUSTOM_LEVELS,
+  cloneLevelData,
   sanitizeCustomLevelEntities,
   createWorld1_1,
   createSecretVault,
@@ -65,7 +74,7 @@ import {
   canSwitchGameMode,
   canExitToMainMenu,
 } from '../game/modePolicy.ts';
-import { Award, Settings, Play, RotateCcw, Volume2, VolumeX, Maximize2, Minimize2, Trophy, Flame, Users, Crown, Clock, CheckCircle2, WifiOff, Hammer, ShieldAlert, Shield, ScrollText, Heart, Map as MapIcon, Bug, Crosshair, ChevronLeft, ChevronRight, Plus, Tv, Wrench, FolderOpen, Lock, Home } from 'lucide-react';
+import { Award, Settings, Play, RotateCcw, Volume2, VolumeX, Maximize2, Minimize2, Trophy, Flame, Users, Crown, Clock, CheckCircle2, WifiOff, Hammer, ShieldAlert, Shield, ScrollText, Heart, Map as MapIcon, Bug, Crosshair, ChevronLeft, ChevronRight, Plus, Tv, Wrench, FolderOpen, Lock, Home, Globe } from 'lucide-react';
 
 export interface PlayerPhysicsStepOptions {
   isUnderwater?: boolean;
@@ -2548,6 +2557,8 @@ export const GameCanvas: React.FC = () => {
   const [resolutionScale, setResolutionScale] = useState<ResolutionScale>('fit');
   const [isMultiplayerOpen, setIsMultiplayerOpen] = useState(false);
   const [isLevelEditorOpen, setIsLevelEditorOpen] = useState(false);
+  const [isCommunityOpen, setIsCommunityOpen] = useState(false);
+  const [activeCommunityLevel, setActiveCommunityLevel] = useState<CommunityLevelRecord | null>(null);
   const [isUpdatesOpen, setIsUpdatesOpen] = useState(false);
   const [updatesFilter, setUpdatesFilter] = useState<UpdatesModalFilter>('all');
   const [isAchievementsOpen, setIsAchievementsOpen] = useState(false);
@@ -2754,6 +2765,9 @@ export const GameCanvas: React.FC = () => {
         setAchievementToast(null);
       }, 4200);
     };
+    engine.onCommunityStageCompleted = (docId: string) => {
+      void recordCommunityLevelClear(docId);
+    };
     const initialSmwProgress = loadSmwBetaProgress();
     engine.yellowSwitchUnlocked = initialSmwProgress.yellowSwitchUnlocked;
     engine.greenSwitchUnlocked = Boolean(initialSmwProgress.greenSwitchUnlocked);
@@ -2793,58 +2807,7 @@ export const GameCanvas: React.FC = () => {
     };
     engine.onSmwStageCompleted = (nodeId: string, meta?: { secretExit?: boolean }) => {
       const currNode = SMW_WIKIWORLD_NODES.find(n => n.id === nodeId);
-      const isDevOnlyPalace = SMW_DEV_ONLY_SWITCH_PALACES.some(p => p.id === nodeId);
-      const isW1SecretExit = Boolean(meta?.secretExit && nodeId === 'wiki-1-overworld');
-      setSmwProgress(prev => {
-        const prevSecret = prev.secretClearedNodeIds ?? [];
-        const nextSecret =
-          meta?.secretExit && !prevSecret.includes(nodeId)
-            ? [...prevSecret, nodeId]
-            : prevSecret;
-        const nextCleared = isW1SecretExit
-          ? prev.clearedNodeIds
-          : prev.clearedNodeIds.includes(nodeId)
-          ? prev.clearedNodeIds
-          : [...prev.clearedNodeIds, nodeId];
-        const nextNode =
-          nodeId === 'wiki-switch-yellow'
-            ? nextCleared.includes('wiki-1-overworld')
-              ? SMW_WIKIWORLD_NODES.find(n => n.id === 'wiki-2-caverna')
-              : SMW_WIKIWORLD_NODES.find(n => n.id === 'wiki-1-overworld')
-            : currNode && currNode.order < 4
-            ? SMW_WIKIWORLD_NODES[currNode.order + 1]
-            : undefined;
-        const yellowPalaceCompleted = Boolean(
-          prev.yellowSwitchUnlocked || nextCleared.includes('wiki-switch-yellow')
-        );
-        const nextSelected = isDevOnlyPalace
-          ? SMW_WIKIWORLD_NODES.some(n => n.id === prev.selectedNodeId)
-            ? prev.selectedNodeId
-            : 'wiki-1-overworld'
-          : isW1SecretExit
-          ? !yellowPalaceCompleted
-            ? 'wiki-switch-yellow'
-            : 'wiki-1-overworld'
-          : nextNode && !nextCleared.includes(nextNode.id)
-          ? nextNode.id
-          : nodeId;
-        return {
-          ...prev,
-          clearedNodeIds: nextCleared,
-          secretClearedNodeIds: nextSecret,
-          selectedNodeId: nextSelected,
-          yellowSwitchUnlocked:
-            prev.yellowSwitchUnlocked || nodeId === 'wiki-switch-yellow',
-          greenSwitchUnlocked:
-            Boolean(prev.greenSwitchUnlocked) || nodeId === 'wiki-switch-green',
-          redSwitchUnlocked:
-            Boolean(prev.redSwitchUnlocked) || nodeId === 'wiki-switch-red',
-          pinkSwitchUnlocked:
-            Boolean(prev.pinkSwitchUnlocked) || nodeId === 'wiki-switch-pink',
-          blueSwitchUnlocked:
-            Boolean(prev.blueSwitchUnlocked) || nodeId === 'wiki-switch-blue',
-        };
-      });
+      setSmwProgress(prev => applySmwStageCompletion(prev, nodeId, meta));
       if (currNode?.isCastle) {
         setSmwSaveSlots(loadSmwSaveSlots());
         setSmwCastleSaveTitle(currNode.title);
@@ -2893,6 +2856,7 @@ export const GameCanvas: React.FC = () => {
       engine.onSmwGoalWalletChanged = undefined;
       engine.onAchievementUnlocked = undefined;
       engine.onAchievementsChanged = undefined;
+      engine.onCommunityStageCompleted = undefined;
       if (achievementToastTimerRef.current) {
         clearTimeout(achievementToastTimerRef.current);
       }
@@ -2934,6 +2898,7 @@ export const GameCanvas: React.FC = () => {
         !isCheatMenuOpen &&
         !isMultiplayerOpen &&
         !isLevelEditorOpen &&
+        !isCommunityOpen &&
         !isUpdatesOpen &&
         !isAchievementsOpen;
       if (!canControlGameplay) {
@@ -2973,6 +2938,7 @@ export const GameCanvas: React.FC = () => {
       isCheatMenuOpen,
       isMultiplayerOpen,
       isLevelEditorOpen,
+      isCommunityOpen,
       isUpdatesOpen,
       isAchievementsOpen,
     ]
@@ -3215,7 +3181,7 @@ export const GameCanvas: React.FC = () => {
   useEffect(() => {
     if (!smartTvMode || isCommercialOpen) return;
     const timer = window.setTimeout(() => {
-      if (isSettingsOpen || isLeaderboardOpen || isCheatMenuOpen || isMultiplayerOpen || isUpdatesOpen || isAchievementsOpen || isLevelEditorOpen) {
+      if (isSettingsOpen || isLeaderboardOpen || isCheatMenuOpen || isMultiplayerOpen || isUpdatesOpen || isAchievementsOpen || isLevelEditorOpen || isCommunityOpen) {
         const dialog = document.querySelector<HTMLElement>('.fixed.inset-0.z-50');
         const firstBtn = dialog?.querySelector<HTMLElement>('button:not(:disabled)');
         firstBtn?.focus();
@@ -3254,6 +3220,7 @@ export const GameCanvas: React.FC = () => {
     isUpdatesOpen,
     isAchievementsOpen,
     isLevelEditorOpen,
+    isCommunityOpen,
   ]);
 
   // Keyboard & Smart TV Remote Event Listeners
@@ -3317,6 +3284,7 @@ export const GameCanvas: React.FC = () => {
           else if (isSettingsOpen) setIsSettingsOpen(false);
           else if (isMultiplayerOpen) setIsMultiplayerOpen(false);
           else if (isLevelEditorOpen) setIsLevelEditorOpen(false);
+          else if (isCommunityOpen) setIsCommunityOpen(false);
         }
         return;
       }
@@ -3326,6 +3294,7 @@ export const GameCanvas: React.FC = () => {
         isSettingsOpen ||
         isLeaderboardOpen ||
         isLevelEditorOpen ||
+        isCommunityOpen ||
         isUpdatesOpen ||
         isAchievementsOpen ||
         isCheatMenuOpen;
@@ -3340,6 +3309,7 @@ export const GameCanvas: React.FC = () => {
           else if (isSettingsOpen) setIsSettingsOpen(false);
           else if (isMultiplayerOpen) setIsMultiplayerOpen(false);
           else if (isLevelEditorOpen) setIsLevelEditorOpen(false);
+          else if (isCommunityOpen) setIsCommunityOpen(false);
           return;
         }
 
@@ -3679,6 +3649,7 @@ export const GameCanvas: React.FC = () => {
     isSettingsOpen,
     isLeaderboardOpen,
     isLevelEditorOpen,
+    isCommunityOpen,
     isUpdatesOpen,
     isAchievementsOpen,
     isSmwMapOpen,
@@ -3707,6 +3678,7 @@ export const GameCanvas: React.FC = () => {
       isCheatMenuOpen ||
       isMultiplayerOpen ||
       isLevelEditorOpen ||
+      isCommunityOpen ||
       isUpdatesOpen ||
       isAchievementsOpen;
 
@@ -3792,6 +3764,7 @@ export const GameCanvas: React.FC = () => {
     isCheatMenuOpen,
     isMultiplayerOpen,
     isLevelEditorOpen,
+    isCommunityOpen,
     isUpdatesOpen,
     isAchievementsOpen,
     handleSelectAction,
@@ -4087,6 +4060,7 @@ export const GameCanvas: React.FC = () => {
       setIsMultiplayerMatchOver(false);
       setHasStarted(true);
       setIsCustomLevelActive(true);
+      setActiveCommunityLevel(null);
       setIsSmwMapOpen(false);
       setIsSmwModeActive(false);
       if (engineRef.current) {
@@ -4121,6 +4095,7 @@ export const GameCanvas: React.FC = () => {
       setIsMultiplayerMatchOver(false);
       setHasStarted(true);
       setIsCustomLevelActive(true);
+      setActiveCommunityLevel(null);
       setIsSmwMapOpen(false);
       setIsSmwModeActive(false);
       if (engineRef.current) {
@@ -4136,6 +4111,86 @@ export const GameCanvas: React.FC = () => {
     [multiplayerStatus.connected, editorImmortality, customLevels]
   );
 
+  const handleOpenCommunityMode = useCallback(() => {
+    if (multiplayerStatus.connected) {
+      setCheatToast('Desconecte do multiplayer para explorar as Fases da Comunidade!');
+      setTimeout(() => setCheatToast(''), 3500);
+      return;
+    }
+    if (!isCustomLevelActive && !activeCommunityLevel && !canSwitchGameMode(getModePolicyInput())) {
+      setCheatToast('Troca de modo bloqueada após iniciar a partida! Disponível apenas no Modo Desenvolvedor ou usando o Editor.');
+      setTimeout(() => setCheatToast(''), 3500);
+      return;
+    }
+    const engine = engineRef.current;
+    if (engine && hasStarted && !engine.isPaused && !engine.isGameOver && !engine.isCampaignVictory) {
+      engine.togglePause();
+      setIsPaused(true);
+    }
+    setIsSettingsOpen(false);
+    setIsLevelEditorOpen(false);
+    setIsUpdatesOpen(false);
+    setIsCommunityOpen(true);
+  }, [multiplayerStatus.connected, isCustomLevelActive, activeCommunityLevel, getModePolicyInput, hasStarted]);
+
+  const handlePlayCommunityLevel = useCallback(
+    (record: CommunityLevelRecord) => {
+      if (multiplayerStatus.connected) {
+        setCheatToast('Saia da sala multiplayer para jogar fases da comunidade!');
+        setTimeout(() => setCheatToast(''), 3500);
+        return;
+      }
+      const sanitizedLevel = sanitizeCustomLevelEntities(record.level).level;
+      SoundEngine.get().resume();
+      setIsCommunityOpen(false);
+      setIsLevelEditorOpen(false);
+      setIsSettingsOpen(false);
+      setIsUpdatesOpen(false);
+      setIsCampaignVictory(false);
+      setIsMultiplayerMatchOver(false);
+      setHasStarted(true);
+      setIsCustomLevelActive(true);
+      setActiveCommunityLevel(record);
+      setIsSmwMapOpen(false);
+      setIsSmwModeActive(false);
+      if (engineRef.current) {
+        engineRef.current.playCommunityLevel(sanitizedLevel, {
+          docId: record.docId,
+          authorName: record.authorName,
+        });
+        setIsPaused(false);
+        setIsGameOver(false);
+        setIsStageClear(false);
+        setStats({ ...engineRef.current.stats, isNewHighScore: false });
+        setMarioPower(engineRef.current.marioPower);
+      }
+      void recordCommunityLevelPlay(record.docId);
+    },
+    [multiplayerStatus.connected]
+  );
+
+  const handleOpenEditorWithCommunityLevel = useCallback(
+    (initialLevel?: LevelData) => {
+      if (initialLevel) {
+        if (customLevels.length >= EDITOR_MAX_CUSTOM_LEVELS) {
+          setCheatToast(`Limite de ${EDITOR_MAX_CUSTOM_LEVELS} fases no editor atingido. Apague uma para editar uma cópia.`);
+          setTimeout(() => setCheatToast(''), 3500);
+        } else {
+          const copy = cloneLevelData(sanitizeCustomLevelEntities(initialLevel).level);
+          copy.id = `community-copy-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
+          copy.name = `${(initialLevel.name || 'FASE').slice(0, 14)} (Cópia)`;
+          copy.isCustom = true;
+          const nextLevels = [...customLevels, copy];
+          setCustomLevels(nextLevels);
+          setActiveCustomLevelId(copy.id);
+        }
+      }
+      setIsCommunityOpen(false);
+      openLevelEditor();
+    },
+    [customLevels, openLevelEditor]
+  );
+
   const handleReturnToMainMenu = useCallback(() => {
     if (!canExitToMainMenu(getModePolicyInput())) {
       setCheatToast('Troca de modo bloqueada após iniciar a partida! Disponível apenas no Modo Desenvolvedor ou usando o Editor.');
@@ -4143,6 +4198,7 @@ export const GameCanvas: React.FC = () => {
       return;
     }
     setIsLevelEditorOpen(false);
+    setIsCommunityOpen(false);
     setIsSettingsOpen(false);
     setIsUpdatesOpen(false);
     setIsCheatMenuOpen(false);
@@ -4157,6 +4213,7 @@ export const GameCanvas: React.FC = () => {
     setIsCampaignVictory(false);
     setHasStarted(false);
     setIsCustomLevelActive(false);
+    setActiveCommunityLevel(null);
     manualRunHeldRef.current = false;
     setControls({
       left: false,
@@ -4277,6 +4334,7 @@ export const GameCanvas: React.FC = () => {
     setIsSmwMapOpen(false);
     setIsSmwModeActive(false);
     setIsCustomLevelActive(false);
+    setActiveCommunityLevel(null);
     setHasStarted(true);
     if (engineRef.current) {
       if (multiplayerStatus.connected) {
@@ -4305,8 +4363,10 @@ export const GameCanvas: React.FC = () => {
     setIsSmwModeActive(false);
     setIsSettingsOpen(false);
     setIsLevelEditorOpen(false);
+    setIsCommunityOpen(false);
     setHasStarted(true);
     setIsCustomLevelActive(false);
+    setActiveCommunityLevel(null);
     if (engineRef.current) {
       engineRef.current.startSingleplayerCampaign(1, 1);
       setIsPaused(false);
@@ -4325,8 +4385,10 @@ export const GameCanvas: React.FC = () => {
     setIsSmwModeActive(false);
     setIsSettingsOpen(false);
     setIsLevelEditorOpen(false);
+    setIsCommunityOpen(false);
     setHasStarted(true);
     setIsCustomLevelActive(false);
+    setActiveCommunityLevel(null);
     if (engineRef.current) {
       engineRef.current.startSingleplayerCampaign(1, 1);
       setIsPaused(false);
@@ -4352,11 +4414,13 @@ export const GameCanvas: React.FC = () => {
     setIsCampaignVictory(false);
     setIsSettingsOpen(false);
     setIsLevelEditorOpen(false);
+    setIsCommunityOpen(false);
     setIsUpdatesOpen(false);
     setIsPaused(false);
     setIsGameOver(false);
     setIsStageClear(false);
     setIsCustomLevelActive(false);
+    setActiveCommunityLevel(null);
     setSmwJustClearedNodeId(null);
     setSmwCastleSaveTitle(null);
     setSmwSaveSlots(loadSmwSaveSlots());
@@ -4782,11 +4846,11 @@ export const GameCanvas: React.FC = () => {
                   SUPER MARIO BROS.
                 </span>
                 <p className="mt-1.5 text-[11px] sm:text-xs text-stone-400 font-mono">
-                  60 FPS Canvas · Clássico NES · Modo World · Campanha 7 Mundos
+                  60 FPS Canvas · Clássico NES · Modo World · 7 Mundos · Comunidade
                 </p>
 
-                {/* Primary Play Actions (3 focused modes) */}
-                <div className="mt-4 sm:mt-5 w-full grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {/* Primary Play Actions (4 focused modes) */}
+                <div className="mt-4 sm:mt-5 w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
                   <button
                     type="button"
                     onClick={handleStartGame}
@@ -4812,6 +4876,15 @@ export const GameCanvas: React.FC = () => {
                   >
                     <Crown className="w-4 h-4 text-amber-200 shrink-0" />
                     <span>7 MUNDOS</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleOpenCommunityMode}
+                    className="px-4 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 border border-sky-300/65 font-['Press_Start_2P',monospace] text-white text-[10px] sm:text-xs font-bold shadow-xl shadow-indigo-950/50 transform hover:scale-[1.03] active:scale-95 transition flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Globe className="w-4 h-4 text-sky-200 shrink-0" />
+                    <span>COMUNIDADE</span>
                   </button>
                 </div>
 
@@ -4986,6 +5059,16 @@ export const GameCanvas: React.FC = () => {
                   )}
                   EDITOR DE FASES
                 </button>
+                {activeCommunityLevel && (
+                  <button
+                    type="button"
+                    onClick={handleOpenCommunityMode}
+                    className="px-5 py-2.5 rounded-lg bg-indigo-900 hover:bg-indigo-800 border border-sky-400/60 text-sky-200 font-['Press_Start_2P',monospace] text-xs shadow flex items-center gap-1.5 cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Globe className="w-3.5 h-3.5 text-sky-300" />
+                    FASES COMUNIDADE
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={openAchievementsModal}
@@ -5306,6 +5389,16 @@ export const GameCanvas: React.FC = () => {
                     OVERWORLD
                   </button>
                 )}
+                {activeCommunityLevel && (
+                  <button
+                    type="button"
+                    onClick={handleOpenCommunityMode}
+                    className="px-5 py-3 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-sky-100 border border-sky-400/70 font-['Press_Start_2P',monospace] text-xs font-bold shadow-lg flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Globe className="w-4 h-4 text-sky-300" />
+                    FASES DA COMUNIDADE
+                  </button>
+                )}
                 <button
                   type="button"
                   onClick={() => setIsLeaderboardOpen(true)}
@@ -5337,10 +5430,16 @@ export const GameCanvas: React.FC = () => {
                 {!isCustomLevelActive && <Heart className="w-6 h-6 text-pink-400 fill-pink-500" />}
               </div>
               <h2 className="font-['Press_Start_2P',monospace] text-lg sm:text-2xl text-pink-300 mb-2 tracking-wider drop-shadow-lg">
-                {isCustomLevelActive ? 'CAMPANHA CONCLUÍDA!' : '7 MUNDOS CONCLUÍDOS!'}
+                {activeCommunityLevel
+                  ? 'FASE CONCLUÍDA!'
+                  : isCustomLevelActive
+                  ? 'CAMPANHA CONCLUÍDA!'
+                  : '7 MUNDOS CONCLUÍDOS!'}
               </h2>
               <p className="text-amber-300 font-mono text-xs sm:text-sm font-bold mb-1">
-                {isCustomLevelActive
+                {activeCommunityLevel
+                  ? `Fase "${activeCommunityLevel.title}" por ${activeCommunityLevel.authorName}`
+                  : isCustomLevelActive
                   ? 'Você venceu todas as fases da sua campanha personalizada!'
                   : 'Você salvou a Princesa Femboy no Castelo Final (7-5)!'}
               </p>
@@ -5365,7 +5464,17 @@ export const GameCanvas: React.FC = () => {
                   <RotateCcw className="w-4 h-4" />
                   JOGAR NOVAMENTE
                 </button>
-                {isCustomLevelActive && (
+                {activeCommunityLevel && (
+                  <button
+                    type="button"
+                    onClick={handleOpenCommunityMode}
+                    className="px-5 py-3 rounded-xl bg-indigo-900 hover:bg-indigo-800 text-sky-100 border border-sky-400/70 font-['Press_Start_2P',monospace] text-[10px] sm:text-xs font-bold shadow-lg flex items-center gap-2 cursor-pointer whitespace-nowrap shrink-0"
+                  >
+                    <Globe className="w-4 h-4 text-sky-300" />
+                    FASES DA COMUNIDADE
+                  </button>
+                )}
+                {isCustomLevelActive && !activeCommunityLevel && (
                   <button
                     type="button"
                     onClick={openLevelEditor}
@@ -5768,6 +5877,7 @@ export const GameCanvas: React.FC = () => {
         onToggleSmartTvAutoRun={toggleSmartTvAutoRun}
         isModeAndEditorLocked={isModeAndEditorLocked}
         currentEndlessSeedCode={stats.endlessSeedCode}
+        onOpenCommunityMode={handleOpenCommunityMode}
       />
 
       {/* Leaderboard / Placar Modal */}
@@ -5867,6 +5977,16 @@ export const GameCanvas: React.FC = () => {
             engineRef.current.setEditorImmortality(enabled);
           }
         }}
+        onOpenCommunityMode={handleOpenCommunityMode}
+      />
+
+      {/* Modo Comunidade (Fases JSON na Nuvem via Firebase + Login Google) */}
+      <CommunityLevelsModal
+        isOpen={isCommunityOpen}
+        onClose={() => setIsCommunityOpen(false)}
+        onPlayCommunityLevel={handlePlayCommunityLevel}
+        onOpenLevelEditor={handleOpenEditorWithCommunityLevel}
+        isEditorLocked={isModeAndEditorLocked}
       />
 
       {/* Updates / Correções Recentes Modal */}

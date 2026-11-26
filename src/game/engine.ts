@@ -326,6 +326,9 @@ export class GameEngine {
   public switchPalaceActivated: boolean = false;
   public onSmwYellowSwitchActivated?: () => void;
   public onSmwSwitchActivated?: (color: SmwSwitchColor) => void;
+  public communityLevelId: string | null = null;
+  public communityLevelAuthor: string | null = null;
+  public onCommunityStageCompleted?: (levelDocId: string) => void;
 
   // Scenery Elements (Bushes, Clouds, Hills)
   public sceneries: { type: string; x: number; y: number }[] = [];
@@ -367,7 +370,10 @@ export class GameEngine {
   private customSubAreaOrigin: { levelTemplate: LevelData; returnPos: Point } | null = null;
   private customLevelRegistry: Map<string, LevelData> = new Map();
   private isWarpMapSwapActive: boolean = false;
+  private smwActiveNodeId: string | null = null;
+  private smwActiveWorldName: string | null = null;
   private preserveUsedPSwitchesOnLoad: boolean = false;
+  public hasExitedToDryFinish: boolean = false;
   public customCampaignLevels: LevelData[] = [];
   public customCampaignIndex: number = 0;
   private keyCavePipeLipKeys: Set<string> = new Set();
@@ -462,23 +468,46 @@ export class GameEngine {
       resolvedLevel = cloneLevelData(this.customSubAreaOrigin.levelTemplate);
       this.customSubAreaOrigin = null;
     }
-    if (resolvedLevel.isCustom) {
-      if (!isRespawn) {
-        const sanitized = sanitizeCustomLevelEntities(resolvedLevel).level;
-        if (!this.isWarpMapSwapActive) {
-          this.customLevelTemplate = cloneLevelData(sanitized);
-        }
-        resolvedLevel = cloneLevelData(sanitized);
-      } else if (this.customLevelTemplate) {
-        resolvedLevel = cloneLevelData(this.customLevelTemplate);
+    if (this.gameMode === 'smw_world_map') {
+      const preparedSmwLevel = resolvedLevel.isCustom
+        ? sanitizeCustomLevelEntities(resolvedLevel).level
+        : cloneLevelData(resolvedLevel);
+      preparedSmwLevel.isCustom = false;
+      if (!this.isWarpMapSwapActive && preparedSmwLevel.smwNodeId) {
+        this.smwActiveNodeId = preparedSmwLevel.smwNodeId;
+        this.smwActiveWorldName = preparedSmwLevel.smwWorldName ?? this.smwActiveWorldName;
       }
-    } else if (!isRespawn && !isSubAreaLevel && !this.isWarpMapSwapActive) {
+      if (!preparedSmwLevel.smwNodeId && this.smwActiveNodeId) {
+        preparedSmwLevel.smwNodeId = this.smwActiveNodeId;
+        preparedSmwLevel.smwWorldName =
+          preparedSmwLevel.smwWorldName ?? this.smwActiveWorldName ?? undefined;
+      }
+      resolvedLevel = preparedSmwLevel;
       this.customLevelTemplate = null;
       this.customSubAreaOrigin = null;
       this.customCampaignLevels = [];
       this.customCampaignIndex = 0;
-      this.isEditorImmortality = false;
-      this.infiniteLives = this.isCheatActive;
+    } else {
+      this.smwActiveNodeId = null;
+      this.smwActiveWorldName = null;
+      if (resolvedLevel.isCustom) {
+        if (!isRespawn) {
+          const sanitized = sanitizeCustomLevelEntities(resolvedLevel).level;
+          if (!this.isWarpMapSwapActive) {
+            this.customLevelTemplate = cloneLevelData(sanitized);
+          }
+          resolvedLevel = cloneLevelData(sanitized);
+        } else if (this.customLevelTemplate) {
+          resolvedLevel = cloneLevelData(this.customLevelTemplate);
+        }
+      } else if (!isRespawn && !isSubAreaLevel && !this.isWarpMapSwapActive) {
+        this.customLevelTemplate = null;
+        this.customSubAreaOrigin = null;
+        this.customCampaignLevels = [];
+        this.customCampaignIndex = 0;
+        this.isEditorImmortality = false;
+        this.infiniteLives = this.isCheatActive;
+      }
     }
     if (resolvedLevel.isCustom && this.customCampaignLevels.length > 0 && !resolvedLevel.biomeLabel) {
       resolvedLevel.biomeLabel = resolvedLevel.name || 'CAMPANHA PERSONALIZADA';
@@ -582,7 +611,7 @@ export class GameEngine {
     this.stats.reservePowerUp = this.reservePowerUp;
     this.bossFireballs = [];
     this.hammerProjectiles = [];
-    if (resolvedLevel.smwNodeId !== undefined) {
+    if (this.gameMode === 'smw_world_map' || resolvedLevel.smwNodeId !== undefined) {
       this.endlessStage = 0;
     } else if (resolvedLevel.singleplayerWorld !== undefined && resolvedLevel.singleplayerStage !== undefined) {
       this.singleplayerWorld = resolvedLevel.singleplayerWorld;
@@ -648,6 +677,10 @@ export class GameEngine {
       this.activatedCheckpointIndices.clear();
       this.marioX = resolvedLevel.marioStart.x;
       this.marioY = resolvedLevel.marioStart.y - (this.getMarioHeight() - 16);
+      this.hasExitedToDryFinish = Boolean(
+        resolvedLevel.dryFinishStartX !== undefined &&
+          this.marioX >= resolvedLevel.dryFinishStartX
+      );
       const bounds = this.getActiveCameraBounds();
       if (resolvedLevel.isCustom && resolvedLevel.marioStart.x > 160) {
         this.camera.centerOn(resolvedLevel.marioStart.x, levelWidthPx, bounds);
@@ -662,10 +695,18 @@ export class GameEngine {
       if (this.activeCheckpoint) {
         this.marioX = this.activeCheckpoint.x;
         this.marioY = this.activeCheckpoint.y;
+        this.hasExitedToDryFinish = Boolean(
+          resolvedLevel.dryFinishStartX !== undefined &&
+            this.marioX >= resolvedLevel.dryFinishStartX
+        );
         this.camera.centerOn(this.activeCheckpoint.x, levelWidthPx, this.getActiveCameraBounds());
       } else {
         this.marioX = newLevel.marioStart.x;
         this.marioY = newLevel.marioStart.y;
+        this.hasExitedToDryFinish = Boolean(
+          resolvedLevel.dryFinishStartX !== undefined &&
+            this.marioX >= resolvedLevel.dryFinishStartX
+        );
         this.camera.snapTo(0, levelWidthPx, this.getActiveCameraBounds());
       }
     }
@@ -1242,7 +1283,7 @@ export class GameEngine {
   private getActiveCameraBounds(): { minX?: number; maxX?: number } | undefined {
     if (this.level.dryFinishStartX === undefined) return undefined;
     const levelWidthPx = this.level.width * GameEngine.TILE_SIZE;
-    if (this.marioX >= this.level.dryFinishStartX) {
+    if (this.hasExitedToDryFinish || this.marioX >= this.level.dryFinishStartX) {
       return { minX: this.level.dryFinishStartX, maxX: levelWidthPx };
     }
     return {
@@ -1809,7 +1850,11 @@ export class GameEngine {
         }
         const targetX = (this.pipeClipLipX ?? this.marioX) - 16;
         if (this.marioX <= targetX || this.warpTimer >= 48) {
-          this.marioX = Math.max(0, targetX);
+          const minExitX =
+            this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
+              ? this.level.dryFinishStartX
+              : 0;
+          this.marioX = Math.max(minExitX, targetX);
           const feetTy = Math.floor((this.marioY + this.getMarioHeight() + 1) / GameEngine.TILE_SIZE);
           const centerTx = Math.max(0, Math.min(this.level.width - 1, Math.floor((this.marioX + 8) / GameEngine.TILE_SIZE)));
           const belowTile = this.level.tiles[feetTy]?.[centerTx];
@@ -2428,9 +2473,20 @@ export class GameEngine {
     // Horizontal Movement
     this.marioX += this.marioVx;
 
-    // Clamp within level horizontal bounds (bidirectional camera follows Mario inside viewport bounds)
-    if (this.marioX < 0) {
-      this.marioX = 0;
+    // Clamp within level horizontal bounds (and prevent returning past dryFinishStartX after exiting water/mansion)
+    if (
+      !this.hasExitedToDryFinish &&
+      this.level.dryFinishStartX !== undefined &&
+      this.marioX >= this.level.dryFinishStartX
+    ) {
+      this.hasExitedToDryFinish = true;
+    }
+    const minMarioX =
+      this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
+        ? this.level.dryFinishStartX
+        : 0;
+    if (this.marioX < minMarioX) {
+      this.marioX = minMarioX;
       this.marioVx = 0;
     }
     const maxMarioX = this.level.width * GameEngine.TILE_SIZE - 16;
@@ -2634,8 +2690,12 @@ export class GameEngine {
     ) {
       this.marioX += carriedPlat.dx;
       this.marioY += carriedPlat.dy;
+      const minMarioX =
+        this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
+          ? this.level.dryFinishStartX
+          : 0;
       const maxMarioX = this.level.width * GameEngine.TILE_SIZE - 16;
-      if (this.marioX < 0) this.marioX = 0;
+      if (this.marioX < minMarioX) this.marioX = minMarioX;
       if (this.marioX > maxMarioX) this.marioX = maxMarioX;
     }
   }
@@ -3211,9 +3271,12 @@ export class GameEngine {
         return;
       }
 
-      // Only activate enemy when camera is near (within 300px)
+      // Only activate enemy when camera is near (within 40px outside viewport)
       if (e.x > this.cameraX + GameEngine.NES_WIDTH + 40 || e.x < this.cameraX - 40) {
-        if (e.type === 'bullet_bill' && e.x < this.cameraX - 40) {
+        if (
+          e.type === 'bullet_bill' &&
+          (e.x < this.cameraX - 40 || e.vx > 0 || e.stateTimer > 0)
+        ) {
           e.alive = false;
         }
         return;
@@ -3313,6 +3376,18 @@ export class GameEngine {
       // Bullet Bill (High-speed straight horizontal projectile enemy, ignores gravity/walls)
       if (e.type === 'bullet_bill') {
         e.x += e.vx;
+        const onScreenNow =
+          e.x + e.width > this.cameraX &&
+          e.x < this.cameraX + GameEngine.NES_WIDTH;
+        if (onScreenNow) {
+          e.stateTimer++;
+        }
+        const exitedLeft = e.vx <= 0 && e.x + e.width < this.cameraX - 8;
+        const exitedRight = (e.vx > 0 || e.stateTimer > 0) && e.x > this.cameraX + GameEngine.NES_WIDTH + 8;
+        if (exitedLeft || exitedRight) {
+          e.alive = false;
+          return;
+        }
         const canCollide =
           this.marioState !== 'dead' &&
           this.marioState !== 'pipe_entering' &&
@@ -3813,9 +3888,12 @@ export class GameEngine {
       }
     });
 
-    // Cleanup squashed and fallen offscreen dead enemies
+    // Cleanup dead, squashed, and fallen offscreen dead enemies
     this.enemies = this.enemies.filter(
-      e => (e.state !== 'squashed' || e.stateTimer < 30) && (e.state !== 'flipped' || e.y <= GameEngine.NES_HEIGHT + 48)
+      e =>
+        (e.alive || e.state === 'flipped' || e.state === 'squashed') &&
+        (e.state !== 'squashed' || e.stateTimer < 30) &&
+        (e.state !== 'flipped' || e.y <= GameEngine.NES_HEIGHT + 48)
     );
   }
 
@@ -5522,8 +5600,12 @@ export class GameEngine {
       dy = speed;
     }
 
-    const maxX = Math.max(0, this.level.width * GameEngine.TILE_SIZE - 16);
-    this.marioX = Math.max(0, Math.min(maxX, this.marioX + dx));
+    const minX =
+      this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
+        ? this.level.dryFinishStartX
+        : 0;
+    const maxX = Math.max(minX, this.level.width * GameEngine.TILE_SIZE - 16);
+    this.marioX = Math.max(minX, Math.min(maxX, this.marioX + dx));
     this.marioY = Math.max(16, Math.min(GameEngine.NES_HEIGHT - 16, this.marioY + dy));
     this.marioVx = dx;
     this.marioVy = 0;
@@ -5946,6 +6028,11 @@ export class GameEngine {
     const entryMode = this.warpTarget.entryMode;
     const destPipeDir = this.warpTarget.destPipeDir;
     const isDoorWarp = this.warpDir === 'door';
+    const isSmwWorldMode = this.gameMode === 'smw_world_map';
+    const originSmwNodeId = isSmwWorldMode ? this.getActiveSmwNodeId() : null;
+    const originSmwWorldName = isSmwWorldMode
+      ? (this.level.smwWorldName ?? this.smwActiveWorldName ?? undefined)
+      : undefined;
     const returningFromSubArea =
       this.level.id === 'secret-vault' || this.level.id === 'smw-wiki-1-secret';
     const normalizedTargetHex = targetHex?.trim() ? normalizeHexLevelCode(targetHex) : null;
@@ -5963,7 +6050,7 @@ export class GameEngine {
       !targetHex?.trim() &&
       (targetLevelId === 'secret-vault' || targetLevelId === 'smw-wiki-1-secret')
     ) {
-      const originIsCustom = Boolean(this.level.isCustom);
+      const originIsCustom = Boolean(this.level.isCustom) && !isSmwWorldMode;
       if (originIsCustom && (targetLevelId === 'smw-wiki-1-secret' || isDoorWarp)) {
         const savedReturnPos = this.warpTarget.returnPos
           ? { ...this.warpTarget.returnPos }
@@ -5977,6 +6064,10 @@ export class GameEngine {
         targetLevelId === 'smw-wiki-1-secret'
           ? createSmwWiki1SecretRoom()
           : createSecretVault();
+      if (isSmwWorldMode && originSmwNodeId) {
+        subAreaLevel.smwNodeId = originSmwNodeId;
+        subAreaLevel.smwWorldName = originSmwWorldName ?? subAreaLevel.smwWorldName;
+      }
       if (this.customSubAreaOrigin) {
         subAreaLevel.smwNodeId = undefined;
         subAreaLevel.pipeWarps = (subAreaLevel.pipeWarps || []).map(pw => ({
@@ -6026,6 +6117,16 @@ export class GameEngine {
         defaultPipeExitOnSameMap: !isDoorWarp,
       });
 
+      if (
+        this.level.dryFinishStartX !== undefined &&
+        (this.marioX >= this.level.dryFinishStartX || destPos.x >= this.level.dryFinishStartX)
+      ) {
+        this.hasExitedToDryFinish = true;
+        if (this.marioState !== 'pipe_exiting' && this.marioX < this.level.dryFinishStartX) {
+          this.marioX = this.level.dryFinishStartX;
+        }
+      }
+
       this.camera.centerOn(
         this.marioX,
         this.level.width * GameEngine.TILE_SIZE,
@@ -6054,7 +6155,30 @@ export class GameEngine {
       const resolved = this.resolveWarpDestinationLevel(targetLevelId, targetHex);
       if (resolved) {
         const { level: nextMap, redirectedToOverworld } = resolved;
-        if (!isDoorWarp && targetLevelId === 'world-1-1' && !redirectedToOverworld) {
+        if (isSmwWorldMode && originSmwNodeId) {
+          if (redirectedToOverworld) {
+            this.smwActiveNodeId = nextMap.smwNodeId ?? 'wiki-1-overworld';
+            this.smwActiveWorldName = nextMap.smwWorldName ?? originSmwWorldName ?? null;
+          } else {
+            nextMap.smwNodeId = originSmwNodeId;
+            nextMap.smwWorldName = originSmwWorldName ?? nextMap.smwWorldName;
+            nextMap.isCustom = false;
+          }
+        } else if (
+          !isSmwWorldMode &&
+          this.customLevelTemplate &&
+          !redirectedToOverworld &&
+          !nextMap.isCustom
+        ) {
+          nextMap.isCustom = true;
+        }
+        if (
+          !isDoorWarp &&
+          targetLevelId === 'world-1-1' &&
+          !redirectedToOverworld &&
+          !isSmwWorldMode &&
+          !this.customLevelTemplate
+        ) {
           this.preserveUsedPSwitchesOnLoad = true;
           this.loadLevel(nextMap, false, false, !returningFromSubArea);
           this.preserveUsedPSwitchesOnLoad = false;
@@ -6093,6 +6217,13 @@ export class GameEngine {
             destPipeDir: resolvedPipeDir,
             detectPipeAtDest: true,
           });
+        }
+
+        if (
+          this.level.dryFinishStartX !== undefined &&
+          this.marioX >= this.level.dryFinishStartX
+        ) {
+          this.hasExitedToDryFinish = true;
         }
 
         this.camera.centerOn(
@@ -7538,7 +7669,40 @@ export class GameEngine {
   }
 
   public advanceToNextLevel() {
-    const isCustomStageOrSubArea = Boolean(this.level.isCustom || this.customSubAreaOrigin);
+    if (this.gameMode === 'smw_world_map') {
+      const clearedNodeId = this.getActiveSmwNodeId();
+      if (clearedNodeId) {
+        const wasSecretExit = this.lastClearWasSecretExit;
+        this.lastClearWasSecretExit = false;
+        this.isStageClear = false;
+        this.localStageCleared = false;
+        this.waitingForPlayersFinish = false;
+        this.waitingPlayersNames = [];
+        this.allPlayersClearedReady = false;
+        this.allPlayersClearedCountdown = 0;
+        this.stageClearDelayTimer = 0;
+        this.stageClearTallyDelay = 0;
+        this.smwCastleEntryActive = false;
+        this.smwCastleEntryTimer = 0;
+        this.bonusStageIrisProgress = 0;
+        this.keyholeClearTimer = 0;
+        this.keyholeTransitionActive = false;
+        this.keyholeTotalTimer = 0;
+        this.marioState = 'idle';
+        this.marioVx = 0;
+        this.marioVy = 0;
+        this.isGameStarted = false;
+        this.resetControls();
+        this.syncHighScore(true);
+        this.persistRunScoreToRanking();
+        this.sound.stopMusic();
+        this.onSmwStageCompleted?.(clearedNodeId, { secretExit: wasSecretExit });
+        return;
+      }
+    }
+    const isCustomStageOrSubArea = Boolean(
+      this.level.isCustom || this.customSubAreaOrigin || this.customLevelTemplate
+    );
     if (isCustomStageOrSubArea && this.customCampaignLevels.length > 0) {
       this.customSubAreaOrigin = null;
       const nextIndex = this.customCampaignIndex + 1;
@@ -7560,38 +7724,23 @@ export class GameEngine {
       this.sound.playStageClear();
       return;
     }
+    if (isCustomStageOrSubArea && this.gameMode === 'community') {
+      this.customSubAreaOrigin = null;
+      const completedId = this.communityLevelId;
+      this.isCampaignVictory = true;
+      this.isStageClear = false;
+      this.bonusStageIrisProgress = 0;
+      this.syncHighScore(true);
+      this.sound.stopMusic();
+      this.sound.playStageClear();
+      if (completedId) {
+        this.onCommunityStageCompleted?.(completedId);
+      }
+      return;
+    }
     if (isCustomStageOrSubArea && this.customLevelTemplate) {
       this.customSubAreaOrigin = null;
       this.loadLevel(cloneLevelData(this.customLevelTemplate), true, false);
-      return;
-    }
-    if (this.gameMode === 'smw_world_map' && this.level.smwNodeId) {
-      const clearedNodeId = this.level.smwNodeId;
-      const wasSecretExit = this.lastClearWasSecretExit;
-      this.lastClearWasSecretExit = false;
-      this.isStageClear = false;
-      this.localStageCleared = false;
-      this.waitingForPlayersFinish = false;
-      this.waitingPlayersNames = [];
-      this.allPlayersClearedReady = false;
-      this.allPlayersClearedCountdown = 0;
-      this.stageClearDelayTimer = 0;
-      this.stageClearTallyDelay = 0;
-      this.smwCastleEntryActive = false;
-      this.smwCastleEntryTimer = 0;
-      this.bonusStageIrisProgress = 0;
-      this.keyholeClearTimer = 0;
-      this.keyholeTransitionActive = false;
-      this.keyholeTotalTimer = 0;
-      this.marioState = 'idle';
-      this.marioVx = 0;
-      this.marioVy = 0;
-      this.isGameStarted = false;
-      this.resetControls();
-      this.syncHighScore(true);
-      this.persistRunScoreToRanking();
-      this.sound.stopMusic();
-      this.onSmwStageCompleted?.(clearedNodeId, { secretExit: wasSecretExit });
       return;
     }
     if (this.level.isFinalCastle) {
@@ -7664,6 +7813,8 @@ export class GameEngine {
   public restartMultiplayerMatch(targetLevel?: LevelData, notifyNetwork: boolean = true) {
     this.customCampaignLevels = [];
     this.customCampaignIndex = 0;
+    this.smwActiveNodeId = null;
+    this.smwActiveWorldName = null;
     this.isMultiplayerMatchOver = false;
     this.multiplayerMatchResult = null;
     this.localStageCleared = false;
@@ -7727,6 +7878,10 @@ export class GameEngine {
     this.customSubAreaOrigin = null;
     this.customCampaignLevels = [];
     this.customCampaignIndex = 0;
+    this.communityLevelId = null;
+    this.communityLevelAuthor = null;
+    this.smwActiveNodeId = null;
+    this.smwActiveWorldName = null;
     this.gameMode = 'classic';
     this.smwCastleEntryActive = false;
     this.smwCastleEntryTimer = 0;
@@ -7799,6 +7954,16 @@ export class GameEngine {
     this.loadLevel(prepared, true, false);
   }
 
+  public playCommunityLevel(
+    customLevel: LevelData,
+    meta: { docId: string; authorName: string }
+  ) {
+    this.playCustomLevel(customLevel, false);
+    this.gameMode = 'community';
+    this.communityLevelId = meta.docId;
+    this.communityLevelAuthor = meta.authorName;
+  }
+
   public startCustomCampaign(levels: LevelData[], immortality: boolean = false) {
     if (!levels || levels.length === 0) return;
 
@@ -7814,6 +7979,8 @@ export class GameEngine {
     this.customSubAreaOrigin = null;
     this.customCampaignLevels = preparedLevels;
     this.customCampaignIndex = 0;
+    this.smwActiveNodeId = null;
+    this.smwActiveWorldName = null;
     this.gameMode = 'classic';
     this.smwCastleEntryActive = false;
     this.smwCastleEntryTimer = 0;
@@ -7900,6 +8067,10 @@ export class GameEngine {
   public startSingleplayerCampaign(world: number = 1, stage: number = 1) {
     this.customCampaignLevels = [];
     this.customCampaignIndex = 0;
+    this.communityLevelId = null;
+    this.communityLevelAuthor = null;
+    this.smwActiveNodeId = null;
+    this.smwActiveWorldName = null;
     this.gameMode = 'singleplayer';
     this.singleplayerWorld = Math.max(1, Math.min(SINGLEPLAYER_WORLD_COUNT, Math.floor(world)));
     this.singleplayerStage = Math.max(1, Math.min(SINGLEPLAYER_STAGES_PER_WORLD, Math.floor(stage)));
@@ -7964,6 +8135,8 @@ export class GameEngine {
     this.customCampaignLevels = [];
     this.customCampaignIndex = 0;
     this.gameMode = 'smw_world_map';
+    this.smwActiveNodeId = level.smwNodeId ?? null;
+    this.smwActiveWorldName = level.smwWorldName ?? null;
     this.isCampaignVictory = false;
     this.isEditorImmortality = false;
     this.infiniteLives = this.isCheatActive;
@@ -8026,7 +8199,11 @@ export class GameEngine {
   }
 
   public getActiveSmwNodeId(): string | null {
-    return this.level?.smwNodeId ?? this.bonusReturnLevelMeta?.smwNodeId ?? null;
+    return (
+      this.level?.smwNodeId ??
+      this.bonusReturnLevelMeta?.smwNodeId ??
+      (this.gameMode === 'smw_world_map' ? this.smwActiveNodeId : null)
+    );
   }
 
   public resetControls() {
@@ -8046,6 +8223,8 @@ export class GameEngine {
 
   public returnToSmwOverworldState() {
     this.gameMode = 'smw_world_map';
+    this.smwActiveNodeId = null;
+    this.smwActiveWorldName = null;
     this.isGameStarted = false;
     this.isPaused = false;
     this.isGameOver = false;
@@ -8082,22 +8261,33 @@ export class GameEngine {
   }
 
   public restartGame() {
+    const activeSmwNodeId = this.getActiveSmwNodeId();
+    if (this.gameMode === 'smw_world_map' && activeSmwNodeId) {
+      this.customSubAreaOrigin = null;
+      this.startSmwStage(createSmwWikiWorldStage(activeSmwNodeId), true);
+      return;
+    }
+
     const isCustomRestart = Boolean(
-      this.level?.isCustom || this.bonusReturnLevelMeta?.isCustom || this.customSubAreaOrigin
+      this.level?.isCustom ||
+        this.bonusReturnLevelMeta?.isCustom ||
+        this.customSubAreaOrigin ||
+        this.customLevelTemplate
     );
-    const activeSmwNodeId = this.level?.smwNodeId ?? this.bonusReturnLevelMeta?.smwNodeId;
     this.customSubAreaOrigin = null;
     if (isCustomRestart && this.customCampaignLevels.length > 0) {
       this.startCustomCampaign(this.customCampaignLevels, this.isEditorImmortality);
       return;
     }
-    if (isCustomRestart && this.customLevelTemplate) {
-      this.playCustomLevel(this.customLevelTemplate, this.isEditorImmortality);
+    if (isCustomRestart && this.gameMode === 'community' && this.customLevelTemplate && this.communityLevelId) {
+      this.playCommunityLevel(this.customLevelTemplate, {
+        docId: this.communityLevelId,
+        authorName: this.communityLevelAuthor || 'Jogador',
+      });
       return;
     }
-
-    if (this.gameMode === 'smw_world_map' && activeSmwNodeId) {
-      this.startSmwStage(createSmwWikiWorldStage(activeSmwNodeId), true);
+    if (isCustomRestart && this.customLevelTemplate) {
+      this.playCustomLevel(this.customLevelTemplate, this.isEditorImmortality);
       return;
     }
 
@@ -8173,6 +8363,10 @@ export class GameEngine {
     this.customSubAreaOrigin = null;
     this.customCampaignLevels = [];
     this.customCampaignIndex = 0;
+    this.communityLevelId = null;
+    this.communityLevelAuthor = null;
+    this.smwActiveNodeId = null;
+    this.smwActiveWorldName = null;
     this.gameMode = 'classic';
     this.goalPointsWallet = 0;
     this.pendingBonusStage = false;
@@ -8364,7 +8558,10 @@ export class GameEngine {
     const camX = this.camera.renderX;
 
     // 1. Background Fill (Split underwater/cavern vs open overworld sky at dryFinishStartX)
-    if (this.level.theme !== 'overworld' && this.level.dryFinishStartX !== undefined) {
+    if (this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined) {
+      ctx.fillStyle = '#5c94fc';
+      ctx.fillRect(0, 0, GameEngine.NES_WIDTH, GameEngine.NES_HEIGHT);
+    } else if (this.level.theme !== 'overworld' && this.level.dryFinishStartX !== undefined) {
       const splitScreenX = Math.round(this.level.dryFinishStartX - camX);
       if (splitScreenX <= 0) {
         ctx.fillStyle = '#5c94fc';
@@ -8984,7 +9181,9 @@ export class GameEngine {
     }
     if (this.level.theme === 'underwater') {
       const waterEndScreenX =
-        this.level.dryFinishStartX !== undefined
+        this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
+          ? 0
+          : this.level.dryFinishStartX !== undefined
           ? Math.min(GameEngine.NES_WIDTH, Math.round(this.level.dryFinishStartX - camX))
           : GameEngine.NES_WIDTH;
 
@@ -9013,9 +9212,9 @@ export class GameEngine {
         if (sx < -80 || sx > GameEngine.NES_WIDTH + 80) return;
 
         if (s.type === 'seaweed_tall') {
-          this.drawSeaweed(ctx, sx, s.y, 44);
+          if (waterEndScreenX > 0) this.drawSeaweed(ctx, sx, s.y, 44);
         } else if (s.type === 'seaweed_short') {
-          this.drawSeaweed(ctx, sx, s.y, 26);
+          if (waterEndScreenX > 0) this.drawSeaweed(ctx, sx, s.y, 26);
         } else if (s.type === 'cloud_med') {
           this.drawCloud(ctx, Math.round(s.x - camX * 0.65), s.y, 32);
         } else if (s.type === 'bush_small') {
@@ -9027,7 +9226,9 @@ export class GameEngine {
 
     if (this.level.theme === 'underground') {
       const dryScreenX =
-        this.level.dryFinishStartX !== undefined
+        this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
+          ? 0
+          : this.level.dryFinishStartX !== undefined
           ? Math.round(this.level.dryFinishStartX - camX)
           : GameEngine.NES_WIDTH;
       if (dryScreenX > 0) {
@@ -9054,7 +9255,9 @@ export class GameEngine {
 
     if (this.level.theme === 'castle') {
       const dryScreenX =
-        this.level.dryFinishStartX !== undefined
+        this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
+          ? 0
+          : this.level.dryFinishStartX !== undefined
           ? Math.round(this.level.dryFinishStartX - camX)
           : GameEngine.NES_WIDTH;
       if (dryScreenX > 0) {
@@ -9074,7 +9277,9 @@ export class GameEngine {
 
     if (this.level.theme === 'ghost_house') {
       const dryScreenX =
-        this.level.dryFinishStartX !== undefined
+        this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
+          ? 0
+          : this.level.dryFinishStartX !== undefined
           ? Math.round(this.level.dryFinishStartX - camX)
           : GameEngine.NES_WIDTH;
       if (dryScreenX < GameEngine.NES_WIDTH) {
@@ -9235,7 +9440,11 @@ export class GameEngine {
 
   private renderTiles(ctx: CanvasRenderingContext2D) {
     const camX = this.camera.renderX;
-    const startTX = Math.max(0, Math.floor(camX / GameEngine.TILE_SIZE));
+    const minVisibleTx =
+      this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
+        ? Math.max(0, Math.floor(this.level.dryFinishStartX / GameEngine.TILE_SIZE))
+        : 0;
+    const startTX = Math.max(minVisibleTx, Math.floor(camX / GameEngine.TILE_SIZE));
     const endTX = Math.min(this.level.width - 1, Math.ceil((camX + GameEngine.NES_WIDTH) / GameEngine.TILE_SIZE));
 
     const qFrame = Math.floor((Date.now() / 150) % 4);
@@ -10055,6 +10264,7 @@ export class GameEngine {
   private renderEnemies(ctx: CanvasRenderingContext2D) {
     const camX = this.camera.renderX;
     this.enemies.forEach(e => {
+      if (!e.alive && e.state !== 'flipped' && e.state !== 'squashed') return;
       const ex = Math.round(e.x - camX);
       if (ex < -32 || ex > GameEngine.NES_WIDTH + 32) return;
 

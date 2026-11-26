@@ -43,7 +43,19 @@ import {
   Eye,
   Music,
   Milestone,
+  CloudUpload,
+  Globe,
+  LogIn,
+  LogOut,
 } from 'lucide-react';
+import { User } from 'firebase/auth';
+import { signInWithGoogle, signOutGoogle, subscribeAuth } from '../firebase.ts';
+import {
+  COMMUNITY_DESC_MAX_LEN,
+  COMMUNITY_TITLE_MAX_LEN,
+  uploadJsonLevelToFirebase,
+  uploadLevelToFirebase,
+} from '../game/communityLevels.ts';
 import { BlockTile, CarryableKind, EnemyType, ItemContent, LevelData, TileType } from '../game/types.ts';
 import {
   EDITOR_MAX_CARRYABLES,
@@ -117,6 +129,7 @@ interface LevelEditorModalProps {
   onBackToMainMenu?: () => void;
   editorImmortality?: boolean;
   onToggleEditorImmortality?: (enabled: boolean) => void;
+  onOpenCommunityMode?: () => void;
 }
 
 type EditorBrushKind =
@@ -257,6 +270,7 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
   onBackToMainMenu,
   editorImmortality = false,
   onToggleEditorImmortality,
+  onOpenCommunityMode,
 }) => {
   const atlas = useMemo(() => SpriteAtlas.get(), []);
   const keyCavePipePreview = useMemo(() => {
@@ -466,6 +480,19 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
   const [statusError, setStatusError] = useState<string>('');
   const [localImmortality, setLocalImmortality] = useState(editorImmortality);
   const [showMissingGoalAlert, setShowMissingGoalAlert] = useState(false);
+  const [authUser, setAuthUser] = useState<User | null>(null);
+  const [showCloudPublishModal, setShowCloudPublishModal] = useState(false);
+  const [cloudTitleInput, setCloudTitleInput] = useState('');
+  const [cloudDescInput, setCloudDescInput] = useState('');
+  const [cloudBusy, setCloudBusy] = useState(false);
+  const [cloudError, setCloudError] = useState('');
+  const [cloudSuccess, setCloudSuccess] = useState('');
+  const cloudFileInputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    const unsub = subscribeAuth(user => setAuthUser(user));
+    return unsub;
+  }, []);
 
   const effectiveCampaignIds = customCampaignIds ?? internalCampaignIds;
   const setEffectiveCampaignIds = useCallback(
@@ -3612,6 +3639,21 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                 <Upload className="w-3.5 h-3.5 text-emerald-400" />
                 <span>Upload</span>
               </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCloudTitleInput(currentLevel.name || '');
+                  setCloudError('');
+                  setCloudSuccess('');
+                  setShowCloudPublishModal(true);
+                }}
+                title="Enviar esta fase ou um arquivo JSON para a nuvem Firebase (com Login Google)"
+                className="px-2.5 py-1.5 rounded bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-400/70 text-indigo-100 font-mono text-xs flex items-center gap-1 cursor-pointer transition"
+              >
+                <CloudUpload className="w-3.5 h-3.5 text-amber-300" />
+                <span>Publicar Nuvem</span>
+              </button>
+
               <input
                 ref={fileInputRef}
                 type="file"
@@ -5046,6 +5088,215 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                 >
                   JOGAR MESMO ASSIM
                 </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Firebase Cloud Publish Modal */}
+        {showCloudPublishModal && (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Publicar fase na nuvem Firebase"
+            className="absolute inset-0 z-30 flex items-center justify-center p-4 bg-black/80 backdrop-blur-xs"
+          >
+            <div className="w-full max-w-lg bg-stone-900 border-2 border-indigo-400/80 rounded-2xl shadow-2xl p-5 space-y-4 text-stone-100">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <CloudUpload className="w-5 h-5 text-amber-300" />
+                  <h3 className="font-['Press_Start_2P',monospace] text-xs text-amber-300">
+                    PUBLICAR FASE NA NUVEM (FIREBASE)
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowCloudPublishModal(false)}
+                  className="p-1.5 rounded-lg bg-stone-800 hover:bg-stone-700 text-stone-300 cursor-pointer"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Google Login Bar */}
+              <div className="p-3 rounded-xl bg-stone-950 border border-stone-800 flex flex-wrap items-center justify-between gap-2">
+                {authUser ? (
+                  <>
+                    <div className="flex items-center gap-2 min-w-0">
+                      {authUser.photoURL ? (
+                        <img
+                          src={authUser.photoURL}
+                          alt={authUser.displayName || 'Google'}
+                          className="w-7 h-7 rounded-full object-cover"
+                          referrerPolicy="no-referrer"
+                        />
+                      ) : (
+                        <UserCheck className="w-5 h-5 text-emerald-400" />
+                      )}
+                      <div className="min-w-0">
+                        <div className="text-xs font-mono font-bold text-emerald-300 truncate">
+                          {authUser.displayName || 'Jogador Google'}
+                        </div>
+                        <div className="text-[10px] font-mono text-stone-400 truncate">
+                          Conectado com Google
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => signOutGoogle()}
+                      className="px-2.5 py-1 rounded bg-stone-800 hover:bg-stone-700 text-stone-300 text-xs font-mono flex items-center gap-1 cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sair</span>
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-xs font-mono text-amber-200">
+                      Entre com sua conta Google para publicar fases na nuvem:
+                    </span>
+                    <button
+                      type="button"
+                      disabled={cloudBusy}
+                      onClick={async () => {
+                        setCloudBusy(true);
+                        setCloudError('');
+                        try {
+                          await signInWithGoogle();
+                        } catch (err) {
+                          setCloudError(err instanceof Error ? err.message : 'Falha no login Google.');
+                        } finally {
+                          setCloudBusy(false);
+                        }
+                      }}
+                      className="px-3 py-1.5 rounded-lg bg-white hover:bg-stone-100 text-stone-900 font-mono text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                    >
+                      <LogIn className="w-3.5 h-3.5 text-indigo-600" />
+                      <span>Entrar com Google</span>
+                    </button>
+                  </>
+                )}
+              </div>
+
+              <div className="space-y-2.5 font-mono text-xs">
+                <label className="block space-y-1">
+                  <span className="text-stone-300">Título da Fase na Comunidade:</span>
+                  <input
+                    type="text"
+                    value={cloudTitleInput}
+                    onChange={e => setCloudTitleInput(e.target.value.slice(0, COMMUNITY_TITLE_MAX_LEN))}
+                    placeholder={currentLevel.name || 'MINHA FASE'}
+                    className="w-full px-3 py-2 rounded-lg bg-stone-950 border border-stone-700 text-amber-200 uppercase"
+                  />
+                </label>
+
+                <label className="block space-y-1">
+                  <span className="text-stone-300">Descrição opcional (até 160 caracteres):</span>
+                  <textarea
+                    rows={2}
+                    value={cloudDescInput}
+                    onChange={e => setCloudDescInput(e.target.value.slice(0, COMMUNITY_DESC_MAX_LEN))}
+                    placeholder="Ex: Fase desafiadora com segredos e canos!"
+                    className="w-full px-3 py-2 rounded-lg bg-stone-950 border border-stone-700 text-stone-200 resize-none"
+                  />
+                </label>
+              </div>
+
+              {cloudError && (
+                <div className="p-2.5 rounded-lg bg-red-950/80 border border-red-500/60 text-red-200 text-xs font-mono">
+                  {cloudError}
+                </div>
+              )}
+              {cloudSuccess && (
+                <div className="p-2.5 rounded-lg bg-emerald-950/80 border border-emerald-500/60 text-emerald-200 text-xs font-mono">
+                  {cloudSuccess}
+                </div>
+              )}
+
+              <div className="flex flex-col gap-2">
+                <button
+                  type="button"
+                  disabled={cloudBusy || !authUser}
+                  onClick={async () => {
+                    setCloudBusy(true);
+                    setCloudError('');
+                    setCloudSuccess('');
+                    try {
+                      const record = await uploadLevelToFirebase(currentLevel, {
+                        titleOverride: cloudTitleInput,
+                        description: cloudDescInput,
+                      });
+                      setCloudSuccess(`Fase "${record.title}" publicada no Firebase!`);
+                      notify(`Fase "${record.title}" publicada na nuvem!`);
+                    } catch (err) {
+                      setCloudError(err instanceof Error ? err.message : 'Erro ao enviar fase para a nuvem.');
+                    } finally {
+                      setCloudBusy(false);
+                    }
+                  }}
+                  className="w-full px-4 py-2.5 rounded-lg bg-gradient-to-r from-indigo-600 to-sky-600 hover:from-indigo-500 hover:to-sky-500 disabled:opacity-50 text-white font-['Press_Start_2P',monospace] text-[10px] flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <CloudUpload className="w-4 h-4 text-amber-300" />
+                  <span>{cloudBusy ? 'ENVIANDO...' : 'PUBLICAR FASE ATUAL NA NUVEM'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  disabled={cloudBusy || !authUser}
+                  onClick={() => cloudFileInputRef.current?.click()}
+                  className="w-full px-4 py-2 rounded-lg bg-stone-800 hover:bg-stone-700 disabled:opacity-50 border border-emerald-500/50 text-emerald-200 font-mono text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <Upload className="w-4 h-4 text-emerald-400" />
+                  <span>Enviar Arquivo .JSON Direto para Nuvem</span>
+                </button>
+                <input
+                  ref={cloudFileInputRef}
+                  type="file"
+                  accept=".json,application/json"
+                  onChange={async e => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    setCloudBusy(true);
+                    setCloudError('');
+                    setCloudSuccess('');
+                    try {
+                      if (file.size > 2 * 1024 * 1024) {
+                        throw new Error('Arquivo JSON muito grande (máximo 2 MB).');
+                      }
+                      const raw = await file.text();
+                      const { record, parsedLevel } = await uploadJsonLevelToFirebase(raw, {
+                        description: cloudDescInput,
+                      });
+                      if (customLevels.length < EDITOR_MAX_CUSTOM_LEVELS) {
+                        onUpdateCustomLevels([...customLevels, parsedLevel], parsedLevel.id);
+                      }
+                      setCloudSuccess(`Arquivo JSON "${record.title}" publicado no Firebase!`);
+                      notify(`JSON "${record.title}" publicado na nuvem!`);
+                    } catch (err) {
+                      setCloudError(err instanceof Error ? err.message : 'Erro ao enviar JSON.');
+                    } finally {
+                      setCloudBusy(false);
+                      if (cloudFileInputRef.current) cloudFileInputRef.current.value = '';
+                    }
+                  }}
+                  className="hidden"
+                />
+
+                {onOpenCommunityMode && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowCloudPublishModal(false);
+                      onClose();
+                      onOpenCommunityMode();
+                    }}
+                    className="w-full px-4 py-2 rounded-lg bg-amber-950/80 hover:bg-amber-900 border border-amber-500/60 text-amber-200 font-mono text-xs font-bold flex items-center justify-center gap-2 cursor-pointer"
+                  >
+                    <Globe className="w-4 h-4 text-amber-300" />
+                    <span>Abrir Modo Comunidade (Jogar Fases da Nuvem)</span>
+                  </button>
+                )}
               </div>
             </div>
           </div>

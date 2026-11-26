@@ -4527,5 +4527,35 @@ export function parseWorldStageFromJson(
   };
 }
 
+export function hasValidStageGoal(level: LevelData): boolean {
+  const hasGoalTile = level.tiles.some(row =>
+    row.some(
+      t =>
+        t?.type === 'axe' ||
+        t?.type === 'yellow_switch' ||
+        t?.type === 'green_switch' ||
+        t?.type === 'red_switch' ||
+        t?.type === 'pink_switch' ||
+        t?.type === 'blue_switch'
+    )
+  );
+  if (hasGoalTile) return true;
+  if ((level.keyholes?.length ?? 0) > 0) return true;
+  if (level.flagX > 0 && level.flagX < level.width * 16) {
+    const flagTx = Math.floor(level.flagX / 16);
+    if (flagTx >= 0 && flagTx < level.width) {
+      const hasPole = level.tiles.some(row => {
+        const t = row[flagTx];
+        return t?.type === 'pole' || t?.type === 'pole_top';
+      });
+      if (hasPole) return true;
+    }
+  }
+  if ((level.pipeWarps || []).some(pw => pw.toLevel === KEY_CAVE_PIPE_TARGET || pw.type === 'door')) {
+    return true;
+  }
+  return false;
+}
+
 
 

@@ -51,7 +51,7 @@ export class CameraSystem {
   ) {
     const boundMin = Math.max(0, bounds?.minX ?? 0);
     const boundMax = Math.min(levelWidthPx, bounds?.maxX ?? levelWidthPx);
-    const minCamX = Math.min(boundMin, Math.max(0, boundMax - this.config.viewportWidth));
+    const minCamX = boundMin;
     const maxCamX = Math.max(minCamX, boundMax - this.config.viewportWidth);
     const clamped = Math.max(minCamX, Math.min(maxCamX, desiredX));
     this.x = clamped;
@@ -81,7 +81,7 @@ export class CameraSystem {
   ) {
     const boundMin = Math.max(0, bounds?.minX ?? 0);
     const boundMax = Math.min(levelWidthPx, bounds?.maxX ?? levelWidthPx);
-    const minCamX = Math.min(boundMin, Math.max(0, boundMax - this.config.viewportWidth));
+    const minCamX = boundMin;
     const maxCamX = Math.max(minCamX, boundMax - this.config.viewportWidth);
     const {
       deadzoneLeft,

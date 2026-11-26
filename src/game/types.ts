@@ -324,7 +324,7 @@ export interface LevelData {
   smwWorldName?: string;
 }
 
-export type GameMode = 'classic' | 'singleplayer' | 'smw_world_map';
+export type GameMode = 'classic' | 'singleplayer' | 'smw_world_map' | 'community';
 export type GameDifficulty = 'easy' | 'normal' | 'hard';
 export type ResolutionScale = '0.5x' | '0.75x' | '1x' | '1.25x' | '1.5x' | '2x' | 'fit';
 
