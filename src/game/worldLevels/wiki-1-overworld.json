@@ -1,9 +1,9 @@
 {
   "format": "smb-custom-level",
   "version": 1,
-  "exportedAt": "2026-11-27T01:13:52.325Z",
+  "exportedAt": "2026-11-27T01:26:19.237Z",
   "level": {
-    "id": "custom-1795741912723-muyd",
+    "id": "custom-1795742753789-fccw",
     "name": "W-1",
     "theme": "overworld",
     "biomeLabel": "WIKIWORLDWEB · YOSHI'S ISLAND (W-1)",
@@ -14,7 +14,12 @@
         null,
         null,
         null,
-        null,
+        {
+          "type": "exclam_yellow",
+          "content": "mushroom",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
         null,
         null,
         null,
@@ -184,7 +189,12 @@
         null,
         null,
         null,
-        null,
+        {
+          "type": "exclam_yellow",
+          "content": "mushroom",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
         null,
         null,
         null,
@@ -354,7 +364,12 @@
         null,
         null,
         null,
-        null,
+        {
+          "type": "exclam_yellow",
+          "content": "mushroom",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
         null,
         null,
         null,
@@ -534,7 +549,12 @@
           "bumpOffset": 0,
           "bumpVel": 0
         },
-        null,
+        {
+          "type": "exclam_yellow",
+          "content": "mushroom",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
         null,
         null,
         null,
@@ -714,7 +734,12 @@
           "bumpOffset": 0,
           "bumpVel": 0
         },
-        null,
+        {
+          "type": "exclam_yellow",
+          "content": "mushroom",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
         null,
         null,
         null,
