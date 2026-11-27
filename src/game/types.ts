@@ -86,7 +86,18 @@ export type TileType =
   | 'pink_switch_pressed'
   | 'blue_switch'
   | 'blue_switch_pressed'
-  | 'bonus_block';
+  | 'bonus_block'
+  | 'grass_ground'
+  | 'dirt'
+  | 'sand_ground'
+  | 'sandstone_brick'
+  | 'snow_ground'
+  | 'ice_block'
+  | 'wood_plank'
+  | 'moss_stone'
+  | 'cloud_block'
+  | 'obsidian_brick'
+  | 'note_block';
 
 export type ItemContent = 'coin' | 'mushroom' | 'fireflower' | 'leaf' | 'feather' | 'femboy' | 'star' | '1up' | 'none';
 
@@ -269,10 +280,22 @@ export interface FloatingPlatformSpec {
   phase?: number;
 }
 
+export type LevelTheme =
+  | 'overworld'
+  | 'underground'
+  | 'castle'
+  | 'underwater'
+  | 'ghost_house'
+  | 'desert'
+  | 'snow'
+  | 'sky'
+  | 'forest'
+  | 'volcano';
+
 export interface LevelData {
   id: string;
   name: string;
-  theme: 'overworld' | 'underground' | 'castle' | 'underwater' | 'ghost_house';
+  theme: LevelTheme;
   width: number; // in tiles (16px per tile)
   height: number; // usually 15 tiles (240px)
   tiles: (BlockTile | null)[][]; // [y][x]
@@ -296,7 +319,7 @@ export interface LevelData {
     destPipeDir?: 'up' | 'down' | 'left' | 'right';
   }[];
   bgColor: string;
-  musicTrack?: 'overworld' | 'underground' | 'underwater' | 'castle' | 'ghost_house' | 'bonus';
+  musicTrack?: LevelTheme | 'bonus';
   useBonusBackdrop?: boolean;
   lowGravity?: boolean;
   lockLeftScroll?: boolean;

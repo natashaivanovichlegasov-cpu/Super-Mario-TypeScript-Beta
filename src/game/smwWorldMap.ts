@@ -12,6 +12,11 @@ import {
   createWorld1_4,
   createWorld2_2,
   createWorldGhostHouse,
+  createWorldDesertStage,
+  createWorldSnowStage,
+  createWorldSkyStage,
+  createWorldForestStage,
+  createWorldVolcanoStage,
   normalizeHexLevelCode,
   parseWorldStageFromJson,
   type WorldStageJsonDefaults,
@@ -59,7 +64,15 @@ export const LM_OVERWORLD_GRID_ROWS = 20;
 
 export const SMW_ISLAND2_UNAVAILABLE_MSG = '(Versão Beta) ainda não disponível para jogar';
 
-export type SmwBoardPalette = 'grass' | 'desert' | 'ocean' | 'haunted' | 'volcano';
+export type SmwBoardPalette =
+  | 'grass'
+  | 'desert'
+  | 'ocean'
+  | 'haunted'
+  | 'volcano'
+  | 'snow'
+  | 'sky'
+  | 'forest';
 
 export type SmwMapDecorationKind =
   | 'hill'
@@ -234,6 +247,9 @@ const VALID_BOARD_PALETTES = new Set<SmwBoardPalette>([
   'ocean',
   'haunted',
   'volcano',
+  'snow',
+  'sky',
+  'forest',
 ]);
 
 const VALID_DECOR_KINDS = new Set<SmwMapDecorationKind>([
@@ -254,6 +270,11 @@ const VALID_NODE_THEMES = new Set<LevelData['theme']>([
   'castle',
   'underwater',
   'ghost_house',
+  'desert',
+  'snow',
+  'sky',
+  'forest',
+  'volcano',
 ]);
 
 function clampPercent(val: unknown, fallback: number): number {
@@ -1261,6 +1282,33 @@ for (const entry of WORLD_STAGE_JSON_REGISTRY) {
   });
 }
 
+const BIOME_HEX_STAGES: {
+  hexId: string;
+  key: string;
+  label: string;
+  loadLevel: () => LevelData;
+}[] = [
+  { hexId: '0115', key: 'theme:desert', label: 'Bioma Deserto (Dunas & Arenito)', loadLevel: createWorldDesertStage },
+  { hexId: '0116', key: 'theme:snow', label: 'Bioma Neve (Geleira & Blocos de Gelo)', loadLevel: createWorldSnowStage },
+  { hexId: '0117', key: 'theme:sky', label: 'Bioma Céu (Nuvens & Blocos Musicais)', loadLevel: createWorldSkyStage },
+  { hexId: '0118', key: 'theme:forest', label: 'Bioma Floresta (Grama, Terra & Madeira)', loadLevel: createWorldForestStage },
+  { hexId: '0119', key: 'theme:volcano', label: 'Bioma Vulcão (Rocha Vulcânica & Lava)', loadLevel: createWorldVolcanoStage },
+];
+
+for (const biome of BIOME_HEX_STAGES) {
+  if (!HEX_CATALOG_BY_CODE.has(biome.hexId)) {
+    HEX_CATALOG_BY_CODE.set(biome.hexId, {
+      hexId: biome.hexId,
+      key: biome.key,
+      label: biome.label,
+      sourceFile: 'levels.ts',
+      isEmbeddedMultiMap: false,
+      isExampleMap: false,
+      loadLevel: biome.loadLevel,
+    });
+  }
+}
+
 const hexManifestEntries: HexCatalogManifestEntry[] = Array.isArray(
   (worldHexMapsJson as { entries?: unknown }).entries
 )
@@ -1488,9 +1536,28 @@ export function resolveWorldStageForNode(
       stage = cloneLevelData(customMatch);
       matchedCustomName = customMatch.name;
     } else if (ref.startsWith('hex:')) {
-      stage = resolveHexLevelTarget(ref.slice(4)).level;
+      const normHex = normalizeHexLevelCode(ref.slice(4));
+      const customByHex = normHex
+        ? customLevels.find(l => normalizeHexLevelCode(l.hexId) === normHex)
+        : undefined;
+      if (customByHex) {
+        stage = cloneLevelData(customByHex);
+        matchedCustomName = customByHex.name;
+      } else {
+        stage = resolveHexLevelTarget(ref.slice(4)).level;
+      }
     } else if (WORLD_STAGE_BY_KEY.has(ref)) {
       stage = loadWorldStageByKey(ref);
+    } else if (ref === 'theme:desert') {
+      stage = createWorldDesertStage();
+    } else if (ref === 'theme:snow') {
+      stage = createWorldSnowStage();
+    } else if (ref === 'theme:sky') {
+      stage = createWorldSkyStage();
+    } else if (ref === 'theme:forest') {
+      stage = createWorldForestStage();
+    } else if (ref === 'theme:volcano') {
+      stage = createWorldVolcanoStage();
     } else if (ref === 'secret-vault') {
       stage = createSecretVault();
     } else if (ref === 'world-1-1') {
@@ -1508,8 +1575,14 @@ export function resolveWorldStageForNode(
 
   if (!stage && node.hexId) {
     const normHex = normalizeHexLevelCode(node.hexId);
-    if (normHex && HEX_CATALOG_BY_CODE.has(normHex)) {
-      stage = HEX_CATALOG_BY_CODE.get(normHex)!.loadLevel();
+    if (normHex) {
+      const customByHex = customLevels.find(l => normalizeHexLevelCode(l.hexId) === normHex);
+      if (customByHex) {
+        stage = cloneLevelData(customByHex);
+        matchedCustomName = customByHex.name;
+      } else if (HEX_CATALOG_BY_CODE.has(normHex)) {
+        stage = HEX_CATALOG_BY_CODE.get(normHex)!.loadLevel();
+      }
     }
   }
 
@@ -1524,6 +1597,16 @@ export function resolveWorldStageForNode(
       stage = createWorld2_2();
     } else if (node.theme === 'ghost_house') {
       stage = createWorldGhostHouse();
+    } else if (node.theme === 'desert') {
+      stage = createWorldDesertStage();
+    } else if (node.theme === 'snow') {
+      stage = createWorldSnowStage();
+    } else if (node.theme === 'sky') {
+      stage = createWorldSkyStage();
+    } else if (node.theme === 'forest') {
+      stage = createWorldForestStage();
+    } else if (node.theme === 'volcano') {
+      stage = createWorldVolcanoStage();
     } else if (node.theme === 'castle' || node.isCastle) {
       stage = createWorld1_4();
     } else {

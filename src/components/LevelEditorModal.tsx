@@ -192,6 +192,11 @@ const SMW_PALETTE_SWATCHES: { label: string; color: string }[] = [
   { label: 'Dia SMW', color: '#5c94fc' },
   { label: 'Noite Estrelada', color: '#0c1438' },
   { label: 'Pôr-do-Sol', color: '#c85840' },
+  { label: 'Deserto Dourado', color: '#f4a848' },
+  { label: 'Neve / Geleira', color: '#74b8f8' },
+  { label: 'Céu das Nuvens', color: '#58b4fc' },
+  { label: 'Floresta Verde', color: '#1b5a38' },
+  { label: 'Vulcão Carmesim', color: '#280a0c' },
   { label: 'Caverna', color: '#000000' },
   { label: 'Abismo Marinho', color: '#1840b8' },
   { label: 'Castelo', color: '#140406' },
@@ -237,6 +242,11 @@ const THEME_BG_COLORS: Record<LevelData['theme'], string> = {
   underwater: '#1840b8',
   castle: '#140406',
   ghost_house: '#120822',
+  desert: '#f4a848',
+  snow: '#74b8f8',
+  sky: '#58b4fc',
+  forest: '#1b5a38',
+  volcano: '#280a0c',
 };
 
 const ITEM_CONTENT_OPTIONS: { value: ItemContent; label: string }[] = [
@@ -515,6 +525,9 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
   const [worldDraft, setWorldDraft] = useState<SmwWorldMapJson>(() =>
     worldMapConfig ? cloneWorldMapJson(worldMapConfig) : getDefaultWorldMapJson()
   );
+  const [smb3AssignIslandId, setSmb3AssignIslandId] = useState<string>('wikiworld');
+  const [smb3AssignNodeId, setSmb3AssignNodeId] = useState<string>('wiki-1-overworld');
+  const [smb3AssignHex, setSmb3AssignHex] = useState<string>('0105');
   const worldUndoRef = useRef<SmwWorldMapJson[]>([]);
   const worldRedoRef = useRef<SmwWorldMapJson[]>([]);
   const [worldHistoryRev, setWorldHistoryRev] = useState(0);
@@ -783,6 +796,83 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
         tab: 'blocks',
         brush: { kind: 'tile', tileType: 'ground' },
         preview: () => atlas.tileGround,
+      },
+      {
+        id: 'tile_grass_ground',
+        label: 'Grama',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'grass_ground' },
+        preview: () => atlas.tileGrassGround,
+      },
+      {
+        id: 'tile_dirt',
+        label: 'Terra',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'dirt' },
+        preview: () => atlas.tileDirt,
+      },
+      {
+        id: 'tile_sand_ground',
+        label: 'Areia',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'sand_ground' },
+        preview: () => atlas.tileSandGround,
+      },
+      {
+        id: 'tile_sandstone_brick',
+        label: 'Arenito',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'sandstone_brick' },
+        preview: () => atlas.tileSandstoneBrick,
+      },
+      {
+        id: 'tile_snow_ground',
+        label: 'Neve',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'snow_ground' },
+        preview: () => atlas.tileSnowGround,
+      },
+      {
+        id: 'tile_ice_block',
+        label: 'Gelo',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'ice_block' },
+        preview: () => atlas.tileIceBlock,
+      },
+      {
+        id: 'tile_wood_plank',
+        label: 'Madeira',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'wood_plank' },
+        preview: () => atlas.tileWoodPlank,
+      },
+      {
+        id: 'tile_moss_stone',
+        label: 'Pedra Musgo',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'moss_stone' },
+        preview: () => atlas.tileMossStone,
+      },
+      {
+        id: 'tile_cloud_block',
+        label: 'Nuvem Sólida',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'cloud_block' },
+        preview: () => atlas.tileCloudBlock,
+      },
+      {
+        id: 'tile_obsidian_brick',
+        label: 'Rocha Vulcânica',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'obsidian_brick' },
+        preview: () => atlas.tileObsidianBrick,
+      },
+      {
+        id: 'tile_note_block',
+        label: 'Bloco Musical ♪',
+        tab: 'blocks',
+        brush: { kind: 'tile', tileType: 'note_block', content: 'coin' },
+        preview: () => atlas.tileNoteBlock,
       },
       {
         id: 'tile_brick',
@@ -2429,6 +2519,39 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
           case 'axe':
             sprite = atlas.tileAxeFrames[0];
             break;
+          case 'grass_ground':
+            sprite = atlas.tileGrassGround;
+            break;
+          case 'dirt':
+            sprite = atlas.tileDirt;
+            break;
+          case 'sand_ground':
+            sprite = atlas.tileSandGround;
+            break;
+          case 'sandstone_brick':
+            sprite = atlas.tileSandstoneBrick;
+            break;
+          case 'snow_ground':
+            sprite = atlas.tileSnowGround;
+            break;
+          case 'ice_block':
+            sprite = atlas.tileIceBlock;
+            break;
+          case 'wood_plank':
+            sprite = atlas.tileWoodPlank;
+            break;
+          case 'moss_stone':
+            sprite = atlas.tileMossStone;
+            break;
+          case 'cloud_block':
+            sprite = atlas.tileCloudBlock;
+            break;
+          case 'obsidian_brick':
+            sprite = atlas.tileObsidianBrick;
+            break;
+          case 'note_block':
+            sprite = atlas.tileNoteBlock;
+            break;
         }
 
         ctx.save();
@@ -3276,6 +3399,16 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
             ? 'castle_stone'
             : draft.theme === 'ghost_house'
             ? 'ghost_floor'
+            : draft.theme === 'desert'
+            ? 'sand_ground'
+            : draft.theme === 'snow'
+            ? 'snow_ground'
+            : draft.theme === 'sky'
+            ? 'cloud_block'
+            : draft.theme === 'forest'
+            ? 'grass_ground'
+            : draft.theme === 'volcano'
+            ? 'obsidian_brick'
             : 'ground';
 
         for (let ty = 0; ty < draft.height; ty++) {
@@ -3661,6 +3794,10 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                 notify('Mundo JSON aplicado ao Modo World!');
               }
             }}
+            onEditStageByHex={(stageRef: string) => {
+              setEditorSurface('level');
+              handleImportTemplate(stageRef);
+            }}
             notify={notify}
             notifyError={notifyError}
           />
@@ -3745,6 +3882,11 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
               <option value="underground">Caverna</option>
               <option value="underwater">Água</option>
               <option value="ghost_house">Mansão Fantasma</option>
+              <option value="desert">Deserto</option>
+              <option value="snow">Neve / Gelo</option>
+              <option value="sky">Céu / Nuvens</option>
+              <option value="forest">Floresta</option>
+              <option value="volcano">Vulcão</option>
               <option value="castle">Castelo</option>
             </select>
 
@@ -3947,6 +4089,11 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                   <option value="underground">Caverna Subterrânea</option>
                   <option value="underwater">Fundo do Mar</option>
                   <option value="ghost_house">Mansão Fantasma</option>
+                  <option value="desert">Deserto Dourado</option>
+                  <option value="snow">Geleira / Neve</option>
+                  <option value="sky">Céu / Nuvens</option>
+                  <option value="forest">Floresta Verde</option>
+                  <option value="volcano">Cratera Vulcânica</option>
                   <option value="castle">Castelo do Bowser</option>
                   <option value="bonus">Sala Bônus / Palácio</option>
                 </select>
@@ -4318,12 +4465,20 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                 >
                   <option value="brick">Tijolo</option>
                   <option value="ground">Chão</option>
-                  <option value="hard_block">Bloco Duro</option>
-                  <option value="used_block">Bloco Usado</option>
-                  <option value="question">Bloco ?</option>
-                  <option value="cloud_block">Nuvem</option>
-                  <option value="donut_bridge">Ponte Donut</option>
+                  <option value="grass_ground">Grama</option>
+                  <option value="dirt">Terra</option>
+                  <option value="sand_ground">Areia</option>
+                  <option value="sandstone_brick">Arenito</option>
+                  <option value="snow_ground">Neve</option>
                   <option value="ice_block">Gelo</option>
+                  <option value="wood_plank">Madeira</option>
+                  <option value="moss_stone">Pedra Musgo</option>
+                  <option value="cloud_block">Nuvem Sólida</option>
+                  <option value="obsidian_brick">Rocha Vulcânica</option>
+                  <option value="note_block">Bloco Musical</option>
+                  <option value="hard_block">Bloco Duro</option>
+                  <option value="question_empty">Bloco Usado</option>
+                  <option value="question">Bloco ?</option>
                   <option value="castle_brick">Castelo</option>
                 </select>
                 <span className="text-stone-500">→</span>
@@ -4333,13 +4488,21 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                   className="bg-stone-900 border border-stone-700 rounded px-1.5 py-1 text-amber-200"
                 >
                   <option value="hard_block">Bloco Duro</option>
+                  <option value="grass_ground">Grama</option>
+                  <option value="dirt">Terra</option>
+                  <option value="sand_ground">Areia</option>
+                  <option value="sandstone_brick">Arenito</option>
+                  <option value="snow_ground">Neve</option>
+                  <option value="ice_block">Gelo</option>
+                  <option value="wood_plank">Madeira</option>
+                  <option value="moss_stone">Pedra Musgo</option>
+                  <option value="cloud_block">Nuvem Sólida</option>
+                  <option value="obsidian_brick">Rocha Vulcânica</option>
+                  <option value="note_block">Bloco Musical</option>
                   <option value="brick">Tijolo</option>
                   <option value="ground">Chão</option>
-                  <option value="used_block">Bloco Usado</option>
+                  <option value="question_empty">Bloco Usado</option>
                   <option value="question">Bloco ?</option>
-                  <option value="cloud_block">Nuvem</option>
-                  <option value="donut_bridge">Ponte Donut</option>
-                  <option value="ice_block">Gelo</option>
                   <option value="castle_brick">Castelo</option>
                 </select>
                 <button
@@ -4360,6 +4523,116 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                   Substituir
                 </button>
               </div>
+            </div>
+
+            {/* SMB3 Style: Assign which stage Hexadecimal enters each World Map stage slot */}
+            <div className="flex flex-wrap items-center gap-2 pt-1.5 border-t border-stone-800/80">
+              <span className="text-[10px] font-bold text-emerald-300">
+                INSERIR NO MODO WORLD (SMB3 POR HEX):
+              </span>
+              <select
+                value={smb3AssignIslandId}
+                onChange={e => {
+                  const islId = e.target.value;
+                  setSmb3AssignIslandId(islId);
+                  const found = worldDraft.islands.find(i => i.id === islId);
+                  if (found?.nodes[0]) {
+                    setSmb3AssignNodeId(found.nodes[0].id);
+                  }
+                }}
+                className="bg-stone-900 border border-emerald-600/50 rounded px-1.5 py-1 text-emerald-200 max-w-[160px]"
+              >
+                {worldDraft.islands.map(isl => (
+                  <option key={isl.id} value={isl.id}>
+                    {isl.worldType === 'subworld' ? `Sub ${isl.number}` : `M${isl.number}`} · {isl.name}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={smb3AssignNodeId}
+                onChange={e => setSmb3AssignNodeId(e.target.value)}
+                className="bg-stone-900 border border-stone-700 rounded px-1.5 py-1 text-amber-200 max-w-[175px]"
+              >
+                {(
+                  worldDraft.islands.find(i => i.id === smb3AssignIslandId)?.nodes ||
+                  worldDraft.islands[0]?.nodes ||
+                  []
+                ).map(nd => (
+                  <option key={nd.id} value={nd.id}>
+                    {nd.code} · {nd.title}
+                  </option>
+                ))}
+              </select>
+              <label className="flex items-center gap-1 text-stone-300">
+                <span>HEX:</span>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={smb3AssignHex}
+                  onChange={e => setSmb3AssignHex(e.target.value.toUpperCase().replace(/[^0-9A-F]/g, ''))}
+                  placeholder="0115"
+                  className="w-14 bg-stone-900 border border-purple-500/60 rounded px-1.5 py-1 text-purple-200 uppercase text-center"
+                />
+              </label>
+              <select
+                value=""
+                onChange={e => {
+                  if (e.target.value) setSmb3AssignHex(e.target.value);
+                }}
+                className="bg-stone-900 border border-stone-700 rounded px-1.5 py-1 text-sky-200 max-w-[165px]"
+              >
+                <option value="">Escolher Hex...</option>
+                {CORE_HEX_LEVELS.map(h => (
+                  <option key={h.hexId} value={h.hexId}>
+                    [{h.hexId}] {h.label}
+                  </option>
+                ))}
+                {EXAMPLE_HEX_LEVELS.slice(0, 40).map(h => (
+                  <option key={h.hexId} value={h.hexId}>
+                    [{h.hexId}] {h.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={() => {
+                  const normHex =
+                    normalizeHexLevelCode(smb3AssignHex) ||
+                    normalizeHexLevelCode(currentLevel.hexId) ||
+                    '0105';
+                  handleChangeWorldDraft(draft => {
+                    const isl =
+                      draft.islands.find(i => i.id === smb3AssignIslandId) || draft.islands[0];
+                    const nd = isl?.nodes.find(n => n.id === smb3AssignNodeId) || isl?.nodes[0];
+                    if (nd) {
+                      nd.stageKey = `hex:${normHex}`;
+                      nd.hexId = normHex;
+                    }
+                  }, true);
+                  const nextDraft = cloneWorldMapJson(worldDraft);
+                  const isl =
+                    nextDraft.islands.find(i => i.id === smb3AssignIslandId) || nextDraft.islands[0];
+                  const nd = isl?.nodes.find(n => n.id === smb3AssignNodeId) || isl?.nodes[0];
+                  if (nd) {
+                    nd.stageKey = `hex:${normHex}`;
+                    nd.hexId = normHex;
+                    onApplyWorldMapJson?.(nextDraft, false);
+                    notify(`Hex ${normHex} inserido na fase ${nd.code} (${nd.title}) do Modo World!`);
+                  }
+                }}
+                className="px-2.5 py-1 rounded bg-emerald-700 hover:bg-emerald-600 text-white font-bold cursor-pointer"
+              >
+                Inserir Fase Hex
+              </button>
+              {currentLevel.hexId && (
+                <button
+                  type="button"
+                  onClick={() => setSmb3AssignHex(normalizeHexLevelCode(currentLevel.hexId) || currentLevel.hexId || '0105')}
+                  className="px-2 py-1 rounded bg-purple-950/90 hover:bg-purple-900 border border-purple-500/50 text-purple-200 cursor-pointer"
+                >
+                  Usar Hex Atual ({currentLevel.hexId})
+                </button>
+              )}
             </div>
           </div>
         )}

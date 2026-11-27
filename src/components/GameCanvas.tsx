@@ -548,6 +548,17 @@ export class TileMap {
       type === 'castle_stone' ||
       type === 'ghost_floor' ||
       type === 'ghost_brick' ||
+      type === 'grass_ground' ||
+      type === 'dirt' ||
+      type === 'sand_ground' ||
+      type === 'sandstone_brick' ||
+      type === 'snow_ground' ||
+      type === 'ice_block' ||
+      type === 'wood_plank' ||
+      type === 'moss_stone' ||
+      type === 'cloud_block' ||
+      type === 'obsidian_brick' ||
+      type === 'note_block' ||
       type === 'bonus_block' ||
       type === 'yellow_switch' ||
       type === 'yellow_switch_pressed' ||
@@ -894,6 +905,39 @@ export class TileMap {
             break;
           case 'axe':
             ctx.drawImage(atlas.tileAxeFrames[axeFrame], screenX, screenY);
+            break;
+          case 'grass_ground':
+            ctx.drawImage(atlas.tileGrassGround, screenX, screenY);
+            break;
+          case 'dirt':
+            ctx.drawImage(atlas.tileDirt, screenX, screenY);
+            break;
+          case 'sand_ground':
+            ctx.drawImage(atlas.tileSandGround, screenX, screenY);
+            break;
+          case 'sandstone_brick':
+            ctx.drawImage(atlas.tileSandstoneBrick, screenX, screenY);
+            break;
+          case 'snow_ground':
+            ctx.drawImage(atlas.tileSnowGround, screenX, screenY);
+            break;
+          case 'ice_block':
+            ctx.drawImage(atlas.tileIceBlock, screenX, screenY);
+            break;
+          case 'wood_plank':
+            ctx.drawImage(atlas.tileWoodPlank, screenX, screenY);
+            break;
+          case 'moss_stone':
+            ctx.drawImage(atlas.tileMossStone, screenX, screenY);
+            break;
+          case 'cloud_block':
+            ctx.drawImage(atlas.tileCloudBlock, screenX, screenY);
+            break;
+          case 'obsidian_brick':
+            ctx.drawImage(atlas.tileObsidianBrick, screenX, screenY);
+            break;
+          case 'note_block':
+            ctx.drawImage(atlas.tileNoteBlock, screenX, screenY);
             break;
         }
       }

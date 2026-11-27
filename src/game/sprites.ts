@@ -472,6 +472,17 @@ export class SpriteAtlas {
   public tileExclamBlueActive!: HTMLCanvasElement;
   public tileBlueSwitch!: HTMLCanvasElement;
   public tileBlueSwitchPressed!: HTMLCanvasElement;
+  public tileGrassGround!: HTMLCanvasElement;
+  public tileDirt!: HTMLCanvasElement;
+  public tileSandGround!: HTMLCanvasElement;
+  public tileSandstoneBrick!: HTMLCanvasElement;
+  public tileSnowGround!: HTMLCanvasElement;
+  public tileIceBlock!: HTMLCanvasElement;
+  public tileWoodPlank!: HTMLCanvasElement;
+  public tileMossStone!: HTMLCanvasElement;
+  public tileCloudBlock!: HTMLCanvasElement;
+  public tileObsidianBrick!: HTMLCanvasElement;
+  public tileNoteBlock!: HTMLCanvasElement;
   
   // Pipes
   public pipeTopLeft!: HTMLCanvasElement;
@@ -2869,6 +2880,210 @@ export class SpriteAtlas {
     ctxGhostBrick.fillRect(9, 5, 6, 1);
     ctxGhostBrick.fillRect(5, 13, 5, 1);
     this.tileGhostBrick = cGhostBrick;
+
+    // 2b. Grama (Grass Ground Top + Dirt)
+    const [cGrass, ctxGrass] = createOffscreen(16, 16);
+    ctxGrass.fillStyle = '#8c4c18';
+    ctxGrass.fillRect(0, 0, 16, 16);
+    ctxGrass.fillStyle = '#00a800';
+    ctxGrass.fillRect(0, 0, 16, 5);
+    ctxGrass.fillStyle = '#58d838';
+    ctxGrass.fillRect(0, 0, 16, 2);
+    ctxGrass.fillStyle = '#005800';
+    ctxGrass.fillRect(0, 5, 16, 1);
+    ctxGrass.fillRect(2, 6, 2, 1);
+    ctxGrass.fillRect(8, 6, 3, 1);
+    ctxGrass.fillRect(13, 6, 2, 1);
+    ctxGrass.fillStyle = '#b86c2c';
+    ctxGrass.fillRect(2, 8, 2, 2);
+    ctxGrass.fillRect(10, 10, 3, 2);
+    ctxGrass.fillStyle = '#582808';
+    ctxGrass.fillRect(5, 11, 2, 2);
+    ctxGrass.fillRect(13, 8, 2, 2);
+    ctxGrass.fillRect(0, 15, 16, 1);
+    this.tileGrassGround = cGrass;
+
+    // 2c. Terra (Rich Dirt Block)
+    const [cDirt, ctxDirt] = createOffscreen(16, 16);
+    ctxDirt.fillStyle = '#8c4c18';
+    ctxDirt.fillRect(0, 0, 16, 16);
+    ctxDirt.fillStyle = '#b86c2c';
+    ctxDirt.fillRect(2, 2, 3, 2);
+    ctxDirt.fillRect(10, 4, 2, 2);
+    ctxDirt.fillRect(5, 10, 3, 2);
+    ctxDirt.fillStyle = '#582808';
+    ctxDirt.fillRect(0, 0, 16, 1);
+    ctxDirt.fillRect(7, 2, 2, 2);
+    ctxDirt.fillRect(2, 7, 2, 2);
+    ctxDirt.fillRect(12, 9, 2, 3);
+    ctxDirt.fillRect(0, 14, 16, 2);
+    this.tileDirt = cDirt;
+
+    // 2d. Areia (Desert Sand Ground)
+    const [cSand, ctxSand] = createOffscreen(16, 16);
+    ctxSand.fillStyle = '#e0a040';
+    ctxSand.fillRect(0, 0, 16, 16);
+    ctxSand.fillStyle = '#fce088';
+    ctxSand.fillRect(0, 0, 16, 3);
+    ctxSand.fillRect(2, 6, 3, 1);
+    ctxSand.fillRect(10, 10, 3, 1);
+    ctxSand.fillStyle = '#a86818';
+    ctxSand.fillRect(0, 3, 16, 1);
+    ctxSand.fillRect(4, 8, 2, 2);
+    ctxSand.fillRect(12, 5, 2, 2);
+    ctxSand.fillRect(0, 14, 16, 2);
+    this.tileSandGround = cSand;
+
+    // 2e. Tijolo Pirâmide (Desert Sandstone Brick)
+    const [cSandBrick, ctxSandBrick] = createOffscreen(16, 16);
+    ctxSandBrick.fillStyle = '#d89038';
+    ctxSandBrick.fillRect(0, 0, 16, 16);
+    ctxSandBrick.fillStyle = '#fce098';
+    ctxSandBrick.fillRect(1, 1, 6, 2);
+    ctxSandBrick.fillRect(9, 1, 6, 2);
+    ctxSandBrick.fillRect(1, 9, 2, 2);
+    ctxSandBrick.fillRect(5, 9, 6, 2);
+    ctxSandBrick.fillStyle = '#784010';
+    ctxSandBrick.fillRect(0, 0, 16, 1);
+    ctxSandBrick.fillRect(0, 7, 16, 2);
+    ctxSandBrick.fillRect(0, 15, 16, 1);
+    ctxSandBrick.fillRect(7, 1, 1, 6);
+    ctxSandBrick.fillRect(3, 9, 1, 6);
+    ctxSandBrick.fillRect(11, 9, 1, 6);
+    this.tileSandstoneBrick = cSandBrick;
+
+    // 2f. Neve (Snow Ground)
+    const [cSnow, ctxSnow] = createOffscreen(16, 16);
+    ctxSnow.fillStyle = '#4888d8';
+    ctxSnow.fillRect(0, 0, 16, 16);
+    ctxSnow.fillStyle = '#ffffff';
+    ctxSnow.fillRect(0, 0, 16, 5);
+    ctxSnow.fillStyle = '#b8e8ff';
+    ctxSnow.fillRect(0, 4, 16, 2);
+    ctxSnow.fillRect(2, 6, 3, 1);
+    ctxSnow.fillRect(9, 6, 4, 1);
+    ctxSnow.fillStyle = '#285898';
+    ctxSnow.fillRect(3, 9, 3, 2);
+    ctxSnow.fillRect(10, 11, 3, 2);
+    ctxSnow.fillRect(0, 14, 16, 2);
+    this.tileSnowGround = cSnow;
+
+    // 2g. Gelo (Ice Block)
+    const [cIce, ctxIce] = createOffscreen(16, 16);
+    ctxIce.fillStyle = '#78d8ff';
+    ctxIce.fillRect(0, 0, 16, 16);
+    ctxIce.fillStyle = '#e0f8ff';
+    ctxIce.fillRect(0, 0, 16, 2);
+    ctxIce.fillRect(0, 0, 2, 16);
+    ctxIce.fillRect(3, 4, 4, 2);
+    ctxIce.fillRect(5, 6, 4, 2);
+    ctxIce.fillRect(9, 10, 3, 2);
+    ctxIce.fillStyle = '#3098d8';
+    ctxIce.fillRect(0, 14, 16, 2);
+    ctxIce.fillRect(14, 0, 2, 16);
+    this.tileIceBlock = cIce;
+
+    // 2h. Madeira (Wood Plank / Log)
+    const [cWood, ctxWood] = createOffscreen(16, 16);
+    ctxWood.fillStyle = '#9c5a20';
+    ctxWood.fillRect(0, 0, 16, 16);
+    ctxWood.fillStyle = '#c8803c';
+    ctxWood.fillRect(0, 1, 16, 2);
+    ctxWood.fillRect(0, 9, 16, 2);
+    ctxWood.fillStyle = '#4c2408';
+    ctxWood.fillRect(0, 0, 16, 1);
+    ctxWood.fillRect(0, 7, 16, 2);
+    ctxWood.fillRect(0, 15, 16, 1);
+    ctxWood.fillRect(2, 4, 4, 1);
+    ctxWood.fillRect(10, 12, 4, 1);
+    ctxWood.fillStyle = '#e8b878';
+    ctxWood.fillRect(1, 3, 1, 1);
+    ctxWood.fillRect(14, 3, 1, 1);
+    ctxWood.fillRect(1, 11, 1, 1);
+    ctxWood.fillRect(14, 11, 1, 1);
+    this.tileWoodPlank = cWood;
+
+    // 2i. Pedra Musgo (Forest Moss Stone)
+    const [cMoss, ctxMoss] = createOffscreen(16, 16);
+    ctxMoss.fillStyle = '#687068';
+    ctxMoss.fillRect(0, 0, 16, 16);
+    ctxMoss.fillStyle = '#289838';
+    ctxMoss.fillRect(0, 0, 16, 4);
+    ctxMoss.fillRect(1, 4, 4, 2);
+    ctxMoss.fillRect(9, 4, 5, 2);
+    ctxMoss.fillStyle = '#68d850';
+    ctxMoss.fillRect(0, 0, 16, 1);
+    ctxMoss.fillStyle = '#384038';
+    ctxMoss.fillRect(0, 14, 16, 2);
+    ctxMoss.fillRect(7, 6, 1, 8);
+    ctxMoss.fillRect(1, 9, 14, 1);
+    this.tileMossStone = cMoss;
+
+    // 2j. Nuvem Sólida (Cloud Block)
+    const [cCloudBlk, ctxCloudBlk] = createOffscreen(16, 16);
+    ctxCloudBlk.fillStyle = '#ffffff';
+    ctxCloudBlk.fillRect(1, 1, 14, 14);
+    ctxCloudBlk.fillStyle = '#b8dcff';
+    ctxCloudBlk.fillRect(1, 11, 14, 4);
+    ctxCloudBlk.fillRect(12, 3, 3, 10);
+    ctxCloudBlk.fillStyle = '#2c5498';
+    ctxCloudBlk.fillRect(0, 0, 16, 1);
+    ctxCloudBlk.fillRect(0, 15, 16, 1);
+    ctxCloudBlk.fillRect(0, 0, 1, 16);
+    ctxCloudBlk.fillRect(15, 0, 1, 16);
+    ctxCloudBlk.fillStyle = '#3c68b8';
+    ctxCloudBlk.fillRect(5, 6, 1, 2);
+    ctxCloudBlk.fillRect(10, 6, 1, 2);
+    this.tileCloudBlock = cCloudBlk;
+
+    // 2k. Rocha Vulcânica (Volcano Obsidian Brick)
+    const [cObsid, ctxObsid] = createOffscreen(16, 16);
+    ctxObsid.fillStyle = '#381c20';
+    ctxObsid.fillRect(0, 0, 16, 16);
+    ctxObsid.fillStyle = '#58282c';
+    ctxObsid.fillRect(1, 1, 6, 2);
+    ctxObsid.fillRect(9, 1, 6, 2);
+    ctxObsid.fillRect(5, 9, 6, 2);
+    ctxObsid.fillStyle = '#f85818';
+    ctxObsid.fillRect(2, 5, 3, 1);
+    ctxObsid.fillRect(11, 12, 3, 1);
+    ctxObsid.fillStyle = '#18080a';
+    ctxObsid.fillRect(0, 0, 16, 1);
+    ctxObsid.fillRect(0, 7, 16, 2);
+    ctxObsid.fillRect(0, 15, 16, 1);
+    ctxObsid.fillRect(7, 1, 1, 6);
+    ctxObsid.fillRect(3, 9, 1, 6);
+    ctxObsid.fillRect(11, 9, 1, 6);
+    this.tileObsidianBrick = cObsid;
+
+    // 2l. Bloco Musical (Note Block ♪)
+    const [cNote, ctxNote] = createOffscreen(16, 16);
+    const notePattern = [
+      'BBBBBBBBBBBBBBBB',
+      'BWWWWWWWWWWWWWWB',
+      'BW............DB',
+      'BW....MMMMMM..DB',
+      'BW....MMMMMM..DB',
+      'BW....M....M..DB',
+      'BW....M....M..DB',
+      'BW...MM...MM..DB',
+      'BW..MMM..MMM..DB',
+      'BW..MMM..MMM..DB',
+      'BW...M....M...DB',
+      'BW............DB',
+      'BW............DB',
+      'BDDDDDDDDDDDDDDB',
+      'BDDDDDDDDDDDDDDB',
+      'BBBBBBBBBBBBBBBB',
+    ];
+    drawPixelGrid(ctxNote, notePattern, {
+      B: '#000000',
+      W: '#ffffff',
+      '.': '#f8f0e0',
+      D: '#b8b0d0',
+      M: '#d83878',
+    });
+    this.tileNoteBlock = cNote;
 
     // 3. Question Blocks (4 animation frames)
     this.tileQuestionFrames = [];

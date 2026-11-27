@@ -28,6 +28,10 @@ import {
   Upload,
   FileJson,
   Sparkles,
+  Sun,
+  Snowflake,
+  Cloud,
+  Flame,
 } from 'lucide-react';
 import {
   JOHANNNNES_CASTLE_1_BOSS_NAME,
@@ -713,6 +717,16 @@ export const SmwOverworldMap: React.FC<SmwOverworldMapProps> = ({
         return <Waves className="w-4 h-4 text-cyan-100" />;
       case 'ghost_house':
         return <Ghost className="w-4 h-4 text-purple-100" />;
+      case 'desert':
+        return <Sun className="w-4 h-4 text-amber-200" />;
+      case 'snow':
+        return <Snowflake className="w-4 h-4 text-sky-100" />;
+      case 'sky':
+        return <Cloud className="w-4 h-4 text-white" />;
+      case 'forest':
+        return <Trees className="w-4 h-4 text-lime-200" />;
+      case 'volcano':
+        return <Flame className="w-4 h-4 text-orange-300" />;
       case 'castle':
         return <Castle className="w-4 h-4 text-amber-100" />;
     }

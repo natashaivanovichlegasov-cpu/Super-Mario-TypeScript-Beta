@@ -3900,6 +3900,16 @@ export function applyTerrainPresetToLevel(level: LevelData, preset: TerrainPrese
       ? 'castle_stone'
       : level.theme === 'ghost_house'
       ? 'ghost_floor'
+      : level.theme === 'desert'
+      ? 'sand_ground'
+      : level.theme === 'snow'
+      ? 'snow_ground'
+      : level.theme === 'sky'
+      ? 'cloud_block'
+      : level.theme === 'forest'
+      ? 'grass_ground'
+      : level.theme === 'volcano'
+      ? 'obsidian_brick'
       : 'ground';
   const blockType: TileType =
     level.theme === 'underground'
@@ -3910,6 +3920,16 @@ export function applyTerrainPresetToLevel(level: LevelData, preset: TerrainPrese
       ? 'ghost_brick'
       : level.theme === 'underwater'
       ? 'coral'
+      : level.theme === 'desert'
+      ? 'sandstone_brick'
+      : level.theme === 'snow'
+      ? 'ice_block'
+      : level.theme === 'sky'
+      ? 'note_block'
+      : level.theme === 'forest'
+      ? 'wood_plank'
+      : level.theme === 'volcano'
+      ? 'obsidian_brick'
       : 'brick';
 
   const w = level.width;
@@ -4026,30 +4046,34 @@ export function createBlankCustomLevel(
       ? 'castle_stone'
       : theme === 'ghost_house'
       ? 'ghost_floor'
+      : theme === 'desert'
+      ? 'sand_ground'
+      : theme === 'snow'
+      ? 'snow_ground'
+      : theme === 'sky'
+      ? 'cloud_block'
+      : theme === 'forest'
+      ? 'grass_ground'
+      : theme === 'volcano'
+      ? 'obsidian_brick'
       : 'ground';
+
+  const subGroundType: TileType =
+    theme === 'forest' ? 'dirt' : theme === 'snow' ? 'ice_block' : groundType;
 
   const ceilingType: TileType =
     theme === 'castle' ? 'castle_stone' : theme === 'ghost_house' ? 'ghost_brick' : 'underground_brick';
 
   for (let x = 0; x < width; x++) {
     grid[13][x] = { type: groundType, content: 'none', bumpOffset: 0, bumpVel: 0 };
-    grid[14][x] = { type: groundType, content: 'none', bumpOffset: 0, bumpVel: 0 };
+    grid[14][x] = { type: subGroundType, content: 'none', bumpOffset: 0, bumpVel: 0 };
     if (theme === 'underground' || theme === 'castle' || theme === 'ghost_house') {
       grid[0][x] = { type: ceilingType, content: 'none', bumpOffset: 0, bumpVel: 0 };
       grid[1][x] = { type: ceilingType, content: 'none', bumpOffset: 0, bumpVel: 0 };
     }
   }
 
-  const bgColor =
-    theme === 'overworld'
-      ? '#5c94fc'
-      : theme === 'underground'
-      ? '#000000'
-      : theme === 'underwater'
-      ? '#1840b8'
-      : theme === 'ghost_house'
-      ? '#120822'
-      : '#140406';
+  const bgColor = THEME_DEFAULT_BG[theme] ?? '#5c94fc';
 
   let flagX = (width - 12) * 16;
   let castleX = (width - 7) * 16;
@@ -4113,6 +4137,11 @@ const VALID_THEMES = new Set<LevelData['theme']>([
   'castle',
   'underwater',
   'ghost_house',
+  'desert',
+  'snow',
+  'sky',
+  'forest',
+  'volcano',
 ]);
 
 const THEME_DEFAULT_BG: Record<LevelData['theme'], string> = {
@@ -4121,6 +4150,11 @@ const THEME_DEFAULT_BG: Record<LevelData['theme'], string> = {
   underwater: '#1840b8',
   castle: '#140406',
   ghost_house: '#120822',
+  desert: '#f4a848',
+  snow: '#74b8f8',
+  sky: '#58b4fc',
+  forest: '#1b5a38',
+  volcano: '#280a0c',
 };
 
 const VALID_TILE_TYPES = new Set<TileType>([
@@ -4174,6 +4208,17 @@ const VALID_TILE_TYPES = new Set<TileType>([
   'blue_switch',
   'blue_switch_pressed',
   'bonus_block',
+  'grass_ground',
+  'dirt',
+  'sand_ground',
+  'sandstone_brick',
+  'snow_ground',
+  'ice_block',
+  'wood_plank',
+  'moss_stone',
+  'cloud_block',
+  'obsidian_brick',
+  'note_block',
 ]);
 
 const VALID_ITEM_CONTENTS = new Set<ItemContent>([
@@ -4613,6 +4658,11 @@ export function parseImportedLevelFile(rawJson: string): LevelData {
     rawMusic === 'underwater' ||
     rawMusic === 'castle' ||
     rawMusic === 'ghost_house' ||
+    rawMusic === 'desert' ||
+    rawMusic === 'snow' ||
+    rawMusic === 'sky' ||
+    rawMusic === 'forest' ||
+    rawMusic === 'volcano' ||
     rawMusic === 'bonus'
       ? rawMusic
       : undefined;
@@ -4800,6 +4850,212 @@ export function hasValidStageGoal(level: LevelData): boolean {
   }
   return false;
 }
+
+function buildWorldBiomeStageTemplate(opts: {
+  id: string;
+  hexId: string;
+  name: string;
+  theme: LevelData['theme'];
+  biomeLabel: string;
+  topTile: TileType;
+  subTile: TileType;
+  platformTile: TileType;
+  accentTile: TileType;
+  useLavaPits?: boolean;
+  lowGravity?: boolean;
+  enemyTypes: [EnemyType, EnemyType, EnemyType];
+}): LevelData {
+  const level = createBlankCustomLevel(opts.name, opts.theme, 128, opts.id);
+  level.isCustom = false;
+  level.hexId = opts.hexId;
+  level.biomeLabel = opts.biomeLabel;
+  level.musicTrack = opts.theme;
+  if (opts.lowGravity) {
+    level.lowGravity = true;
+  }
+
+  const pits: [number, number][] = [
+    [28, 30],
+    [58, 60],
+    [88, 91],
+  ];
+
+  for (let x = 0; x < level.width; x++) {
+    const isPit = pits.some(([a, b]) => x >= a && x <= b);
+    if (isPit) {
+      if (opts.useLavaPits) {
+        level.tiles[13][x] = { type: 'lava', content: 'none', bumpOffset: 0, bumpVel: 0 };
+        level.tiles[14][x] = { type: 'lava', content: 'none', bumpOffset: 0, bumpVel: 0 };
+      } else {
+        level.tiles[13][x] = null;
+        level.tiles[14][x] = null;
+      }
+    } else {
+      level.tiles[13][x] = { type: opts.topTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+      level.tiles[14][x] = { type: opts.subTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+    }
+  }
+
+  // Stepped terrain hills with grass/dirt/snow/sand/obsidian
+  for (let x = 14; x <= 21; x++) {
+    level.tiles[11][x] = { type: opts.topTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+    level.tiles[12][x] = { type: opts.subTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+  }
+  for (let x = 35; x <= 44; x++) {
+    level.tiles[10][x] = { type: opts.platformTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+  }
+  for (let x = 66; x <= 74; x++) {
+    level.tiles[11][x] = { type: opts.topTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+    level.tiles[12][x] = { type: opts.subTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+  }
+
+  // Bridges / platforms & Note Block jumps
+  level.tiles[9][18] = { type: 'exclam_yellow', content: 'mushroom', bumpOffset: 0, bumpVel: 0 };
+  level.tiles[9][24] = { type: 'note_block', content: 'coin', bumpOffset: 0, bumpVel: 0, coinsLeft: 3 };
+  level.tiles[9][25] = { type: opts.accentTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+  level.tiles[9][26] = { type: 'question', content: 'coin', bumpOffset: 0, bumpVel: 0 };
+  level.tiles[10][29] = { type: 'note_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
+
+  level.tiles[7][39] = { type: 'question', content: 'coin', bumpOffset: 0, bumpVel: 0 };
+  level.tiles[7][40] = { type: opts.accentTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+  level.tiles[7][41] = { type: 'question', content: 'coin', bumpOffset: 0, bumpVel: 0 };
+
+  for (let x = 58; x <= 60; x++) {
+    level.tiles[10][x] = { type: opts.platformTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+  }
+  level.tiles[10][62] = { type: 'note_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
+  level.tiles[6][69] = { type: opts.platformTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+  level.tiles[6][70] = { type: 'exclam_yellow', content: 'mushroom', bumpOffset: 0, bumpVel: 0 };
+  level.tiles[6][71] = { type: opts.platformTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+
+  for (let x = 88; x <= 91; x++) {
+    level.tiles[9][x] = { type: opts.platformTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+  }
+  level.tiles[12][86] = { type: 'note_block', content: 'none', bumpOffset: 0, bumpVel: 0 };
+
+  // Staircase before goal
+  for (let s = 1; s <= 4; s++) {
+    const sx = 104 + s;
+    for (let sy = 13 - s; sy <= 12; sy++) {
+      level.tiles[sy][sx] = { type: opts.platformTile, content: 'none', bumpOffset: 0, bumpVel: 0 };
+    }
+  }
+
+  // Pipes & enemies
+  placePipe(level.tiles, 48, 12, 3);
+  placePipe(level.tiles, 78, 12, 2);
+
+  const [e1, e2, e3] = opts.enemyTypes;
+  level.enemies = [
+    { type: e1, x: 17 * 16, y: 10 * 16 - 4 },
+    { type: e2, x: 38 * 16, y: 9 * 16 - 4 },
+    { type: e1, x: 52 * 16, y: 12 * 16 },
+    { type: e3, x: 69 * 16, y: 10 * 16 - 4 },
+    { type: e2, x: 82 * 16, y: 11 * 16 },
+    { type: e1, x: 96 * 16, y: 12 * 16 },
+  ];
+
+  level.coins = [
+    { x: 24 * 16 + 4, y: 6 * 16 },
+    { x: 25 * 16 + 4, y: 6 * 16 },
+    { x: 39 * 16 + 4, y: 5 * 16 },
+    { x: 40 * 16 + 4, y: 5 * 16 },
+    { x: 59 * 16 + 4, y: 8 * 16 },
+    { x: 89 * 16 + 4, y: 7 * 16 },
+    { x: 90 * 16 + 4, y: 7 * 16 },
+  ];
+
+  level.wCoins = [
+    { x: 29 * 16 + 2, y: 6 * 16 },
+    { x: 40 * 16 + 2, y: 4 * 16 },
+    { x: 70 * 16 + 2, y: 3 * 16 },
+    { x: 90 * 16 + 2, y: 6 * 16 },
+  ];
+
+  level.checkpoints = [
+    { x: 64 * 16, respawnPos: { x: 64 * 16, y: 12 * 16 }, visible: true },
+  ];
+
+  return level;
+}
+
+export function createWorldDesertStage(): LevelData {
+  return buildWorldBiomeStageTemplate({
+    id: 'world-desert',
+    hexId: '0115',
+    name: 'DESERTO DOURADO',
+    theme: 'desert',
+    biomeLabel: 'DUNAS DO DESERTO · AREIA & ARENITO',
+    topTile: 'sand_ground',
+    subTile: 'sandstone_brick',
+    platformTile: 'sandstone_brick',
+    accentTile: 'hard_block',
+    enemyTypes: ['koopa', 'red_koopa', 'hammer_bro'],
+  });
+}
+
+export function createWorldSnowStage(): LevelData {
+  return buildWorldBiomeStageTemplate({
+    id: 'world-snow',
+    hexId: '0116',
+    name: 'GELEIRA ALVA',
+    theme: 'snow',
+    biomeLabel: 'VALE DE NEVE & BLOCOS DE GELO',
+    topTile: 'snow_ground',
+    subTile: 'ice_block',
+    platformTile: 'ice_block',
+    accentTile: 'snow_ground',
+    enemyTypes: ['koopa', 'paratroopa', 'spiny'],
+  });
+}
+
+export function createWorldSkyStage(): LevelData {
+  return buildWorldBiomeStageTemplate({
+    id: 'world-sky',
+    hexId: '0117',
+    name: 'NUVENS NOTA',
+    theme: 'sky',
+    biomeLabel: 'CEU DAS NUVENS & BLOCOS MUSICAIS',
+    topTile: 'cloud_block',
+    subTile: 'cloud_block',
+    platformTile: 'note_block',
+    accentTile: 'cloud_block',
+    lowGravity: true,
+    enemyTypes: ['paratroopa', 'paratroopa', 'red_koopa'],
+  });
+}
+
+export function createWorldForestStage(): LevelData {
+  return buildWorldBiomeStageTemplate({
+    id: 'world-forest',
+    hexId: '0118',
+    name: 'BOSQUE VERDE',
+    theme: 'forest',
+    biomeLabel: 'FLORESTA DE GRAMA, TERRA & MADEIRA',
+    topTile: 'grass_ground',
+    subTile: 'dirt',
+    platformTile: 'wood_plank',
+    accentTile: 'moss_stone',
+    enemyTypes: ['goomba', 'koopa', 'red_koopa'],
+  });
+}
+
+export function createWorldVolcanoStage(): LevelData {
+  return buildWorldBiomeStageTemplate({
+    id: 'world-volcano',
+    hexId: '0119',
+    name: 'CRATERA VULCAO',
+    theme: 'volcano',
+    biomeLabel: 'CRATERA VULCANICA · ROCHA & LAVA',
+    topTile: 'obsidian_brick',
+    subTile: 'obsidian_brick',
+    platformTile: 'bridge',
+    accentTile: 'moss_stone',
+    useLavaPits: true,
+    enemyTypes: ['dry_bones', 'buzzy', 'hammer_bro'],
+  });
+}
+
 
 
 

@@ -2104,9 +2104,22 @@ export class GameEngine {
     const starBoost = this.marioStarTimer > 0 ? 1.15 : 1;
     const maxSpeed = (isUnderwater ? (isRunning ? 2.2 : 1.55) : (isRunning ? 3.4 : 2.0)) * starBoost;
     const accel = isUnderwater ? 0.13 : (isRunning ? 0.22 : 0.16);
-    // Ground friction: 0.72 stops Mario quickly when directional key is released (eliminates ice-like excessive sliding)
-    // Air/Water friction: slightly looser for natural momentum control
-    const friction = isUnderwater ? (this.marioGrounded ? 0.78 : 0.92) : (this.marioGrounded ? 0.72 : 0.90);
+    const groundCenterTx = Math.floor((this.marioX + 8) / GameEngine.TILE_SIZE);
+    const groundUnderTy = Math.floor((this.marioY + this.getMarioHeight() + 2) / GameEngine.TILE_SIZE);
+    const groundUnderTile =
+      groundUnderTy >= 0 && groundUnderTy < this.level.height && groundCenterTx >= 0 && groundCenterTx < this.level.width
+        ? this.level.tiles[groundUnderTy]?.[groundCenterTx]
+        : null;
+    const isOnIce = this.marioGrounded && groundUnderTile?.type === 'ice_block';
+    const friction = isUnderwater
+      ? this.marioGrounded
+        ? 0.78
+        : 0.92
+      : this.marioGrounded
+      ? isOnIce
+        ? 0.96
+        : 0.72
+      : 0.90;
 
     // Tanooki Statue Mode: Holding Down in Tanooki suit turns into invulnerable statue
     this.isStatue = this.marioPower === 'tanooki' && this.controls.down && this.marioGrounded;
@@ -2578,6 +2591,24 @@ export class GameEngine {
             this.triggerSpinBounce(t.tileX * GameEngine.TILE_SIZE + 8, t.tileY * GameEngine.TILE_SIZE);
             break;
           }
+          if (t.tile.type === 'note_block') {
+            this.marioY = t.tileY * GameEngine.TILE_SIZE - height;
+            const highJump = Boolean(this.controls.jump || this.controls.spinJump);
+            this.marioVy = highJump ? -8.8 : -5.6;
+            this.marioGrounded = false;
+            this.isSpinJumping = false;
+            this.spinJumpTimer = 0;
+            this.stompComboCount = 0;
+            t.tile.bumpOffset = 4;
+            t.tile.bumpVel = 1.6;
+            this.sound.playNoteBlockBounce();
+            this.particleSystem.emitNoteBlockNotes(
+              t.tileX * GameEngine.TILE_SIZE + 8,
+              t.tileY * GameEngine.TILE_SIZE
+            );
+            this.marioState = 'jumping';
+            break;
+          }
           this.marioY = t.tileY * GameEngine.TILE_SIZE - height;
           this.marioVy = 0;
           this.marioGrounded = true;
@@ -2805,6 +2836,19 @@ export class GameEngine {
 
     if (block.type === 'bonus_block') {
       this.resolveBonusStageBlock(tx, ty, block);
+      return;
+    }
+
+    if (block.type === 'note_block') {
+      this.sound.playNoteBlockBounce();
+      this.particleSystem.emitNoteBlockNotes(tx * GameEngine.TILE_SIZE + 8, ty * GameEngine.TILE_SIZE);
+      if (block.coinsLeft && block.coinsLeft > 0) {
+        block.coinsLeft--;
+        this.spawnCoin(tx * GameEngine.TILE_SIZE, (ty - 1) * GameEngine.TILE_SIZE);
+      } else if (block.content && block.content !== 'none') {
+        this.spawnBlockContent(tx, ty, block.content);
+        block.content = 'none';
+      }
       return;
     }
 
@@ -5717,14 +5761,18 @@ export class GameEngine {
       this.sound.playMusic(this.level.musicTrack);
       return;
     }
-    if (theme === 'underground') {
-      this.sound.playMusic('underground');
-    } else if (theme === 'castle') {
-      this.sound.playMusic('castle');
-    } else if (theme === 'underwater') {
-      this.sound.playMusic('underwater');
-    } else if (theme === 'ghost_house') {
-      this.sound.playMusic('ghost_house');
+    if (
+      theme === 'underground' ||
+      theme === 'castle' ||
+      theme === 'underwater' ||
+      theme === 'ghost_house' ||
+      theme === 'desert' ||
+      theme === 'snow' ||
+      theme === 'sky' ||
+      theme === 'forest' ||
+      theme === 'volcano'
+    ) {
+      this.sound.playMusic(theme);
     } else {
       this.sound.playMusic('overworld');
     }
@@ -6332,6 +6380,7 @@ export class GameEngine {
           block.type === 'underground_brick' ||
           block.type === 'ghost_brick' ||
           block.type === 'question' ||
+          block.type === 'note_block' ||
           (exclamCol !== null && this.isSwitchUnlocked(exclamCol)))
       ) {
         this.hitBlock(hitTileX, hitTileY, block);
@@ -8487,6 +8536,17 @@ export class GameEngine {
       type === 'castle_stone' ||
       type === 'ghost_floor' ||
       type === 'ghost_brick' ||
+      type === 'grass_ground' ||
+      type === 'dirt' ||
+      type === 'sand_ground' ||
+      type === 'sandstone_brick' ||
+      type === 'snow_ground' ||
+      type === 'ice_block' ||
+      type === 'wood_plank' ||
+      type === 'moss_stone' ||
+      type === 'cloud_block' ||
+      type === 'obsidian_brick' ||
+      type === 'note_block' ||
       this.isAnySwitchTile(type) ||
       type === 'bonus_block' ||
       (this.getExclamBlockColor(type) !== null &&
@@ -9374,6 +9434,31 @@ export class GameEngine {
       return;
     }
 
+    if (this.level.theme === 'desert') {
+      this.renderDesertParallax(ctx, camX);
+      return;
+    }
+
+    if (this.level.theme === 'snow') {
+      this.renderSnowParallax(ctx, camX);
+      return;
+    }
+
+    if (this.level.theme === 'sky') {
+      this.renderSkyParallax(ctx, camX);
+      return;
+    }
+
+    if (this.level.theme === 'forest') {
+      this.renderForestParallax(ctx, camX);
+      return;
+    }
+
+    if (this.level.theme === 'volcano') {
+      this.renderVolcanoParallax(ctx, camX);
+      return;
+    }
+
     if (this.level.theme !== 'overworld') return;
 
     this.renderOverworldParallax(ctx, camX);
@@ -9398,6 +9483,277 @@ export class GameEngine {
         }
       }
     });
+  }
+
+  private renderDesertParallax(ctx: CanvasRenderingContext2D, camX: number) {
+    const timeSec = Date.now() / 1000;
+    // Layer 0: Warm sun & golden haze bands
+    ctx.fillStyle = '#f8c860';
+    ctx.fillRect(0, 146, GameEngine.NES_WIDTH, 32);
+    ctx.fillStyle = '#f8d888';
+    ctx.fillRect(0, 178, GameEngine.NES_WIDTH, 34);
+    ctx.fillStyle = '#fff4b0';
+    ctx.beginPath();
+    ctx.arc(204, 52, 16, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Layer 1: Distant pyramids (0.16x parallax)
+    this.renderParallaxPeriod(240, camX * 0.16, (sx) => {
+      ctx.fillStyle = '#c88038';
+      ctx.beginPath();
+      ctx.moveTo(sx + 10, 208);
+      ctx.lineTo(sx + 68, 118);
+      ctx.lineTo(sx + 126, 208);
+      ctx.closePath();
+      ctx.fill();
+      ctx.fillStyle = '#e09c48';
+      ctx.beginPath();
+      ctx.moveTo(sx + 68, 118);
+      ctx.lineTo(sx + 68, 208);
+      ctx.lineTo(sx + 10, 208);
+      ctx.closePath();
+      ctx.fill();
+
+      ctx.fillStyle = '#b87030';
+      ctx.beginPath();
+      ctx.moveTo(sx + 132, 208);
+      ctx.lineTo(sx + 182, 134);
+      ctx.lineTo(sx + 232, 208);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // Layer 2: Rolling sand dunes & saguaro cacti (0.42x parallax)
+    this.renderParallaxPeriod(192, camX * 0.42, (sx, idx) => {
+      ctx.fillStyle = '#e8aa50';
+      ctx.beginPath();
+      ctx.arc(sx + 48, 214, 48, Math.PI, 0);
+      ctx.arc(sx + 144, 216, 54, Math.PI, 0);
+      ctx.fill();
+      // Cactus silhouette
+      const cx = sx + 92 + ((Math.abs(idx) * 17) % 24);
+      ctx.fillStyle = '#2c8848';
+      ctx.fillRect(cx, 168, 6, 36);
+      ctx.fillRect(cx - 5, 178, 5, 4);
+      ctx.fillRect(cx - 5, 170, 3, 10);
+      ctx.fillRect(cx + 6, 182, 5, 4);
+      ctx.fillRect(cx + 8, 173, 3, 12);
+    });
+
+    // Gentle drifting heat shimmer specks
+    this.renderParallaxPeriod(128, camX * 0.25 + timeSec * 12, (sx, idx) => {
+      ctx.fillStyle = 'rgba(255, 248, 200, 0.35)';
+      ctx.fillRect(sx + ((Math.abs(idx) * 29) % 90), 84 + ((Math.abs(idx) * 11) % 36), 6, 2);
+    });
+  }
+
+  private renderSnowParallax(ctx: CanvasRenderingContext2D, camX: number) {
+    const timeSec = Date.now() / 1000;
+    // Layer 0: Crisp winter horizon mist
+    ctx.fillStyle = '#9cccf8';
+    ctx.fillRect(0, 140, GameEngine.NES_WIDTH, 72);
+
+    // Layer 1: Glacial alpine peaks (0.18x parallax)
+    this.renderParallaxPeriod(240, camX * 0.18, (sx) => {
+      ctx.fillStyle = '#5c8cc8';
+      ctx.beginPath();
+      ctx.moveTo(sx, 208);
+      ctx.lineTo(sx + 56, 106);
+      ctx.lineTo(sx + 112, 208);
+      ctx.lineTo(sx + 174, 120);
+      ctx.lineTo(sx + 240, 208);
+      ctx.closePath();
+      ctx.fill();
+
+      // Snow caps
+      ctx.fillStyle = '#eef8ff';
+      ctx.beginPath();
+      ctx.moveTo(sx + 56, 106);
+      ctx.lineTo(sx + 74, 134);
+      ctx.lineTo(sx + 58, 128);
+      ctx.lineTo(sx + 40, 134);
+      ctx.closePath();
+      ctx.fill();
+      ctx.beginPath();
+      ctx.moveTo(sx + 174, 120);
+      ctx.lineTo(sx + 190, 144);
+      ctx.lineTo(sx + 174, 138);
+      ctx.lineTo(sx + 158, 146);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // Layer 2: Frosted pine silhouettes & snowbanks (0.42x parallax)
+    this.renderParallaxPeriod(160, camX * 0.42, (sx) => {
+      ctx.fillStyle = '#cce8ff';
+      ctx.beginPath();
+      ctx.arc(sx + 40, 214, 42, Math.PI, 0);
+      ctx.arc(sx + 120, 214, 48, Math.PI, 0);
+      ctx.fill();
+
+      const drawPine = (px: number, py: number) => {
+        ctx.fillStyle = '#205858';
+        ctx.beginPath();
+        ctx.moveTo(px + 10, py - 28);
+        ctx.lineTo(px, py);
+        ctx.lineTo(px + 20, py);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#eef8ff';
+        ctx.beginPath();
+        ctx.moveTo(px + 10, py - 28);
+        ctx.lineTo(px + 5, py - 16);
+        ctx.lineTo(px + 15, py - 16);
+        ctx.closePath();
+        ctx.fill();
+      };
+      drawPine(sx + 24, 186);
+      drawPine(sx + 104, 184);
+    });
+
+    // Ambient falling snowflakes
+    for (let i = 0; i < 24; i++) {
+      const fx = Math.floor((i * 37 + timeSec * 14 - camX * 0.3) % GameEngine.NES_WIDTH);
+      const sx = fx < 0 ? fx + GameEngine.NES_WIDTH : fx;
+      const fy = Math.floor((i * 23 + timeSec * (18 + (i % 3) * 6)) % (GameEngine.NES_HEIGHT - 24));
+      ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#d8f0ff';
+      ctx.fillRect(sx, fy, 2, 2);
+    }
+  }
+
+  private renderSkyParallax(ctx: CanvasRenderingContext2D, camX: number) {
+    const timeSec = Date.now() / 1000;
+    // Lower atmospheric cloud sea
+    ctx.fillStyle = '#a8d8ff';
+    ctx.fillRect(0, 152, GameEngine.NES_WIDTH, 88);
+
+    // Distant floating cloud islands (0.18x parallax)
+    this.renderParallaxPeriod(200, camX * 0.18 + timeSec * 6, (sx, idx) => {
+      const y = 52 + ((Math.abs(idx) * 23) % 44);
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(sx + 24, y + 10, 14, 0, Math.PI * 2);
+      ctx.arc(sx + 44, y + 6, 18, 0, Math.PI * 2);
+      ctx.arc(sx + 64, y + 10, 14, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#d4ecff';
+      ctx.fillRect(sx + 16, y + 14, 56, 8);
+    });
+
+    // Midground giant puffy cloud banks at horizon (0.40x parallax)
+    this.renderParallaxPeriod(128, camX * 0.40, (sx) => {
+      ctx.fillStyle = '#eef8ff';
+      ctx.beginPath();
+      ctx.arc(sx + 24, 198, 28, Math.PI, 0);
+      ctx.arc(sx + 68, 194, 34, Math.PI, 0);
+      ctx.arc(sx + 110, 200, 24, Math.PI, 0);
+      ctx.fill();
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(sx, 198, 128, 42);
+    });
+  }
+
+  private renderForestParallax(ctx: CanvasRenderingContext2D, camX: number) {
+    const timeSec = Date.now() / 1000;
+    // Deep forest mist backdrop
+    ctx.fillStyle = '#14442c';
+    ctx.fillRect(0, 32, GameEngine.NES_WIDTH, 180);
+
+    // Layer 1: Distant giant ancient trunks & canopy arches (0.20x parallax)
+    this.renderParallaxPeriod(192, camX * 0.20, (sx) => {
+      ctx.fillStyle = '#1e3824';
+      ctx.fillRect(sx + 20, 24, 24, 188);
+      ctx.fillRect(sx + 116, 24, 28, 188);
+      ctx.fillStyle = '#185834';
+      ctx.beginPath();
+      ctx.arc(sx + 32, 38, 36, 0, Math.PI);
+      ctx.arc(sx + 130, 34, 42, 0, Math.PI);
+      ctx.fill();
+    });
+
+    // Layer 2: Midground woodland foliage & glowing fireflies (0.44x parallax)
+    this.renderParallaxPeriod(160, camX * 0.44, (sx, idx) => {
+      ctx.fillStyle = '#246e3c';
+      ctx.beginPath();
+      ctx.arc(sx + 36, 204, 34, Math.PI, 0);
+      ctx.arc(sx + 116, 208, 40, Math.PI, 0);
+      ctx.fill();
+
+      // Sunbeam filtering through canopy
+      ctx.fillStyle = 'rgba(184, 248, 144, 0.08)';
+      ctx.beginPath();
+      ctx.moveTo(sx + 56, 24);
+      ctx.lineTo(sx + 80, 24);
+      ctx.lineTo(sx + 104, 208);
+      ctx.lineTo(sx + 68, 208);
+      ctx.closePath();
+      ctx.fill();
+
+      // Blinking forest firefly
+      const fx = sx + 54 + Math.sin(timeSec * 2 + idx) * 14;
+      const fy = 128 + Math.cos(timeSec * 1.7 + idx * 2) * 18;
+      ctx.fillStyle = Math.floor(timeSec * 3 + idx) % 2 === 0 ? '#d8fc68' : '#88d840';
+      ctx.fillRect(Math.round(fx), Math.round(fy), 3, 3);
+    });
+  }
+
+  private renderVolcanoParallax(ctx: CanvasRenderingContext2D, camX: number) {
+    const timeSec = Date.now() / 1000;
+    const flicker = Math.floor(Date.now() / 140) % 2;
+
+    // Layer 0: Molten crimson horizon glow
+    ctx.fillStyle = flicker === 0 ? 'rgba(232, 72, 16, 0.24)' : 'rgba(248, 104, 24, 0.30)';
+    ctx.fillRect(0, 144, GameEngine.NES_WIDTH, 96);
+
+    // Layer 1: Smoking volcanic calderas (0.18x parallax)
+    this.renderParallaxPeriod(240, camX * 0.18, (sx) => {
+      ctx.fillStyle = '#2a0e12';
+      ctx.beginPath();
+      ctx.moveTo(sx + 4, 208);
+      ctx.lineTo(sx + 54, 108);
+      ctx.lineTo(sx + 78, 108);
+      ctx.lineTo(sx + 128, 208);
+      ctx.closePath();
+      ctx.fill();
+
+      // Glowing lava crater rim
+      ctx.fillStyle = '#f85810';
+      ctx.fillRect(sx + 55, 108, 22, 4);
+      // Lava fissure down slope
+      ctx.fillRect(sx + 64, 112, 3, 28);
+      ctx.fillRect(sx + 67, 136, 3, 22);
+
+      // Distant volcanic spire
+      ctx.fillStyle = '#381418';
+      ctx.beginPath();
+      ctx.moveTo(sx + 142, 208);
+      ctx.lineTo(sx + 186, 126);
+      ctx.lineTo(sx + 234, 208);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // Layer 2: Basalt ridges & rising embers (0.44x parallax)
+    this.renderParallaxPeriod(176, camX * 0.44, (sx) => {
+      ctx.fillStyle = '#401818';
+      ctx.beginPath();
+      ctx.moveTo(sx, 208);
+      ctx.lineTo(sx + 42, 164);
+      ctx.lineTo(sx + 92, 186);
+      ctx.lineTo(sx + 144, 158);
+      ctx.lineTo(sx + 176, 208);
+      ctx.closePath();
+      ctx.fill();
+    });
+
+    // Rising glowing embers
+    for (let i = 0; i < 16; i++) {
+      const ex = Math.floor((i * 41 + Math.sin(timeSec * 2 + i) * 10) % GameEngine.NES_WIDTH);
+      const sx = ex < 0 ? ex + GameEngine.NES_WIDTH : ex;
+      const ey = GameEngine.NES_HEIGHT - Math.floor((timeSec * (24 + (i % 4) * 8) + i * 19) % 180);
+      ctx.fillStyle = i % 2 === 0 ? '#fce058' : '#f86818';
+      ctx.fillRect(sx, ey, 2, 2);
+    }
   }
 
   private drawSeaweed(ctx: CanvasRenderingContext2D, x: number, y: number, h: number) {
@@ -9655,6 +10011,39 @@ export class GameEngine {
             ctx.drawImage(this.atlas.tileAxeFrames[axeFrame], screenX, screenY);
             break;
           }
+          case 'grass_ground':
+            ctx.drawImage(this.atlas.tileGrassGround, screenX, screenY);
+            break;
+          case 'dirt':
+            ctx.drawImage(this.atlas.tileDirt, screenX, screenY);
+            break;
+          case 'sand_ground':
+            ctx.drawImage(this.atlas.tileSandGround, screenX, screenY);
+            break;
+          case 'sandstone_brick':
+            ctx.drawImage(this.atlas.tileSandstoneBrick, screenX, screenY);
+            break;
+          case 'snow_ground':
+            ctx.drawImage(this.atlas.tileSnowGround, screenX, screenY);
+            break;
+          case 'ice_block':
+            ctx.drawImage(this.atlas.tileIceBlock, screenX, screenY);
+            break;
+          case 'wood_plank':
+            ctx.drawImage(this.atlas.tileWoodPlank, screenX, screenY);
+            break;
+          case 'moss_stone':
+            ctx.drawImage(this.atlas.tileMossStone, screenX, screenY);
+            break;
+          case 'cloud_block':
+            ctx.drawImage(this.atlas.tileCloudBlock, screenX, screenY);
+            break;
+          case 'obsidian_brick':
+            ctx.drawImage(this.atlas.tileObsidianBrick, screenX, screenY);
+            break;
+          case 'note_block':
+            ctx.drawImage(this.atlas.tileNoteBlock, screenX, screenY);
+            break;
         }
       }
     }

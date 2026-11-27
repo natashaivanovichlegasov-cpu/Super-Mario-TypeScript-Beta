@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { EnemyType, Item, Particle } from './types.ts';
+import { EnemyType, Item, LevelTheme, Particle } from './types.ts';
 import { SpriteAtlas } from './sprites.ts';
 
 export type EnemyDefeatKind =
@@ -234,7 +234,7 @@ export class ParticleSystem {
   }
 
   /** Subtle mortar dust puffs when bumping a brick without shattering it */
-  public emitBrickBumpDust(x: number, y: number, theme: 'overworld' | 'underground' | 'castle' | 'underwater' | 'ghost_house' = 'overworld') {
+  public emitBrickBumpDust(x: number, y: number, theme: LevelTheme = 'overworld') {
     const dustColor =
       theme === 'underground'
         ? '#70d8e8'
@@ -244,6 +244,16 @@ export class ParticleSystem {
         ? '#98e0ff'
         : theme === 'ghost_house'
         ? '#b898e0'
+        : theme === 'desert'
+        ? '#f4c878'
+        : theme === 'snow'
+        ? '#d8f0ff'
+        : theme === 'sky'
+        ? '#ffffff'
+        : theme === 'forest'
+        ? '#88d878'
+        : theme === 'volcano'
+        ? '#f87838'
         : '#f8b880';
 
     for (let i = 0; i < 4; i++) {
@@ -258,6 +268,25 @@ export class ParticleSystem {
         maxLife: 12,
         size: 2 + (i % 2),
         color: i % 2 === 0 ? '#ffffff' : dustColor,
+      });
+    }
+  }
+
+  /** Musical sparkle puffs when bouncing off a Note Block */
+  public emitNoteBlockNotes(centerX: number, topY: number) {
+    const colors = ['#f84888', '#58f8f8', '#fce058', '#98f868'];
+    for (let i = 0; i < 4; i++) {
+      const side = i % 2 === 0 ? -1 : 1;
+      this.add({
+        type: 'sparkle',
+        x: centerX - 2 + side * (3 + i * 2),
+        y: topY - 4,
+        vx: side * (0.4 + (i % 2) * 0.3),
+        vy: -1.1 - i * 0.25,
+        life: 0,
+        maxLife: 18,
+        size: 3,
+        color: colors[i % colors.length],
       });
     }
   }

@@ -83,6 +83,7 @@ interface WorldEditorPanelProps {
   onChangeWorldDraft: (updater: (draft: SmwWorldMapJson) => void, recordUndo?: boolean) => void;
   onResetDefault: () => void;
   onApplyWorld: (openWorldMode: boolean) => void;
+  onEditStageByHex?: (stageRef: string) => void;
   notify: (msg: string) => void;
   notifyError: (msg: string) => void;
 }
@@ -103,8 +104,11 @@ const PALETTE_OPTIONS: { id: SmwBoardPalette; label: string }[] = [
   { id: 'grass', label: 'Planície (SMB3 Mundo 1)' },
   { id: 'desert', label: 'Deserto (SMB3 Mundo 2)' },
   { id: 'ocean', label: 'Oceano (SMB3 Mundo 3)' },
+  { id: 'snow', label: 'Neve / Gelo (SMB3 Mundo 6)' },
+  { id: 'sky', label: 'Céu / Nuvens (SMB3 Mundo 5)' },
+  { id: 'forest', label: 'Floresta (Bosque Verde)' },
   { id: 'haunted', label: 'Sombrio (Fantasmas)' },
-  { id: 'volcano', label: 'Vulcão / Castelo (Mundo 7)' },
+  { id: 'volcano', label: 'Vulcão / Castelo (Mundo 8)' },
 ];
 
 function snapFreePct(v: number): number {
@@ -176,6 +180,7 @@ export const WorldEditorPanel: React.FC<WorldEditorPanelProps> = ({
   onChangeWorldDraft,
   onResetDefault,
   onApplyWorld,
+  onEditStageByHex,
   notify,
   notifyError,
 }) => {
@@ -1472,59 +1477,122 @@ export const WorldEditorPanel: React.FC<WorldEditorPanelProps> = ({
                     </select>
                   </label>
                 ) : (
-                  <label className="block space-y-0.5">
-                    <span className="text-[10px] text-stone-400">Fase Vinculada (Stage / Hex / Editor):</span>
-                    <select
-                      value={selectedNode.stageKey || selectedNode.id}
-                      onChange={e => {
-                        const val = e.target.value;
-                        onChangeWorldDraft(draft => {
-                          const isl = draft.islands.find(i => i.id === activeIsland.id);
-                          const nd = isl?.nodes.find(n => n.id === selectedNode.id);
-                          if (nd) {
-                            nd.stageKey = val;
-                            if (val.startsWith('hex:')) {
-                              nd.hexId = val.slice(4);
+                  <div className="space-y-1.5">
+                    <label className="block space-y-0.5">
+                      <span className="text-[10px] text-stone-400">Fase Vinculada (Stage / Hex / Editor):</span>
+                      <select
+                        value={selectedNode.stageKey || selectedNode.id}
+                        onChange={e => {
+                          const val = e.target.value;
+                          onChangeWorldDraft(draft => {
+                            const isl = draft.islands.find(i => i.id === activeIsland.id);
+                            const nd = isl?.nodes.find(n => n.id === selectedNode.id);
+                            if (nd) {
+                              nd.stageKey = val;
+                              if (val.startsWith('hex:')) {
+                                nd.hexId = val.slice(4);
+                              } else if (val.startsWith('theme:')) {
+                                const themeVal = val.slice(6) as LevelData['theme'];
+                                nd.theme = themeVal;
+                                const matchBiome = HEX_LEVEL_LIST.find(h => h.key === val);
+                                if (matchBiome) nd.hexId = matchBiome.hexId;
+                              }
                             }
-                          }
-                        }, true);
-                      }}
-                      className="w-full bg-stone-900 border border-sky-500/50 rounded px-2 py-1 text-sky-200"
-                    >
-                      <optgroup label="Fases Originais do Modo World (JSON)">
-                        {WORLD_STAGE_JSON_REGISTRY.map(entry => (
-                          <option key={entry.key} value={entry.key}>
-                            [{entry.hexId}] {entry.label}
-                          </option>
-                        ))}
-                        <option value="smw-wiki-1-secret">Caverna Secreta da Chave</option>
-                      </optgroup>
-                      {customLevels.length > 0 && (
-                        <optgroup label="Minhas Fases do Editor">
-                          {customLevels.map(lvl => (
-                            <option key={lvl.id} value={`custom:${lvl.id}`}>
-                              [Editor] {lvl.name} ({lvl.theme})
+                          }, true);
+                        }}
+                        className="w-full bg-stone-900 border border-sky-500/50 rounded px-2 py-1 text-sky-200"
+                      >
+                        <optgroup label="Biomas Novos do Modo World (R1.24.AE.8)">
+                          <option value="theme:desert">[0115] Deserto Dourado (Areia & Arenito)</option>
+                          <option value="theme:snow">[0116] Geleira Alva (Neve & Gelo)</option>
+                          <option value="theme:sky">[0117] Nuvens Nota (Céu & Bloco Musical)</option>
+                          <option value="theme:forest">[0118] Bosque Verde (Grama, Terra & Madeira)</option>
+                          <option value="theme:volcano">[0119] Cratera Vulcão (Rocha & Lava)</option>
+                        </optgroup>
+                        <optgroup label="Fases Originais do Modo World (JSON)">
+                          {WORLD_STAGE_JSON_REGISTRY.map(entry => (
+                            <option key={entry.key} value={entry.key}>
+                              [{entry.hexId}] {entry.label}
+                            </option>
+                          ))}
+                          <option value="smw-wiki-1-secret">Caverna Secreta da Chave</option>
+                        </optgroup>
+                        {customLevels.length > 0 && (
+                          <optgroup label="Minhas Fases do Editor">
+                            {customLevels.map(lvl => (
+                              <option key={lvl.id} value={`custom:${lvl.id}`}>
+                                [Editor{lvl.hexId ? ` · HEX ${lvl.hexId}` : ''}] {lvl.name} ({lvl.theme})
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
+                        <optgroup label="Mapas Hexadecimais Core (0105..0119, 00D0+)">
+                          {HEX_LEVEL_LIST.filter(item => !item.isExampleMap).map(item => (
+                            <option key={item.hexId} value={`hex:${item.hexId}`}>
+                              [{item.hexId}] {item.label}
                             </option>
                           ))}
                         </optgroup>
+                        <optgroup label="Mapas Exemplo Hex (0200–02FE)">
+                          {HEX_LEVEL_LIST.filter(item => Boolean(item.isExampleMap)).map(item => (
+                            <option key={item.hexId} value={`hex:${item.hexId}`}>
+                              [{item.hexId}] {item.label}
+                            </option>
+                          ))}
+                        </optgroup>
+                        <optgroup label="Fases Clássicas">
+                          <option value="world-1-1">Mundo 1-1</option>
+                          <option value="world-1-2">Mundo 1-2 (Caverna)</option>
+                          <option value="world-2-2">Mundo 2-2 (Água)</option>
+                          <option value="world-ghost">Mansão Fantasma</option>
+                          <option value="world-1-4">Mundo 1-4 (Castelo)</option>
+                          <option value="secret-vault">Cofre Secreto</option>
+                        </optgroup>
+                      </select>
+                    </label>
+
+                    <div className="flex items-center gap-1 bg-stone-900/90 border border-purple-500/40 rounded px-1.5 py-1">
+                      <span className="text-[10px] text-purple-300 font-bold shrink-0">HEX SMB3:</span>
+                      <input
+                        type="text"
+                        maxLength={6}
+                        value={
+                          selectedNode.hexId ||
+                          (selectedNode.stageKey?.startsWith('hex:') ? selectedNode.stageKey.slice(4) : '')
+                        }
+                        onChange={e => {
+                          const raw = e.target.value.toUpperCase().replace(/[^0-9A-F]/g, '');
+                          onChangeWorldDraft(draft => {
+                            const isl = draft.islands.find(i => i.id === activeIsland.id);
+                            const nd = isl?.nodes.find(n => n.id === selectedNode.id);
+                            if (!nd) return;
+                            nd.hexId = raw || undefined;
+                            if (raw.length >= 2) {
+                              const padded = raw.padStart(4, '0');
+                              nd.stageKey = `hex:${padded}`;
+                            }
+                          }, true);
+                        }}
+                        placeholder="0105"
+                        className="w-14 bg-stone-950 border border-stone-700 rounded px-1 py-0.5 text-amber-300 uppercase font-mono text-[10px]"
+                      />
+                      {onEditStageByHex && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            onEditStageByHex(
+                              selectedNode.hexId
+                                ? `hex:${selectedNode.hexId.padStart(4, '0')}`
+                                : selectedNode.stageKey || selectedNode.id
+                            )
+                          }
+                          className="ml-auto px-1.5 py-0.5 rounded bg-purple-900/80 hover:bg-purple-800 border border-purple-400/50 text-purple-100 text-[10px] cursor-pointer"
+                        >
+                          Editar Fase
+                        </button>
                       )}
-                      <optgroup label="Mapas Hexadecimais (0105 / 00D0 / 0200+)">
-                        {HEX_LEVEL_LIST.slice(0, 80).map(item => (
-                          <option key={item.hexId} value={`hex:${item.hexId}`}>
-                            [{item.hexId}] {item.label}
-                          </option>
-                        ))}
-                      </optgroup>
-                      <optgroup label="Fases Clássicas">
-                        <option value="world-1-1">Mundo 1-1</option>
-                        <option value="world-1-2">Mundo 1-2 (Caverna)</option>
-                        <option value="world-2-2">Mundo 2-2 (Água)</option>
-                        <option value="world-ghost">Mansão Fantasma</option>
-                        <option value="world-1-4">Mundo 1-4 (Castelo)</option>
-                        <option value="secret-vault">Cofre Secreto</option>
-                      </optgroup>
-                    </select>
-                  </label>
+                    </div>
+                  </div>
                 )}
 
                 <div className="grid grid-cols-2 gap-1.5">
@@ -1582,6 +1650,11 @@ export const WorldEditorPanel: React.FC<WorldEditorPanelProps> = ({
                       <option value="underground">Caverna</option>
                       <option value="underwater">Água</option>
                       <option value="ghost_house">Mansão Fantasma</option>
+                      <option value="desert">Deserto</option>
+                      <option value="snow">Neve / Gelo</option>
+                      <option value="sky">Céu / Nuvens</option>
+                      <option value="forest">Floresta</option>
+                      <option value="volcano">Vulcão</option>
                       <option value="castle">Castelo</option>
                     </select>
                   </label>

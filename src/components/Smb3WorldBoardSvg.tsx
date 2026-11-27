@@ -83,6 +83,30 @@ const PALETTE_COLORS: Record<
     hillFill: '#4c201c',
     hillShade: '#280c0c',
   },
+  snow: {
+    oceanBg: '#1c3c78',
+    boardBg: '#d8f0ff',
+    boardBorder: '#74b8f8',
+    gridStroke: '#a8d4f0',
+    hillFill: '#88c4f4',
+    hillShade: '#4c88c4',
+  },
+  sky: {
+    oceanBg: '#2068c8',
+    boardBg: '#98dcff',
+    boardBorder: '#ffffff',
+    gridStroke: '#70bce8',
+    hillFill: '#f4fbff',
+    hillShade: '#b8dff8',
+  },
+  forest: {
+    oceanBg: '#0c281c',
+    boardBg: '#48a450',
+    boardBorder: '#d8a848',
+    gridStroke: '#34843c',
+    hillFill: '#1c7830',
+    hillShade: '#0e4c1c',
+  },
 };
 
 export function buildStraightPathSvgData(seg: SmwPathSegment): string {

@@ -27,7 +27,7 @@ export class SoundEngine {
   private isMuted: boolean = false;
   private volume: number = 0.6;
   private musicEnabled: boolean = true;
-  private currentTrack: 'overworld' | 'underground' | 'underwater' | 'castle' | 'ghost_house' | 'bonus' | 'starman' | 'none' = 'none';
+  private currentTrack: 'overworld' | 'underground' | 'underwater' | 'castle' | 'ghost_house' | 'desert' | 'snow' | 'sky' | 'forest' | 'volcano' | 'bonus' | 'starman' | 'none' = 'none';
 
   // Music sequence playback state
   private musicTimer: number | null = null;
@@ -178,13 +178,9 @@ export class SoundEngine {
     if (!this.musicEnabled) {
       this.stopMusic();
     } else if (!this.commercialSuspended) {
-      if (this.currentTrack === 'overworld') this.playMusic('overworld');
-      else if (this.currentTrack === 'underground') this.playMusic('underground');
-      else if (this.currentTrack === 'underwater') this.playMusic('underwater');
-      else if (this.currentTrack === 'castle') this.playMusic('castle');
-      else if (this.currentTrack === 'ghost_house') this.playMusic('ghost_house');
-      else if (this.currentTrack === 'bonus') this.playMusic('bonus');
-      else if (this.currentTrack === 'starman') this.playMusic('starman');
+      if (this.currentTrack !== 'none') {
+        this.playMusic(this.currentTrack);
+      }
     }
     return this.musicEnabled;
   }
@@ -945,7 +941,25 @@ export class SoundEngine {
 
   // --- BACKGROUND MUSIC ENGINE ---
 
-  public playMusic(track: 'overworld' | 'underground' | 'underwater' | 'castle' | 'ghost_house' | 'bonus' | 'starman') {
+  public playNoteBlockBounce() {
+    this.resume();
+    if (!this.ctx || !this.sfxGain) return;
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(392, now);
+    osc.frequency.setValueAtTime(523.25, now + 0.045);
+    osc.frequency.setValueAtTime(659.25, now + 0.09);
+    gain.gain.setValueAtTime(0.32, now);
+    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.22);
+    osc.connect(gain);
+    gain.connect(this.sfxGain);
+    osc.start(now);
+    osc.stop(now + 0.22);
+  }
+
+  public playMusic(track: 'overworld' | 'underground' | 'underwater' | 'castle' | 'ghost_house' | 'desert' | 'snow' | 'sky' | 'forest' | 'volcano' | 'bonus' | 'starman') {
     this.currentTrack = track;
     this.musicPaused = false;
     if (!this.musicEnabled || this.commercialSuspended) return;
@@ -962,6 +976,16 @@ export class SoundEngine {
       this.initCastleMusic();
     } else if (track === 'ghost_house') {
       this.initGhostHouseMusic();
+    } else if (track === 'desert') {
+      this.initDesertMusic();
+    } else if (track === 'snow') {
+      this.initSnowMusic();
+    } else if (track === 'sky') {
+      this.initSkyMusic();
+    } else if (track === 'forest') {
+      this.initForestMusic();
+    } else if (track === 'volcano') {
+      this.initVolcanoMusic();
     } else if (track === 'bonus') {
       this.initBonusMusic();
     } else if (track === 'starman') {
@@ -1222,6 +1246,101 @@ export class SoundEngine {
       [N.C3, E], [N.G3, E], [N.C4, Q],
     ];
 
+    this.musicStep = 0;
+    this.playNextMusicSlice();
+  }
+
+  private initDesertMusic() {
+    const E = 0.14;
+    const Q = 0.28;
+    this.currentScore = [
+      [N.E5, E], [N.F5, E], [N.Gs5, Q], [N.F5, E], [N.E5, E],
+      [N.D5, E], [N.E5, E], [N.F5, Q], [N.E5, Q],
+      [N.D5, E], [N.C5, E], [N.B4, Q], [N.C5, E], [N.D5, E],
+      [N.E5, Q], [N.A4, Q], [N.REST, Q],
+    ];
+    this.currentBass = [
+      [N.A3, E], [N.E4, E], [N.A3, Q], [N.E3, E], [N.A3, E],
+      [N.D3, E], [N.A3, E], [N.D3, Q], [N.E3, Q],
+      [N.F3, E], [N.C4, E], [N.E3, Q], [N.A3, E], [N.E3, E],
+      [N.A2, Q], [N.E3, Q], [N.REST, Q],
+    ];
+    this.musicStep = 0;
+    this.playNextMusicSlice();
+  }
+
+  private initSnowMusic() {
+    const E = 0.17;
+    const Q = 0.34;
+    this.currentScore = [
+      [N.E5, E], [N.B5, E], [N.G5, Q], [N.E5, E], [N.D5, E],
+      [N.C5, Q], [N.G5, E], [N.E5, E], [N.D5, Q],
+      [N.A4, E], [N.C5, E], [N.E5, Q], [N.D5, E], [N.B4, E],
+      [N.C5, Q], [N.REST, Q],
+    ];
+    this.currentBass = [
+      [N.C3, Q], [N.G3, E], [N.E3, E], [N.C3, Q],
+      [N.A3, Q], [N.E3, E], [N.G3, E], [N.G2, Q],
+      [N.F3, Q], [N.C4, E], [N.G3, E], [N.G2, Q],
+      [N.C3, Q], [N.G2, Q],
+    ];
+    this.musicStep = 0;
+    this.playNextMusicSlice();
+  }
+
+  private initSkyMusic() {
+    const E = 0.135;
+    const Q = 0.27;
+    this.currentScore = [
+      [N.G4, E], [N.C5, E], [N.E5, E], [N.G5, E], [N.E5, Q],
+      [N.F5, E], [N.D5, E], [N.B4, Q], [N.G4, Q],
+      [N.A4, E], [N.C5, E], [N.F5, E], [N.E5, E], [N.D5, Q],
+      [N.C5, Q], [N.E5, E], [N.G5, E], [N.C6, Q],
+    ];
+    this.currentBass = [
+      [N.C3, E], [N.G3, E], [N.C4, E], [N.G3, E], [N.C3, Q],
+      [N.G2, E], [N.D3, E], [N.G3, Q], [N.G2, Q],
+      [N.F3, E], [N.C4, E], [N.D3, E], [N.A3, E], [N.G3, Q],
+      [N.C3, Q], [N.G3, E], [N.E3, E], [N.C3, Q],
+    ];
+    this.musicStep = 0;
+    this.playNextMusicSlice();
+  }
+
+  private initForestMusic() {
+    const E = 0.16;
+    const Q = 0.32;
+    this.currentScore = [
+      [N.D5, E], [N.F5, E], [N.A5, Q], [N.G5, E], [N.F5, E],
+      [N.E5, Q], [N.C5, E], [N.D5, E], [N.E5, Q],
+      [N.F5, E], [N.E5, E], [N.D5, Q], [N.C5, E], [N.A4, E],
+      [N.D5, Q], [N.REST, Q],
+    ];
+    this.currentBass = [
+      [N.D3, Q], [N.A3, E], [N.F3, E], [N.D3, Q],
+      [N.C3, Q], [N.G3, E], [N.E3, E], [N.A3, Q],
+      [N.F3, Q], [N.C4, E], [N.D3, E], [N.A3, Q],
+      [N.D3, Q], [N.A2, Q],
+    ];
+    this.musicStep = 0;
+    this.playNextMusicSlice();
+  }
+
+  private initVolcanoMusic() {
+    const E = 0.13;
+    const Q = 0.26;
+    this.currentScore = [
+      [N.E4, E], [N.G4, E], [N.As4, E], [N.A4, E], [N.E4, Q],
+      [N.F4, E], [N.Gs4, E], [N.B4, E], [N.A4, E], [N.E4, Q],
+      [N.E5, E], [N.Ds5, E], [N.D5, E], [N.C5, E], [N.B4, Q],
+      [N.E4, Q], [N.REST, Q],
+    ];
+    this.currentBass = [
+      [N.E3, E], [N.E3, E], [N.G3, E], [N.Fs3, E], [N.E3, Q],
+      [N.D3, E], [N.D3, E], [N.F3, E], [N.E3, E], [N.E3, Q],
+      [N.C3, E], [N.B2, E], [N.As2, E], [N.A2, E], [N.G2, Q],
+      [N.E2, Q], [N.E3, Q],
+    ];
     this.musicStep = 0;
     this.playNextMusicSlice();
   }
