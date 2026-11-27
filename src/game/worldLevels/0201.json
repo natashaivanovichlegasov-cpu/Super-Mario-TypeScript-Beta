@@ -1,9 +1,9 @@
 {
   "format": "smb-custom-level",
   "version": 1,
-  "exportedAt": "2026-11-27T00:48:48.668Z",
+  "exportedAt": "2026-11-27T01:14:54.863Z",
   "level": {
-    "id": "custom-1795740519273-8o2x",
+    "id": "custom-1795742040655-dmhe",
     "name": "EX 0201 GRUTA",
     "theme": "underground",
     "biomeLabel": "EXEMPLO HEX 0201 · GRUTA",
@@ -1220,8 +1220,18 @@
         null,
         null,
         null,
-        null,
-        null,
+        {
+          "type": "pipe_top_left",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "pipe_top_right",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
         null,
         null,
         null,
@@ -1305,8 +1315,18 @@
         null,
         null,
         null,
-        null,
-        null,
+        {
+          "type": "pipe_body_left",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "pipe_body_right",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
         null,
         null,
         null,
@@ -1974,7 +1994,7 @@
     "entryPipeDir": "right",
     "marioStart": {
       "x": 64,
-      "y": 176
+      "y": 144
     },
     "flagX": 608,
     "castleX": 688,

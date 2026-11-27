@@ -1,9 +1,9 @@
 {
   "format": "smb-custom-level",
   "version": 1,
-  "exportedAt": "2026-11-27T01:07:24.536Z",
+  "exportedAt": "2026-11-27T01:13:52.325Z",
   "level": {
-    "id": "custom-1795741547773-hhsq",
+    "id": "custom-1795741912723-muyd",
     "name": "W-1",
     "theme": "overworld",
     "biomeLabel": "WIKIWORLDWEB · YOSHI'S ISLAND (W-1)",
@@ -2570,8 +2570,18 @@
         null,
         null,
         null,
-        null,
-        null,
+        {
+          "type": "pipe_warp_top_left",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "pipe_warp_top_right",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
         null,
         null,
         null,
@@ -2915,8 +2925,18 @@
         null,
         null,
         null,
-        null,
-        null,
+        {
+          "type": "pipe_body_left",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
+        {
+          "type": "pipe_body_right",
+          "content": "none",
+          "bumpOffset": 0,
+          "bumpVel": 0
+        },
         null,
         null,
         null,
@@ -5068,6 +5088,23 @@
           "y": 64
         },
         "type": "down"
+      },
+      {
+        "from": {
+          "x": 2512,
+          "y": 160,
+          "width": 32,
+          "height": 16
+        },
+        "toLevel": "hex:0201",
+        "targetHex": "0201",
+        "toPos": {
+          "x": 48,
+          "y": 192
+        },
+        "type": "down",
+        "entryMode": "pipe",
+        "destPipeDir": "up"
       }
     ],
     "checkpoints": [
