@@ -1,0 +1,224 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "subworld-7",
+  "number": 7,
+  "worldType": "subworld",
+  "parentWorldId": "world-7",
+  "name": "Submundo 7 · Núcleo de Lava",
+  "subtitle": "Submundo 7 · Abismo secreto sob o Castelo de Bowser",
+  "playable": true,
+  "boardPalette": "volcano",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "O Núcleo de Lava é a área secreta mais extrema do jogo, escondida sob a fortaleza de Chronus e Bowser!",
+  "nodes": [
+    {
+      "id": "sw7-return",
+      "order": 0,
+      "code": "M7",
+      "title": "Voltar ao Mundo 7",
+      "subtitle": "Subir ao Império Vulcânico",
+      "theme": "castle",
+      "nodeKind": "star_warp",
+      "targetIslandId": "world-7",
+      "targetNodeId": "w7-subworld-portal",
+      "gridX": 4,
+      "gridY": 9,
+      "mapX": 16,
+      "mapY": 45
+    },
+    {
+      "id": "sw7-1-nucleo",
+      "order": 1,
+      "code": "S7-1",
+      "title": "Câmara de Magma",
+      "subtitle": "Submundo 7 · Setor Vulcânico",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:0237",
+      "hexId": "0237",
+      "gridX": 10,
+      "gridY": 14,
+      "mapX": 40,
+      "mapY": 70
+    },
+    {
+      "id": "sw7-2-abismo",
+      "order": 2,
+      "code": "S7-2",
+      "title": "Mar de Brasas",
+      "subtitle": "Travessia extrema sob lava",
+      "theme": "underwater",
+      "nodeKind": "stage",
+      "stageKey": "hex:0238",
+      "hexId": "0238",
+      "gridX": 16,
+      "gridY": 7,
+      "unlocksAfterNodeId": "sw7-1-nucleo",
+      "mapX": 64,
+      "mapY": 35
+    },
+    {
+      "id": "sw7-3-cidadela",
+      "order": 3,
+      "code": "S7-C",
+      "title": "Altar do Núcleo",
+      "subtitle": "Subchefe Secreto Final",
+      "bossName": "Chronus Ômega",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:023A",
+      "hexId": "023A",
+      "gridX": 21,
+      "gridY": 12,
+      "isCastle": true,
+      "unlocksAfterNodeId": "sw7-2-abismo",
+      "mapX": 84,
+      "mapY": 60
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "sw7-return",
+      "toId": "sw7-1-nucleo",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        45
+      ],
+      "c1": [
+        40,
+        45
+      ],
+      "c2": [
+        40,
+        45
+      ],
+      "p1": [
+        40,
+        70
+      ],
+      "waypoints": [
+        [
+          16,
+          45
+        ],
+        [
+          40,
+          45
+        ],
+        [
+          40,
+          70
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw7-1-nucleo",
+      "toId": "sw7-2-abismo",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        40,
+        70
+      ],
+      "c1": [
+        40,
+        35
+      ],
+      "c2": [
+        40,
+        35
+      ],
+      "p1": [
+        64,
+        35
+      ],
+      "waypoints": [
+        [
+          40,
+          70
+        ],
+        [
+          40,
+          35
+        ],
+        [
+          64,
+          35
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw7-2-abismo",
+      "toId": "sw7-3-cidadela",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        64,
+        35
+      ],
+      "c1": [
+        84,
+        35
+      ],
+      "c2": [
+        84,
+        35
+      ],
+      "p1": [
+        84,
+        60
+      ],
+      "waypoints": [
+        [
+          64,
+          35
+        ],
+        [
+          84,
+          35
+        ],
+        [
+          84,
+          60
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    }
+  ],
+  "decorations": [
+    {
+      "id": "sw7-rock-1",
+      "kind": "rock",
+      "gridX": 7,
+      "gridY": 6,
+      "x": 28,
+      "y": 30
+    },
+    {
+      "id": "sw7-patrol-1",
+      "kind": "enemy_patrol",
+      "gridX": 14,
+      "gridY": 15,
+      "label": "Lava Guard",
+      "x": 56,
+      "y": 75
+    },
+    {
+      "id": "sw7-fort-1",
+      "kind": "castle_fort",
+      "gridX": 21,
+      "gridY": 5,
+      "x": 84,
+      "y": 25
+    }
+  ]
+}

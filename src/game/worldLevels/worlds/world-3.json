@@ -1,0 +1,347 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "world-3",
+  "number": 3,
+  "worldType": "main",
+  "subworldId": "subworld-3",
+  "name": "Mundo 3 · Arquipélago Marinho",
+  "subtitle": "Mundo 3 · Ilhotas Tropicais & Recifes",
+  "playable": true,
+  "boardPalette": "ocean",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "As marés do Arquipélago Marinho guardam rotas secretas e navios afundados controlados pela frota de Bowser.",
+  "nodes": [
+    {
+      "id": "w3-1-praia",
+      "order": 0,
+      "code": "3-1",
+      "title": "Prado Costeiro",
+      "subtitle": "Ilhota inicial de águas claras",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "hex:020A",
+      "hexId": "020A",
+      "gridX": 4,
+      "gridY": 12,
+      "mapX": 16,
+      "mapY": 60
+    },
+    {
+      "id": "w3-2-gruta",
+      "order": 1,
+      "code": "3-2",
+      "title": "Mina Marítima",
+      "subtitle": "Galerias submersas na rocha",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:020B",
+      "hexId": "020B",
+      "gridX": 9,
+      "gridY": 15,
+      "unlocksAfterNodeId": "w3-1-praia",
+      "mapX": 36,
+      "mapY": 75
+    },
+    {
+      "id": "w3-3-corais",
+      "order": 2,
+      "code": "3-3",
+      "title": "Recife de Corais",
+      "subtitle": "Cheep Cheeps e correntes marinhas",
+      "theme": "underwater",
+      "nodeKind": "stage",
+      "stageKey": "hex:020C",
+      "hexId": "020C",
+      "gridX": 14,
+      "gridY": 9,
+      "unlocksAfterNodeId": "w3-2-gruta",
+      "mapX": 56,
+      "mapY": 45
+    },
+    {
+      "id": "w3-4-navio",
+      "order": 3,
+      "code": "3-4",
+      "title": "Biblioteca Afundada",
+      "subtitle": "Navio fantasma à deriva",
+      "theme": "ghost_house",
+      "nodeKind": "stage",
+      "stageKey": "hex:020D",
+      "hexId": "020D",
+      "gridX": 19,
+      "gridY": 14,
+      "unlocksAfterNodeId": "w3-3-corais",
+      "mapX": 76,
+      "mapY": 70
+    },
+    {
+      "id": "w3-5-castelo",
+      "order": 4,
+      "code": "3-C",
+      "title": "Castelo Coral",
+      "subtitle": "3º Chefe: Capitão Cheep",
+      "bossName": "Capitão Cheep",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:020E",
+      "hexId": "020E",
+      "gridX": 22,
+      "gridY": 8,
+      "isCastle": true,
+      "unlocksAfterNodeId": "w3-4-navio",
+      "mapX": 88,
+      "mapY": 40
+    },
+    {
+      "id": "w3-subworld-portal",
+      "order": 5,
+      "code": "S3",
+      "title": "Portal Submundo 3",
+      "subtitle": "Mergulho para a Fossa Abissal",
+      "theme": "underwater",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "subworld-3",
+      "targetNodeId": "sw3-1-fossa",
+      "gridX": 14,
+      "gridY": 4,
+      "unlocksAfterNodeId": "w3-3-corais",
+      "mapX": 56,
+      "mapY": 20
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "w3-1-praia",
+      "toId": "w3-2-gruta",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        60
+      ],
+      "c1": [
+        36,
+        60
+      ],
+      "c2": [
+        36,
+        60
+      ],
+      "p1": [
+        36,
+        75
+      ],
+      "waypoints": [
+        [
+          16,
+          60
+        ],
+        [
+          36,
+          60
+        ],
+        [
+          36,
+          75
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w3-2-gruta",
+      "toId": "w3-3-corais",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        36,
+        75
+      ],
+      "c1": [
+        36,
+        45
+      ],
+      "c2": [
+        36,
+        45
+      ],
+      "p1": [
+        56,
+        45
+      ],
+      "waypoints": [
+        [
+          36,
+          75
+        ],
+        [
+          36,
+          45
+        ],
+        [
+          56,
+          45
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w3-3-corais",
+      "toId": "w3-4-navio",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        56,
+        45
+      ],
+      "c1": [
+        76,
+        45
+      ],
+      "c2": [
+        76,
+        45
+      ],
+      "p1": [
+        76,
+        70
+      ],
+      "waypoints": [
+        [
+          56,
+          45
+        ],
+        [
+          76,
+          45
+        ],
+        [
+          76,
+          70
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w3-4-navio",
+      "toId": "w3-5-castelo",
+      "fromOrder": 3,
+      "toOrder": 4,
+      "p0": [
+        76,
+        70
+      ],
+      "c1": [
+        76,
+        40
+      ],
+      "c2": [
+        76,
+        40
+      ],
+      "p1": [
+        88,
+        40
+      ],
+      "waypoints": [
+        [
+          76,
+          70
+        ],
+        [
+          76,
+          40
+        ],
+        [
+          88,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w3-3-corais",
+      "toId": "w3-subworld-portal",
+      "fromOrder": 2,
+      "toOrder": 5,
+      "p0": [
+        56,
+        45
+      ],
+      "c1": [
+        56,
+        20
+      ],
+      "c2": [
+        56,
+        45
+      ],
+      "p1": [
+        56,
+        20
+      ],
+      "waypoints": [
+        [
+          56,
+          45
+        ],
+        [
+          56,
+          20
+        ]
+      ],
+      "lineStyle": "straight",
+      "eventId": 4
+    }
+  ],
+  "decorations": [
+    {
+      "id": "w3-water-1",
+      "kind": "water",
+      "gridX": 11,
+      "gridY": 10,
+      "width": 16,
+      "height": 18,
+      "x": 44,
+      "y": 50
+    },
+    {
+      "id": "w3-bridge-1",
+      "kind": "bridge",
+      "gridX": 11,
+      "gridY": 12,
+      "width": 12,
+      "height": 4,
+      "x": 44,
+      "y": 60
+    },
+    {
+      "id": "w3-trees-1",
+      "kind": "trees",
+      "gridX": 5,
+      "gridY": 6,
+      "x": 20,
+      "y": 30
+    },
+    {
+      "id": "w3-cloud-1",
+      "kind": "cloud",
+      "gridX": 18,
+      "gridY": 4,
+      "x": 72,
+      "y": 20
+    },
+    {
+      "id": "w3-fort-1",
+      "kind": "castle_fort",
+      "gridX": 22,
+      "gridY": 4,
+      "x": 88,
+      "y": 20
+    }
+  ]
+}

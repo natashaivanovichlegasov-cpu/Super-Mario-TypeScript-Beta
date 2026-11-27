@@ -3628,6 +3628,245 @@ export function deleteLevelColumnAt(level: LevelData, atTx: number): boolean {
   return true;
 }
 
+/**
+ * Lunar Magic batch tool: shifts all tiles and entities by (dx, dy) tiles.
+ */
+export function shiftLevelTiles(level: LevelData, dx: number, dy: number): void {
+  const stepX = Math.trunc(dx);
+  const stepY = Math.trunc(dy);
+  if (stepX === 0 && stepY === 0) return;
+
+  const w = level.width;
+  const h = level.height;
+  const nextGrid: (BlockTile | null)[][] = Array.from({ length: h }, () =>
+    Array.from({ length: w }, () => null)
+  );
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const tile = level.tiles[y]?.[x];
+      if (!tile) continue;
+      const nx = x + stepX;
+      const ny = y + stepY;
+      if (nx >= 0 && nx < w && ny >= 0 && ny < h) {
+        nextGrid[ny][nx] = { ...tile };
+      }
+    }
+  }
+  level.tiles = nextGrid;
+
+  const pxDx = stepX * 16;
+  const pxDy = stepY * 16;
+  const maxX = w * 16 - 8;
+  const maxY = h * 16 - 8;
+
+  level.enemies = level.enemies
+    .map(e => ({ ...e, x: e.x + pxDx, y: e.y + pxDy }))
+    .filter(e => e.x >= 0 && e.x <= maxX && e.y >= 0 && e.y <= maxY);
+  level.coins = level.coins
+    .map(c => ({ x: c.x + pxDx, y: c.y + pxDy }))
+    .filter(c => c.x >= 0 && c.x <= maxX && c.y >= 0 && c.y <= maxY);
+  if (level.wCoins) {
+    const nextWC = level.wCoins
+      .map(c => ({ x: c.x + pxDx, y: c.y + pxDy }))
+      .filter(c => c.x >= 0 && c.x <= maxX && c.y >= 0 && c.y <= maxY);
+    level.wCoins = nextWC.length > 0 ? nextWC : undefined;
+  }
+  if (level.yoshis) {
+    const nextY = level.yoshis
+      .map(y => ({ x: y.x + pxDx, y: y.y + pxDy }))
+      .filter(y => y.x >= 0 && y.x <= maxX && y.y >= 0 && y.y <= maxY);
+    level.yoshis = nextY.length > 0 ? nextY : undefined;
+  }
+  if (level.carryables) {
+    const nextC = level.carryables
+      .map(c => ({ ...c, x: c.x + pxDx, y: c.y + pxDy }))
+      .filter(c => c.x >= 0 && c.x <= maxX && c.y >= 0 && c.y <= maxY);
+    level.carryables = nextC.length > 0 ? nextC : undefined;
+  }
+  if (level.keyholes) {
+    const nextK = level.keyholes
+      .map(k => ({ x: k.x + pxDx, y: k.y + pxDy }))
+      .filter(k => k.x >= 0 && k.x <= maxX && k.y >= 0 && k.y <= maxY);
+    level.keyholes = nextK.length > 0 ? nextK : undefined;
+  }
+  if (level.floatingPlatforms) {
+    const nextFP = level.floatingPlatforms
+      .map(fp => ({ ...fp, x: fp.x + pxDx, y: fp.y + pxDy }))
+      .filter(fp => fp.x >= 0 && fp.x <= maxX && fp.y >= 8 && fp.y <= maxY);
+    level.floatingPlatforms = nextFP.length > 0 ? nextFP : undefined;
+  }
+  if (level.checkpoints) {
+    const nextCP = level.checkpoints
+      .map(cp => ({
+        ...cp,
+        x: cp.x + pxDx,
+        respawnPos: {
+          x: Math.max(0, Math.min(maxX, cp.respawnPos.x + pxDx)),
+          y: Math.max(0, Math.min(maxY, cp.respawnPos.y + pxDy)),
+        },
+      }))
+      .filter(cp => cp.x >= 0 && cp.x <= maxX);
+    level.checkpoints = nextCP.length > 0 ? nextCP : undefined;
+  }
+  if (level.pipeWarps) {
+    level.pipeWarps = level.pipeWarps
+      .map(pw => ({
+        ...pw,
+        from: { ...pw.from, x: pw.from.x + pxDx, y: pw.from.y + pxDy },
+        toPos:
+          pw.toLevel === level.id
+            ? {
+                x: Math.max(0, Math.min(maxX, pw.toPos.x + pxDx)),
+                y: Math.max(0, Math.min(maxY, pw.toPos.y + pxDy)),
+              }
+            : pw.toPos,
+      }))
+      .filter(pw => pw.from.x >= 0 && pw.from.x < w * 16 && pw.from.y >= 0 && pw.from.y < h * 16);
+    pruneKeyCavePipeWarps(level);
+  }
+  level.marioStart.x = Math.max(0, Math.min((w - 2) * 16, level.marioStart.x + pxDx));
+  level.marioStart.y = Math.max(0, Math.min((h - 2) * 16, level.marioStart.y + pxDy));
+  if (level.flagX < 99000) {
+    level.flagX = Math.max(16, Math.min((w - 2) * 16, level.flagX + pxDx));
+  }
+  if (level.castleX < 99000) {
+    level.castleX = Math.max(16, Math.min((w - 2) * 16, level.castleX + pxDx));
+  }
+  if (level.dryFinishStartX !== undefined) {
+    level.dryFinishStartX = Math.max(0, Math.min(w * 16, level.dryFinishStartX + pxDx));
+  }
+}
+
+/**
+ * Lunar Magic batch tool: replaces all tiles of `fromType` with `toType` (or clears when `empty`).
+ */
+export function replaceTileTypeInLevel(
+  level: LevelData,
+  fromType: TileType,
+  toType: TileType
+): number {
+  let replaced = 0;
+  for (let y = 0; y < level.height; y++) {
+    const row = level.tiles[y];
+    if (!row) continue;
+    for (let x = 0; x < level.width; x++) {
+      const tile = row[x];
+      if (!tile || tile.type !== fromType) continue;
+      if (toType === 'empty') {
+        row[x] = null;
+      } else {
+        row[x] = {
+          ...tile,
+          type: toType,
+          content: toType === 'question' && tile.content === 'none' ? 'coin' : tile.content,
+        };
+      }
+      replaced++;
+    }
+  }
+  return replaced;
+}
+
+/**
+ * Lunar Magic batch tool: mirrors tiles, coins, and enemy positions horizontally.
+ */
+export function mirrorLevelHorizontally(level: LevelData): void {
+  const w = level.width;
+  const h = level.height;
+  const mirrorTilePair = (type: TileType): TileType => {
+    switch (type) {
+      case 'pipe_top_left':
+        return 'pipe_top_right';
+      case 'pipe_top_right':
+        return 'pipe_top_left';
+      case 'pipe_body_left':
+        return 'pipe_body_right';
+      case 'pipe_body_right':
+        return 'pipe_body_left';
+      case 'pipe_warp_top_left':
+        return 'pipe_warp_top_right';
+      case 'pipe_warp_top_right':
+        return 'pipe_warp_top_left';
+      default:
+        return type;
+    }
+  };
+  for (let y = 0; y < h; y++) {
+    const row = level.tiles[y];
+    if (!row) continue;
+    const mirroredRow: (BlockTile | null)[] = new Array(w).fill(null);
+    for (let x = 0; x < w; x++) {
+      const tile = row[x];
+      if (!tile) continue;
+      mirroredRow[w - 1 - x] = { ...tile, type: mirrorTilePair(tile.type) };
+    }
+    level.tiles[y] = mirroredRow;
+  }
+
+  const mirrorX = (x: number, itemW: number = 16) => Math.max(0, (w * 16 - itemW) - x);
+  level.enemies = level.enemies.map(e => ({
+    ...e,
+    x: mirrorX(e.x, e.type === 'bowser' ? 24 : 16),
+    facing: e.facing === 'right' ? 'left' : e.facing === 'left' ? 'right' : undefined,
+  }));
+  level.coins = level.coins.map(c => ({ ...c, x: mirrorX(c.x, 16) }));
+  if (level.wCoins) level.wCoins = level.wCoins.map(c => ({ ...c, x: mirrorX(c.x, 16) }));
+  if (level.yoshis) level.yoshis = level.yoshis.map(y => ({ ...y, x: mirrorX(y.x, 20) }));
+  if (level.carryables) level.carryables = level.carryables.map(c => ({ ...c, x: mirrorX(c.x, 16) }));
+  if (level.keyholes) level.keyholes = level.keyholes.map(k => ({ ...k, x: mirrorX(k.x, 16) }));
+  if (level.floatingPlatforms) {
+    level.floatingPlatforms = level.floatingPlatforms.map(fp => ({ ...fp, x: mirrorX(fp.x, fp.width) }));
+  }
+  if (level.checkpoints) {
+    level.checkpoints = level.checkpoints.map(cp => ({
+      ...cp,
+      x: mirrorX(cp.x, 16),
+      respawnPos: { ...cp.respawnPos, x: mirrorX(cp.respawnPos.x, 16) },
+    }));
+  }
+  if (level.pipeWarps) {
+    level.pipeWarps = level.pipeWarps.map(pw => ({
+      ...pw,
+      from: { ...pw.from, x: mirrorX(pw.from.x, pw.from.width) },
+    }));
+  }
+  level.marioStart.x = mirrorX(level.marioStart.x, 16);
+  if (level.flagX < 99000) level.flagX = mirrorX(level.flagX, 16);
+  if (level.castleX < 99000) level.castleX = mirrorX(level.castleX, 16);
+}
+
+/**
+ * Lunar Magic tool: clears one 16-column screen (Txx) while optionally preserving rows 13-14 ground.
+ */
+export function clearLevelScreenAt(
+  level: LevelData,
+  screenIndex: number,
+  keepFloor: boolean = true
+): void {
+  const startTx = Math.max(0, Math.floor(screenIndex) * 16);
+  const endTx = Math.min(level.width, startTx + 16);
+  if (startTx >= endTx) return;
+  for (let y = 0; y < level.height; y++) {
+    if (keepFloor && y >= 13) continue;
+    for (let x = startTx; x < endTx; x++) {
+      level.tiles[y][x] = null;
+    }
+  }
+  const minPx = startTx * 16;
+  const maxPx = endTx * 16;
+  const outside = (x: number) => x < minPx || x >= maxPx;
+  level.enemies = level.enemies.filter(e => outside(e.x));
+  level.coins = level.coins.filter(c => outside(c.x));
+  if (level.wCoins) level.wCoins = level.wCoins.filter(c => outside(c.x));
+  if (level.carryables) level.carryables = level.carryables.filter(c => outside(c.x));
+  if (level.keyholes) level.keyholes = level.keyholes.filter(k => outside(k.x));
+  if (level.floatingPlatforms) level.floatingPlatforms = level.floatingPlatforms.filter(fp => outside(fp.x));
+  if (level.pipeWarps) {
+    level.pipeWarps = level.pipeWarps.filter(pw => outside(pw.from.x));
+    pruneKeyCavePipeWarps(level);
+  }
+}
+
 export type TerrainPresetId =
   | 'flat'
   | 'hills_pits'
@@ -4117,6 +4356,7 @@ export function parseImportedLevelFile(rawJson: string): LevelData {
         type: enemyType,
         x: Math.max(0, Math.min(width * 16 - 8, e.x)),
         y: Math.max(0, Math.min(height * 16 - 8, e.y)),
+        ...(e.facing === 'left' || e.facing === 'right' ? { facing: e.facing } : {}),
       });
     }
   }
@@ -4378,6 +4618,8 @@ export function parseImportedLevelFile(rawJson: string): LevelData {
       : undefined;
 
   const useBonusBackdrop = candidateObj.useBonusBackdrop === true ? true : undefined;
+  const lowGravity = candidateObj.lowGravity === true ? true : undefined;
+  const lockLeftScroll = candidateObj.lockLeftScroll === true ? true : undefined;
   const dryFinishStartX =
     typeof candidateObj.dryFinishStartX === 'number' && Number.isFinite(candidateObj.dryFinishStartX)
       ? Math.max(0, Math.min(width * 16, candidateObj.dryFinishStartX))
@@ -4455,6 +4697,8 @@ export function parseImportedLevelFile(rawJson: string): LevelData {
       checkpoints,
       musicTrack,
       useBonusBackdrop,
+      lowGravity,
+      lockLeftScroll,
       hexId,
       entryType,
       entryPipeDir,

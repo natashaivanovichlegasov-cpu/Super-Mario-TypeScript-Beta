@@ -940,17 +940,19 @@ export class GameEngine {
   }
 
   private buildEnemyFromPlacement(
-    e: { type: EnemyType; x: number; y: number },
+    e: { type: EnemyType; x: number; y: number; facing?: 'left' | 'right' },
     speedMult: number,
     bowserHp: number,
     bossName?: string
   ): Enemy {
+    const facing: 'left' | 'right' = e.facing === 'right' ? 'right' : 'left';
+    const dir = facing === 'right' ? 1 : -1;
     return {
       id: this.nextEntityId++,
       type: e.type,
       x: e.x,
       y: e.y,
-      vx: EnemySpawnManager.getInitialVelocity(e.type, speedMult, -1),
+      vx: EnemySpawnManager.getInitialVelocity(e.type, speedMult, dir),
       vy: e.type === 'paratroopa' ? -2.8 : 0,
       width: e.type === 'bowser' ? 24 : 16,
       height:
@@ -966,7 +968,7 @@ export class GameEngine {
       alive: true,
       state: 'walk' as const,
       stateTimer: 0,
-      facing: 'left' as const,
+      facing,
       animFrame: 0,
       animTimer: 0,
       pipeOriginY: e.type === 'piranha' || e.type === 'lava_bubble' ? e.y : undefined,
@@ -1281,13 +1283,16 @@ export class GameEngine {
   }
 
   private getActiveCameraBounds(): { minX?: number; maxX?: number } | undefined {
-    if (this.level.dryFinishStartX === undefined) return undefined;
     const levelWidthPx = this.level.width * GameEngine.TILE_SIZE;
+    const lockMinX = this.level.lockLeftScroll ? Math.max(0, this.cameraX) : 0;
+    if (this.level.dryFinishStartX === undefined) {
+      return this.level.lockLeftScroll ? { minX: lockMinX, maxX: levelWidthPx } : undefined;
+    }
     if (this.hasExitedToDryFinish || this.marioX >= this.level.dryFinishStartX) {
-      return { minX: this.level.dryFinishStartX, maxX: levelWidthPx };
+      return { minX: Math.max(this.level.dryFinishStartX, lockMinX), maxX: levelWidthPx };
     }
     return {
-      minX: 0,
+      minX: lockMinX,
       maxX: Math.max(GameEngine.NES_WIDTH, this.level.dryFinishStartX),
     };
   }
@@ -2272,11 +2277,13 @@ export class GameEngine {
           this.marioVy = -2.5;
         }
 
-        // Gravity
-        const glideGravity = this.marioPower === 'cape' ? 0.05 : 0.08;
-        const gravity = this.isFluttering ? glideGravity : (this.marioVy < 0 ? 0.38 : 0.62);
+        // Gravity (Lunar Magic lowGravity scales vertical gravity to moon physics)
+        const gravScale = this.level.lowGravity ? 0.62 : 1;
+        const glideGravity = (this.marioPower === 'cape' ? 0.05 : 0.08) * gravScale;
+        const gravity = this.isFluttering ? glideGravity : (this.marioVy < 0 ? 0.38 : 0.62) * gravScale;
         this.marioVy += gravity;
-        if (this.marioVy > 7.0) this.marioVy = 7.0; // Terminal velocity
+        const maxFall = this.level.lowGravity ? 5.0 : 7.0;
+        if (this.marioVy > maxFall) this.marioVy = maxFall; // Terminal velocity
       }
     }
 
@@ -2481,10 +2488,11 @@ export class GameEngine {
     ) {
       this.hasExitedToDryFinish = true;
     }
-    const minMarioX =
+    const dryMinX =
       this.hasExitedToDryFinish && this.level.dryFinishStartX !== undefined
         ? this.level.dryFinishStartX
         : 0;
+    const minMarioX = this.level.lockLeftScroll ? Math.max(dryMinX, this.cameraX) : dryMinX;
     if (this.marioX < minMarioX) {
       this.marioX = minMarioX;
       this.marioVx = 0;

@@ -276,7 +276,7 @@ export interface LevelData {
   width: number; // in tiles (16px per tile)
   height: number; // usually 15 tiles (240px)
   tiles: (BlockTile | null)[][]; // [y][x]
-  enemies: { type: EnemyType; x: number; y: number }[];
+  enemies: { type: EnemyType; x: number; y: number; facing?: 'left' | 'right' }[];
   coins: Point[];
   wCoins?: Point[];
   marioStart: Point;
@@ -298,6 +298,8 @@ export interface LevelData {
   bgColor: string;
   musicTrack?: 'overworld' | 'underground' | 'underwater' | 'castle' | 'ghost_house' | 'bonus';
   useBonusBackdrop?: boolean;
+  lowGravity?: boolean;
+  lockLeftScroll?: boolean;
   hexId?: string;
   entryType?: 'normal' | 'pipe';
   entryPipeDir?: 'up' | 'down' | 'left' | 'right';

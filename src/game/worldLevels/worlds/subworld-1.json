@@ -1,0 +1,221 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "subworld-1",
+  "number": 1,
+  "worldType": "subworld",
+  "parentWorldId": "wikiworld",
+  "name": "Submundo 1 · Caverna das Raízes",
+  "subtitle": "Submundo 1 · Área secreta conectada à Ilha WikiWorldWeb",
+  "playable": true,
+  "boardPalette": "haunted",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "Submundo 1 abaixo da Ilha WikiWorldWeb! Túneis ocultos e um lago subterrâneo guardam atalhos e tesouros.",
+  "nodes": [
+    {
+      "id": "sw1-return",
+      "order": 0,
+      "code": "M1",
+      "title": "Voltar ao Mundo 1",
+      "subtitle": "Cano de retorno para Ilha WikiWorldWeb",
+      "theme": "overworld",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "wikiworld",
+      "targetNodeId": "w1-subworld-portal",
+      "gridX": 4,
+      "gridY": 10,
+      "mapX": 16,
+      "mapY": 50
+    },
+    {
+      "id": "sw1-1-raizes",
+      "order": 1,
+      "code": "S1-1",
+      "title": "Gruta das Raízes",
+      "subtitle": "Submundo 1 · Túnel inicial",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:0201",
+      "hexId": "0201",
+      "gridX": 10,
+      "gridY": 10,
+      "mapX": 40,
+      "mapY": 50
+    },
+    {
+      "id": "sw1-2-recife",
+      "order": 2,
+      "code": "S1-2",
+      "title": "Lago Subterrâneo",
+      "subtitle": "Águas frias nas cavernas",
+      "theme": "underwater",
+      "nodeKind": "stage",
+      "stageKey": "hex:0202",
+      "hexId": "0202",
+      "gridX": 16,
+      "gridY": 6,
+      "unlocksAfterNodeId": "sw1-1-raizes",
+      "mapX": 64,
+      "mapY": 30
+    },
+    {
+      "id": "sw1-3-bastiao",
+      "order": 3,
+      "code": "S1-C",
+      "title": "Bastião Subterrâneo",
+      "subtitle": "Subchefe das Raízes",
+      "bossName": "Guardião das Raízes",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:0204",
+      "hexId": "0204",
+      "gridX": 21,
+      "gridY": 11,
+      "isCastle": true,
+      "unlocksAfterNodeId": "sw1-2-recife",
+      "mapX": 84,
+      "mapY": 55
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "sw1-return",
+      "toId": "sw1-1-raizes",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        50
+      ],
+      "c1": [
+        40,
+        50
+      ],
+      "c2": [
+        16,
+        50
+      ],
+      "p1": [
+        40,
+        50
+      ],
+      "waypoints": [
+        [
+          16,
+          50
+        ],
+        [
+          40,
+          50
+        ]
+      ],
+      "lineStyle": "straight"
+    },
+    {
+      "fromId": "sw1-1-raizes",
+      "toId": "sw1-2-recife",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        40,
+        50
+      ],
+      "c1": [
+        40,
+        30
+      ],
+      "c2": [
+        40,
+        30
+      ],
+      "p1": [
+        64,
+        30
+      ],
+      "waypoints": [
+        [
+          40,
+          50
+        ],
+        [
+          40,
+          30
+        ],
+        [
+          64,
+          30
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw1-2-recife",
+      "toId": "sw1-3-bastiao",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        64,
+        30
+      ],
+      "c1": [
+        84,
+        30
+      ],
+      "c2": [
+        84,
+        30
+      ],
+      "p1": [
+        84,
+        55
+      ],
+      "waypoints": [
+        [
+          64,
+          30
+        ],
+        [
+          84,
+          30
+        ],
+        [
+          84,
+          55
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    }
+  ],
+  "decorations": [
+    {
+      "id": "sw1-rock-1",
+      "kind": "rock",
+      "gridX": 7,
+      "gridY": 5,
+      "x": 28,
+      "y": 25
+    },
+    {
+      "id": "sw1-water-1",
+      "kind": "water",
+      "gridX": 16,
+      "gridY": 14,
+      "width": 12,
+      "height": 10,
+      "x": 64,
+      "y": 70
+    },
+    {
+      "id": "sw1-fort-1",
+      "kind": "castle_fort",
+      "gridX": 21,
+      "gridY": 5,
+      "x": 84,
+      "y": 25
+    }
+  ]
+}

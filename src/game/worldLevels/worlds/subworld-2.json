@@ -1,0 +1,223 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "subworld-2",
+  "number": 2,
+  "worldType": "subworld",
+  "parentWorldId": "island2",
+  "name": "Submundo 2 · Pirâmide Oculta",
+  "subtitle": "Submundo 2 · Câmaras secretas sob as dunas de Chronus",
+  "playable": true,
+  "boardPalette": "desert",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "Nas profundezas da Pirâmide Oculta de Chronus estão armadilhas de pedra e tesouros perdidos.",
+  "nodes": [
+    {
+      "id": "sw2-return",
+      "order": 0,
+      "code": "M2",
+      "title": "Voltar ao Mundo 2",
+      "subtitle": "Saída para Terras de Chronus",
+      "theme": "overworld",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "island2",
+      "targetNodeId": "w2-subworld-portal",
+      "gridX": 4,
+      "gridY": 10,
+      "mapX": 16,
+      "mapY": 50
+    },
+    {
+      "id": "sw2-1-tumba",
+      "order": 1,
+      "code": "S2-1",
+      "title": "Tumba de Arenito",
+      "subtitle": "Submundo 2 · Câmara 1",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "hex:022A",
+      "hexId": "022A",
+      "gridX": 10,
+      "gridY": 7,
+      "mapX": 40,
+      "mapY": 35
+    },
+    {
+      "id": "sw2-2-catacumba",
+      "order": 2,
+      "code": "S2-2",
+      "title": "Catacumba Dourada",
+      "subtitle": "Corredor de armadilhas",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:022B",
+      "hexId": "022B",
+      "gridX": 16,
+      "gridY": 14,
+      "unlocksAfterNodeId": "sw2-1-tumba",
+      "mapX": 64,
+      "mapY": 70
+    },
+    {
+      "id": "sw2-3-esfinge",
+      "order": 3,
+      "code": "S2-C",
+      "title": "Santuário da Esfinge",
+      "subtitle": "Subchefe da Pirâmide",
+      "bossName": "Faraó Koopa",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:022D",
+      "hexId": "022D",
+      "gridX": 21,
+      "gridY": 9,
+      "isCastle": true,
+      "unlocksAfterNodeId": "sw2-2-catacumba",
+      "mapX": 84,
+      "mapY": 45
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "sw2-return",
+      "toId": "sw2-1-tumba",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        50
+      ],
+      "c1": [
+        16,
+        35
+      ],
+      "c2": [
+        16,
+        35
+      ],
+      "p1": [
+        40,
+        35
+      ],
+      "waypoints": [
+        [
+          16,
+          50
+        ],
+        [
+          16,
+          35
+        ],
+        [
+          40,
+          35
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw2-1-tumba",
+      "toId": "sw2-2-catacumba",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        40,
+        35
+      ],
+      "c1": [
+        64,
+        35
+      ],
+      "c2": [
+        64,
+        35
+      ],
+      "p1": [
+        64,
+        70
+      ],
+      "waypoints": [
+        [
+          40,
+          35
+        ],
+        [
+          64,
+          35
+        ],
+        [
+          64,
+          70
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw2-2-catacumba",
+      "toId": "sw2-3-esfinge",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        64,
+        70
+      ],
+      "c1": [
+        64,
+        45
+      ],
+      "c2": [
+        64,
+        45
+      ],
+      "p1": [
+        84,
+        45
+      ],
+      "waypoints": [
+        [
+          64,
+          70
+        ],
+        [
+          64,
+          45
+        ],
+        [
+          84,
+          45
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    }
+  ],
+  "decorations": [
+    {
+      "id": "sw2-rock-1",
+      "kind": "rock",
+      "gridX": 14,
+      "gridY": 5,
+      "x": 56,
+      "y": 25
+    },
+    {
+      "id": "sw2-hill-1",
+      "kind": "hill",
+      "gridX": 7,
+      "gridY": 15,
+      "x": 28,
+      "y": 75
+    },
+    {
+      "id": "sw2-fort-1",
+      "kind": "castle_fort",
+      "gridX": 21,
+      "gridY": 4,
+      "x": 84,
+      "y": 20
+    }
+  ]
+}

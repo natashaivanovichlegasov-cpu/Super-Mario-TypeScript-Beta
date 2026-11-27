@@ -1,0 +1,4019 @@
+{
+  "format": "smb-world-map",
+  "version": 1,
+  "design": "smb3",
+  "defaultIslandId": "wikiworld",
+  "islands": [
+    {
+      "id": "wikiworld",
+      "number": 1,
+      "worldType": "main",
+      "subworldId": "subworld-1",
+      "name": "Ilha WikiWorldWeb",
+      "subtitle": "Mundo 1 · 6 fases + Portal para o Submundo 1",
+      "playable": true,
+      "boardPalette": "grass",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "Olá, seja bem vindo ao mundo fantastico de WazzimaGiygg. Parece que desta vez o problema também é o caluniador, de nome Chronus, junto com Bowser. Vamos explorar os mundos para poder salvar a princesa femboy",
+      "nodes": [
+        {
+          "id": "wiki-1-overworld",
+          "order": 0,
+          "code": "W-1",
+          "title": "Overworld",
+          "subtitle": "Planícies de Yoshi's Island · Cano secreto à caverna da chave",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "wiki-1-overworld",
+          "hexId": "0105",
+          "mapX": 16,
+          "mapY": 64,
+          "gridX": 4,
+          "gridY": 13
+        },
+        {
+          "id": "wiki-2-caverna",
+          "order": 1,
+          "code": "W-2",
+          "title": "Caverna",
+          "subtitle": "Grutas subterrâneas e túneis de pedra",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "wiki-2-caverna",
+          "hexId": "0106",
+          "mapX": 34,
+          "mapY": 40,
+          "gridX": 9,
+          "gridY": 8,
+          "unlocksAfterNodeId": "wiki-1-overworld"
+        },
+        {
+          "id": "wiki-3-agua",
+          "order": 2,
+          "code": "W-3",
+          "title": "Água",
+          "subtitle": "Lagoa costeira com recifes e corais",
+          "theme": "underwater",
+          "nodeKind": "stage",
+          "stageKey": "wiki-3-agua",
+          "hexId": "0107",
+          "mapX": 52,
+          "mapY": 64,
+          "gridX": 13,
+          "gridY": 13,
+          "unlocksAfterNodeId": "wiki-2-caverna"
+        },
+        {
+          "id": "wiki-4-mansao",
+          "order": 3,
+          "code": "W-4",
+          "title": "Mansão Fantasma",
+          "subtitle": "Boos, Dry Bones e salões assombrados",
+          "theme": "ghost_house",
+          "nodeKind": "stage",
+          "stageKey": "wiki-4-mansao",
+          "hexId": "0108",
+          "mapX": 68,
+          "mapY": 40,
+          "gridX": 17,
+          "gridY": 8,
+          "unlocksAfterNodeId": "wiki-3-agua"
+        },
+        {
+          "id": "wiki-5-castelo",
+          "order": 4,
+          "code": "W-5",
+          "title": "Castelo de Johannnnes89",
+          "subtitle": "Fortaleza final da ilha · 1º Chefe: Lorde Ignis Koopa",
+          "bossName": "Lorde Ignis Koopa",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "wiki-5-castelo",
+          "hexId": "0109",
+          "mapX": 86,
+          "mapY": 54,
+          "gridX": 22,
+          "gridY": 11,
+          "isCastle": true,
+          "unlocksAfterNodeId": "wiki-4-mansao"
+        },
+        {
+          "id": "wiki-switch-yellow",
+          "order": 5,
+          "code": "PA",
+          "title": "Palácio Interruptor Amarelo",
+          "subtitle": "Saída secreta de W-1 (cano do subsolo · Chave + Fechadura). Ativa blocos [!] amarelos",
+          "theme": "underground",
+          "nodeKind": "switch_palace",
+          "stageKey": "wiki-switch-yellow",
+          "hexId": "0110",
+          "mapX": 28,
+          "mapY": 76,
+          "gridX": 7,
+          "gridY": 15,
+          "isSwitchPalace": true,
+          "switchColor": "yellow",
+          "unlocksAfterSecretNodeId": "wiki-1-overworld"
+        },
+        {
+          "id": "w1-subworld-portal",
+          "order": 6,
+          "code": "S1",
+          "title": "Portal Submundo 1",
+          "subtitle": "Passagem oculta para o Submundo 1 · Caverna das Raízes",
+          "theme": "underground",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "subworld-1",
+          "targetNodeId": "sw1-1-raizes",
+          "mapX": 34,
+          "mapY": 20,
+          "gridX": 9,
+          "gridY": 4,
+          "unlocksAfterNodeId": "wiki-2-caverna"
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "wiki-1-overworld",
+          "toId": "wiki-2-caverna",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            64
+          ],
+          "c1": [
+            16,
+            40
+          ],
+          "c2": [
+            16,
+            40
+          ],
+          "p1": [
+            34,
+            40
+          ],
+          "waypoints": [
+            [
+              16,
+              64
+            ],
+            [
+              16,
+              40
+            ],
+            [
+              34,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "wiki-2-caverna",
+          "toId": "wiki-3-agua",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            34,
+            40
+          ],
+          "c1": [
+            52,
+            40
+          ],
+          "c2": [
+            52,
+            40
+          ],
+          "p1": [
+            52,
+            64
+          ],
+          "waypoints": [
+            [
+              34,
+              40
+            ],
+            [
+              52,
+              40
+            ],
+            [
+              52,
+              64
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "wiki-3-agua",
+          "toId": "wiki-4-mansao",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            52,
+            64
+          ],
+          "c1": [
+            52,
+            40
+          ],
+          "c2": [
+            52,
+            40
+          ],
+          "p1": [
+            68,
+            40
+          ],
+          "waypoints": [
+            [
+              52,
+              64
+            ],
+            [
+              52,
+              40
+            ],
+            [
+              68,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "wiki-4-mansao",
+          "toId": "wiki-5-castelo",
+          "fromOrder": 3,
+          "toOrder": 4,
+          "p0": [
+            68,
+            40
+          ],
+          "c1": [
+            86,
+            40
+          ],
+          "c2": [
+            86,
+            40
+          ],
+          "p1": [
+            86,
+            54
+          ],
+          "waypoints": [
+            [
+              68,
+              40
+            ],
+            [
+              86,
+              40
+            ],
+            [
+              86,
+              54
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "wiki-1-overworld",
+          "toId": "wiki-switch-yellow",
+          "fromOrder": 0,
+          "toOrder": 5,
+          "p0": [
+            16,
+            64
+          ],
+          "c1": [
+            16,
+            76
+          ],
+          "c2": [
+            16,
+            76
+          ],
+          "p1": [
+            28,
+            76
+          ],
+          "waypoints": [
+            [
+              16,
+              64
+            ],
+            [
+              16,
+              76
+            ],
+            [
+              28,
+              76
+            ]
+          ],
+          "lineStyle": "orthogonal",
+          "isSecretRoute": true,
+          "eventId": 1
+        },
+        {
+          "fromId": "wiki-2-caverna",
+          "toId": "w1-subworld-portal",
+          "fromOrder": 1,
+          "toOrder": 6,
+          "p0": [
+            34,
+            40
+          ],
+          "c1": [
+            34,
+            20
+          ],
+          "c2": [
+            34,
+            40
+          ],
+          "p1": [
+            34,
+            20
+          ],
+          "waypoints": [
+            [
+              34,
+              40
+            ],
+            [
+              34,
+              20
+            ]
+          ],
+          "lineStyle": "straight",
+          "eventId": 2
+        }
+      ],
+      "decorations": [
+        {
+          "id": "dec-water-lagoon",
+          "kind": "water",
+          "x": 45,
+          "y": 54,
+          "width": 16,
+          "height": 22
+        },
+        {
+          "id": "dec-bridge-agua",
+          "kind": "bridge",
+          "x": 47,
+          "y": 40,
+          "width": 10,
+          "height": 4
+        },
+        {
+          "id": "dec-hill-1",
+          "kind": "hill",
+          "x": 11,
+          "y": 32
+        },
+        {
+          "id": "dec-hill-2",
+          "kind": "hill",
+          "x": 38,
+          "y": 24
+        },
+        {
+          "id": "dec-trees-1",
+          "kind": "trees",
+          "x": 24,
+          "y": 52
+        },
+        {
+          "id": "dec-trees-2",
+          "kind": "trees",
+          "x": 10,
+          "y": 78
+        },
+        {
+          "id": "dec-rock-cave",
+          "kind": "rock",
+          "x": 34,
+          "y": 26
+        },
+        {
+          "id": "dec-haunted-1",
+          "kind": "haunted_tree",
+          "x": 62,
+          "y": 24
+        },
+        {
+          "id": "dec-haunted-2",
+          "kind": "haunted_tree",
+          "x": 76,
+          "y": 28
+        },
+        {
+          "id": "dec-castle-fort",
+          "kind": "castle_fort",
+          "x": 86,
+          "y": 38
+        },
+        {
+          "id": "dec-patrol-1",
+          "kind": "enemy_patrol",
+          "x": 42,
+          "y": 78,
+          "label": "Hammer Bro"
+        }
+      ]
+    },
+    {
+      "id": "island2",
+      "number": 2,
+      "worldType": "main",
+      "subworldId": "subworld-2",
+      "name": "Mundo 2 · Terras de Chronus",
+      "subtitle": "Mundo 2 · Deserto Dourado & Ruínas Antigas",
+      "playable": true,
+      "boardPalette": "desert",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "Você chegou às Terras Áridas de Chronus! Atravesse dunas, túneis de arenito e a fortaleza solar para abrir caminho rumo ao próximo continente.",
+      "nodes": [
+        {
+          "id": "island2-1-entrada",
+          "order": 0,
+          "code": "2-1",
+          "title": "Dunas de Chronus",
+          "subtitle": "Deserto de areia escaldante",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:0205",
+          "hexId": "0205",
+          "gridX": 4,
+          "gridY": 13,
+          "mapX": 16,
+          "mapY": 65
+        },
+        {
+          "id": "island2-2-ruinas",
+          "order": 1,
+          "code": "2-2",
+          "title": "Ruínas Subterrâneas",
+          "subtitle": "Catacumbas abaixo da areia",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:0206",
+          "hexId": "0206",
+          "gridX": 9,
+          "gridY": 8,
+          "unlocksAfterNodeId": "island2-1-entrada",
+          "mapX": 36,
+          "mapY": 40
+        },
+        {
+          "id": "w2-3-oasis",
+          "order": 2,
+          "code": "2-3",
+          "title": "Oásis Escondido",
+          "subtitle": "Águas subterrâneas do deserto",
+          "theme": "underwater",
+          "nodeKind": "stage",
+          "stageKey": "hex:0207",
+          "hexId": "0207",
+          "gridX": 14,
+          "gridY": 13,
+          "unlocksAfterNodeId": "island2-2-ruinas",
+          "mapX": 56,
+          "mapY": 65
+        },
+        {
+          "id": "w2-4-templo",
+          "order": 3,
+          "code": "2-4",
+          "title": "Templo Assombrado",
+          "subtitle": "Múmias e espectros das dunas",
+          "theme": "ghost_house",
+          "nodeKind": "stage",
+          "stageKey": "hex:0208",
+          "hexId": "0208",
+          "gridX": 18,
+          "gridY": 8,
+          "unlocksAfterNodeId": "w2-3-oasis",
+          "mapX": 72,
+          "mapY": 40
+        },
+        {
+          "id": "island2-3-fortaleza",
+          "order": 4,
+          "code": "2-C",
+          "title": "Fortaleza de Chronus",
+          "subtitle": "2º Chefe: Guardião de Arenito",
+          "bossName": "Guardião de Arenito",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:0209",
+          "hexId": "0209",
+          "gridX": 22,
+          "gridY": 11,
+          "isCastle": true,
+          "unlocksAfterNodeId": "w2-4-templo",
+          "mapX": 88,
+          "mapY": 55
+        },
+        {
+          "id": "w2-subworld-portal",
+          "order": 5,
+          "code": "S2",
+          "title": "Portal Submundo 2",
+          "subtitle": "Entrada para a Pirâmide Oculta",
+          "theme": "underground",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "subworld-2",
+          "targetNodeId": "sw2-1-tumba",
+          "gridX": 9,
+          "gridY": 4,
+          "unlocksAfterNodeId": "island2-2-ruinas",
+          "mapX": 36,
+          "mapY": 20
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "island2-1-entrada",
+          "toId": "island2-2-ruinas",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            65
+          ],
+          "c1": [
+            16,
+            40
+          ],
+          "c2": [
+            16,
+            40
+          ],
+          "p1": [
+            36,
+            40
+          ],
+          "waypoints": [
+            [
+              16,
+              65
+            ],
+            [
+              16,
+              40
+            ],
+            [
+              36,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "island2-2-ruinas",
+          "toId": "w2-3-oasis",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            36,
+            40
+          ],
+          "c1": [
+            56,
+            40
+          ],
+          "c2": [
+            56,
+            40
+          ],
+          "p1": [
+            56,
+            65
+          ],
+          "waypoints": [
+            [
+              36,
+              40
+            ],
+            [
+              56,
+              40
+            ],
+            [
+              56,
+              65
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w2-3-oasis",
+          "toId": "w2-4-templo",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            56,
+            65
+          ],
+          "c1": [
+            56,
+            40
+          ],
+          "c2": [
+            56,
+            40
+          ],
+          "p1": [
+            72,
+            40
+          ],
+          "waypoints": [
+            [
+              56,
+              65
+            ],
+            [
+              56,
+              40
+            ],
+            [
+              72,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w2-4-templo",
+          "toId": "island2-3-fortaleza",
+          "fromOrder": 3,
+          "toOrder": 4,
+          "p0": [
+            72,
+            40
+          ],
+          "c1": [
+            88,
+            40
+          ],
+          "c2": [
+            88,
+            40
+          ],
+          "p1": [
+            88,
+            55
+          ],
+          "waypoints": [
+            [
+              72,
+              40
+            ],
+            [
+              88,
+              40
+            ],
+            [
+              88,
+              55
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "island2-2-ruinas",
+          "toId": "w2-subworld-portal",
+          "fromOrder": 1,
+          "toOrder": 5,
+          "p0": [
+            36,
+            40
+          ],
+          "c1": [
+            36,
+            20
+          ],
+          "c2": [
+            36,
+            40
+          ],
+          "p1": [
+            36,
+            20
+          ],
+          "waypoints": [
+            [
+              36,
+              40
+            ],
+            [
+              36,
+              20
+            ]
+          ],
+          "lineStyle": "straight",
+          "eventId": 3
+        }
+      ],
+      "decorations": [
+        {
+          "id": "w2-hill-1",
+          "kind": "hill",
+          "gridX": 4,
+          "gridY": 5,
+          "x": 16,
+          "y": 25
+        },
+        {
+          "id": "w2-rock-1",
+          "kind": "rock",
+          "gridX": 13,
+          "gridY": 6,
+          "x": 52,
+          "y": 30
+        },
+        {
+          "id": "w2-water-1",
+          "kind": "water",
+          "gridX": 14,
+          "gridY": 16,
+          "width": 14,
+          "height": 12,
+          "x": 56,
+          "y": 80
+        },
+        {
+          "id": "w2-fort-1",
+          "kind": "castle_fort",
+          "gridX": 22,
+          "gridY": 6,
+          "x": 88,
+          "y": 30
+        },
+        {
+          "id": "w2-patrol-1",
+          "kind": "enemy_patrol",
+          "gridX": 11,
+          "gridY": 15,
+          "label": "Fire Snake",
+          "x": 44,
+          "y": 75
+        }
+      ]
+    },
+    {
+      "id": "world-3",
+      "number": 3,
+      "worldType": "main",
+      "subworldId": "subworld-3",
+      "name": "Mundo 3 · Arquipélago Marinho",
+      "subtitle": "Mundo 3 · Ilhotas Tropicais & Recifes",
+      "playable": true,
+      "boardPalette": "ocean",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "As marés do Arquipélago Marinho guardam rotas secretas e navios afundados controlados pela frota de Bowser.",
+      "nodes": [
+        {
+          "id": "w3-1-praia",
+          "order": 0,
+          "code": "3-1",
+          "title": "Prado Costeiro",
+          "subtitle": "Ilhota inicial de águas claras",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:020A",
+          "hexId": "020A",
+          "gridX": 4,
+          "gridY": 12,
+          "mapX": 16,
+          "mapY": 60
+        },
+        {
+          "id": "w3-2-gruta",
+          "order": 1,
+          "code": "3-2",
+          "title": "Mina Marítima",
+          "subtitle": "Galerias submersas na rocha",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:020B",
+          "hexId": "020B",
+          "gridX": 9,
+          "gridY": 15,
+          "unlocksAfterNodeId": "w3-1-praia",
+          "mapX": 36,
+          "mapY": 75
+        },
+        {
+          "id": "w3-3-corais",
+          "order": 2,
+          "code": "3-3",
+          "title": "Recife de Corais",
+          "subtitle": "Cheep Cheeps e correntes marinhas",
+          "theme": "underwater",
+          "nodeKind": "stage",
+          "stageKey": "hex:020C",
+          "hexId": "020C",
+          "gridX": 14,
+          "gridY": 9,
+          "unlocksAfterNodeId": "w3-2-gruta",
+          "mapX": 56,
+          "mapY": 45
+        },
+        {
+          "id": "w3-4-navio",
+          "order": 3,
+          "code": "3-4",
+          "title": "Biblioteca Afundada",
+          "subtitle": "Navio fantasma à deriva",
+          "theme": "ghost_house",
+          "nodeKind": "stage",
+          "stageKey": "hex:020D",
+          "hexId": "020D",
+          "gridX": 19,
+          "gridY": 14,
+          "unlocksAfterNodeId": "w3-3-corais",
+          "mapX": 76,
+          "mapY": 70
+        },
+        {
+          "id": "w3-5-castelo",
+          "order": 4,
+          "code": "3-C",
+          "title": "Castelo Coral",
+          "subtitle": "3º Chefe: Capitão Cheep",
+          "bossName": "Capitão Cheep",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:020E",
+          "hexId": "020E",
+          "gridX": 22,
+          "gridY": 8,
+          "isCastle": true,
+          "unlocksAfterNodeId": "w3-4-navio",
+          "mapX": 88,
+          "mapY": 40
+        },
+        {
+          "id": "w3-subworld-portal",
+          "order": 5,
+          "code": "S3",
+          "title": "Portal Submundo 3",
+          "subtitle": "Mergulho para a Fossa Abissal",
+          "theme": "underwater",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "subworld-3",
+          "targetNodeId": "sw3-1-fossa",
+          "gridX": 14,
+          "gridY": 4,
+          "unlocksAfterNodeId": "w3-3-corais",
+          "mapX": 56,
+          "mapY": 20
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "w3-1-praia",
+          "toId": "w3-2-gruta",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            60
+          ],
+          "c1": [
+            36,
+            60
+          ],
+          "c2": [
+            36,
+            60
+          ],
+          "p1": [
+            36,
+            75
+          ],
+          "waypoints": [
+            [
+              16,
+              60
+            ],
+            [
+              36,
+              60
+            ],
+            [
+              36,
+              75
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w3-2-gruta",
+          "toId": "w3-3-corais",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            36,
+            75
+          ],
+          "c1": [
+            36,
+            45
+          ],
+          "c2": [
+            36,
+            45
+          ],
+          "p1": [
+            56,
+            45
+          ],
+          "waypoints": [
+            [
+              36,
+              75
+            ],
+            [
+              36,
+              45
+            ],
+            [
+              56,
+              45
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w3-3-corais",
+          "toId": "w3-4-navio",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            56,
+            45
+          ],
+          "c1": [
+            76,
+            45
+          ],
+          "c2": [
+            76,
+            45
+          ],
+          "p1": [
+            76,
+            70
+          ],
+          "waypoints": [
+            [
+              56,
+              45
+            ],
+            [
+              76,
+              45
+            ],
+            [
+              76,
+              70
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w3-4-navio",
+          "toId": "w3-5-castelo",
+          "fromOrder": 3,
+          "toOrder": 4,
+          "p0": [
+            76,
+            70
+          ],
+          "c1": [
+            76,
+            40
+          ],
+          "c2": [
+            76,
+            40
+          ],
+          "p1": [
+            88,
+            40
+          ],
+          "waypoints": [
+            [
+              76,
+              70
+            ],
+            [
+              76,
+              40
+            ],
+            [
+              88,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w3-3-corais",
+          "toId": "w3-subworld-portal",
+          "fromOrder": 2,
+          "toOrder": 5,
+          "p0": [
+            56,
+            45
+          ],
+          "c1": [
+            56,
+            20
+          ],
+          "c2": [
+            56,
+            45
+          ],
+          "p1": [
+            56,
+            20
+          ],
+          "waypoints": [
+            [
+              56,
+              45
+            ],
+            [
+              56,
+              20
+            ]
+          ],
+          "lineStyle": "straight",
+          "eventId": 4
+        }
+      ],
+      "decorations": [
+        {
+          "id": "w3-water-1",
+          "kind": "water",
+          "gridX": 11,
+          "gridY": 10,
+          "width": 16,
+          "height": 18,
+          "x": 44,
+          "y": 50
+        },
+        {
+          "id": "w3-bridge-1",
+          "kind": "bridge",
+          "gridX": 11,
+          "gridY": 12,
+          "width": 12,
+          "height": 4,
+          "x": 44,
+          "y": 60
+        },
+        {
+          "id": "w3-trees-1",
+          "kind": "trees",
+          "gridX": 5,
+          "gridY": 6,
+          "x": 20,
+          "y": 30
+        },
+        {
+          "id": "w3-cloud-1",
+          "kind": "cloud",
+          "gridX": 18,
+          "gridY": 4,
+          "x": 72,
+          "y": 20
+        },
+        {
+          "id": "w3-fort-1",
+          "kind": "castle_fort",
+          "gridX": 22,
+          "gridY": 4,
+          "x": 88,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "world-4",
+      "number": 4,
+      "worldType": "main",
+      "subworldId": "subworld-4",
+      "name": "Mundo 4 · Vale dos Gigantes",
+      "subtitle": "Mundo 4 · Florestas Colossais & Abismos",
+      "playable": true,
+      "boardPalette": "grass",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "Tudo no Vale dos Gigantes tem proporções titânicas! Desvende os túneis de pedra e enfrente o Rei Koopa Colosso.",
+      "nodes": [
+        {
+          "id": "w4-1-vale",
+          "order": 0,
+          "code": "4-1",
+          "title": "Vale Verdejante",
+          "subtitle": "Campos altos de gramado gigante",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:020F",
+          "hexId": "020F",
+          "gridX": 4,
+          "gridY": 8,
+          "mapX": 16,
+          "mapY": 40
+        },
+        {
+          "id": "w4-2-abismo",
+          "order": 1,
+          "code": "4-2",
+          "title": "Abismo de Pedra",
+          "subtitle": "Cavernas profundas do vale",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:0210",
+          "hexId": "0210",
+          "gridX": 9,
+          "gridY": 13,
+          "unlocksAfterNodeId": "w4-1-vale",
+          "mapX": 36,
+          "mapY": 65
+        },
+        {
+          "id": "w4-3-bosque",
+          "order": 2,
+          "code": "4-3",
+          "title": "Bosque dos Sinos",
+          "subtitle": "Floresta densa com plataformas altas",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:0214",
+          "hexId": "0214",
+          "gridX": 14,
+          "gridY": 8,
+          "unlocksAfterNodeId": "w4-2-abismo",
+          "mapX": 56,
+          "mapY": 40
+        },
+        {
+          "id": "w4-4-corredor",
+          "order": 3,
+          "code": "4-4",
+          "title": "Corredor Sombrio",
+          "subtitle": "Salão antigo cercado de névoa",
+          "theme": "ghost_house",
+          "nodeKind": "stage",
+          "stageKey": "hex:0217",
+          "hexId": "0217",
+          "gridX": 18,
+          "gridY": 14,
+          "unlocksAfterNodeId": "w4-3-bosque",
+          "mapX": 72,
+          "mapY": 70
+        },
+        {
+          "id": "w4-5-castelo",
+          "order": 4,
+          "code": "4-C",
+          "title": "Fortaleza Colossal",
+          "subtitle": "4º Chefe: Rei Koopa Colosso",
+          "bossName": "Rei Koopa Colosso",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:0218",
+          "hexId": "0218",
+          "gridX": 22,
+          "gridY": 10,
+          "isCastle": true,
+          "unlocksAfterNodeId": "w4-4-corredor",
+          "mapX": 88,
+          "mapY": 50
+        },
+        {
+          "id": "w4-subworld-portal",
+          "order": 5,
+          "code": "S4",
+          "title": "Portal Submundo 4",
+          "subtitle": "Desce às Minas Subterrâneas",
+          "theme": "underground",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "subworld-4",
+          "targetNodeId": "sw4-1-minas",
+          "gridX": 9,
+          "gridY": 17,
+          "unlocksAfterNodeId": "w4-2-abismo",
+          "mapX": 36,
+          "mapY": 85
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "w4-1-vale",
+          "toId": "w4-2-abismo",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            40
+          ],
+          "c1": [
+            36,
+            40
+          ],
+          "c2": [
+            36,
+            40
+          ],
+          "p1": [
+            36,
+            65
+          ],
+          "waypoints": [
+            [
+              16,
+              40
+            ],
+            [
+              36,
+              40
+            ],
+            [
+              36,
+              65
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w4-2-abismo",
+          "toId": "w4-3-bosque",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            36,
+            65
+          ],
+          "c1": [
+            36,
+            40
+          ],
+          "c2": [
+            36,
+            40
+          ],
+          "p1": [
+            56,
+            40
+          ],
+          "waypoints": [
+            [
+              36,
+              65
+            ],
+            [
+              36,
+              40
+            ],
+            [
+              56,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w4-3-bosque",
+          "toId": "w4-4-corredor",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            56,
+            40
+          ],
+          "c1": [
+            72,
+            40
+          ],
+          "c2": [
+            72,
+            40
+          ],
+          "p1": [
+            72,
+            70
+          ],
+          "waypoints": [
+            [
+              56,
+              40
+            ],
+            [
+              72,
+              40
+            ],
+            [
+              72,
+              70
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w4-4-corredor",
+          "toId": "w4-5-castelo",
+          "fromOrder": 3,
+          "toOrder": 4,
+          "p0": [
+            72,
+            70
+          ],
+          "c1": [
+            72,
+            50
+          ],
+          "c2": [
+            72,
+            50
+          ],
+          "p1": [
+            88,
+            50
+          ],
+          "waypoints": [
+            [
+              72,
+              70
+            ],
+            [
+              72,
+              50
+            ],
+            [
+              88,
+              50
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w4-2-abismo",
+          "toId": "w4-subworld-portal",
+          "fromOrder": 1,
+          "toOrder": 5,
+          "p0": [
+            36,
+            65
+          ],
+          "c1": [
+            36,
+            85
+          ],
+          "c2": [
+            36,
+            65
+          ],
+          "p1": [
+            36,
+            85
+          ],
+          "waypoints": [
+            [
+              36,
+              65
+            ],
+            [
+              36,
+              85
+            ]
+          ],
+          "lineStyle": "straight",
+          "eventId": 5
+        }
+      ],
+      "decorations": [
+        {
+          "id": "w4-trees-1",
+          "kind": "trees",
+          "gridX": 5,
+          "gridY": 14,
+          "x": 20,
+          "y": 70
+        },
+        {
+          "id": "w4-hill-1",
+          "kind": "hill",
+          "gridX": 11,
+          "gridY": 5,
+          "x": 44,
+          "y": 25
+        },
+        {
+          "id": "w4-rock-1",
+          "kind": "rock",
+          "gridX": 16,
+          "gridY": 16,
+          "x": 64,
+          "y": 80
+        },
+        {
+          "id": "w4-fort-1",
+          "kind": "castle_fort",
+          "gridX": 22,
+          "gridY": 5,
+          "x": 88,
+          "y": 25
+        },
+        {
+          "id": "w4-patrol-1",
+          "kind": "enemy_patrol",
+          "gridX": 14,
+          "gridY": 12,
+          "label": "Sledge Bro",
+          "x": 56,
+          "y": 60
+        }
+      ]
+    },
+    {
+      "id": "world-5",
+      "number": 5,
+      "worldType": "main",
+      "subworldId": "subworld-5",
+      "name": "Mundo 5 · Nuvens do Céu",
+      "subtitle": "Mundo 5 · Torre Celestial & Estrada das Nuvens",
+      "playable": true,
+      "boardPalette": "ocean",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "Acima das montanhas fica a Nação das Nuvens! Salte entre pontes aéreas e enfrente o Barão Alado na Cidadela Celeste.",
+      "nodes": [
+        {
+          "id": "w5-1-mirante",
+          "order": 0,
+          "code": "5-1",
+          "title": "Mirante das Nuvens",
+          "subtitle": "Subida às correntes de vento",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:0219",
+          "hexId": "0219",
+          "gridX": 4,
+          "gridY": 14,
+          "mapX": 16,
+          "mapY": 70
+        },
+        {
+          "id": "w5-2-fosso",
+          "order": 1,
+          "code": "5-2",
+          "title": "Fosso Aéreo",
+          "subtitle": "Túneis escavados no pico",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:021A",
+          "hexId": "021A",
+          "gridX": 9,
+          "gridY": 10,
+          "unlocksAfterNodeId": "w5-1-mirante",
+          "mapX": 36,
+          "mapY": 50
+        },
+        {
+          "id": "w5-3-ponte",
+          "order": 2,
+          "code": "5-3",
+          "title": "Ponte das Águias",
+          "subtitle": "Travessia suspensa nas alturas",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:021E",
+          "hexId": "021E",
+          "gridX": 14,
+          "gridY": 6,
+          "unlocksAfterNodeId": "w5-2-fosso",
+          "mapX": 56,
+          "mapY": 30
+        },
+        {
+          "id": "w5-4-torre",
+          "order": 3,
+          "code": "5-4",
+          "title": "Torre Nebulosa",
+          "subtitle": "Salão flutuante dos espectros",
+          "theme": "ghost_house",
+          "nodeKind": "stage",
+          "stageKey": "hex:021C",
+          "hexId": "021C",
+          "gridX": 18,
+          "gridY": 12,
+          "unlocksAfterNodeId": "w5-3-ponte",
+          "mapX": 72,
+          "mapY": 60
+        },
+        {
+          "id": "w5-5-castelo",
+          "order": 4,
+          "code": "5-C",
+          "title": "Cidadela Celeste",
+          "subtitle": "5º Chefe: Barão Alado",
+          "bossName": "Barão Alado",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:021D",
+          "hexId": "021D",
+          "gridX": 22,
+          "gridY": 8,
+          "isCastle": true,
+          "unlocksAfterNodeId": "w5-4-torre",
+          "mapX": 88,
+          "mapY": 40
+        },
+        {
+          "id": "w5-subworld-portal",
+          "order": 5,
+          "code": "S5",
+          "title": "Portal Submundo 5",
+          "subtitle": "Warp para a Estrada Estelar",
+          "theme": "ghost_house",
+          "nodeKind": "star_warp",
+          "targetIslandId": "subworld-5",
+          "targetNodeId": "sw5-1-estrela",
+          "gridX": 14,
+          "gridY": 16,
+          "unlocksAfterNodeId": "w5-3-ponte",
+          "mapX": 56,
+          "mapY": 80
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "w5-1-mirante",
+          "toId": "w5-2-fosso",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            70
+          ],
+          "c1": [
+            16,
+            50
+          ],
+          "c2": [
+            16,
+            50
+          ],
+          "p1": [
+            36,
+            50
+          ],
+          "waypoints": [
+            [
+              16,
+              70
+            ],
+            [
+              16,
+              50
+            ],
+            [
+              36,
+              50
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w5-2-fosso",
+          "toId": "w5-3-ponte",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            36,
+            50
+          ],
+          "c1": [
+            56,
+            50
+          ],
+          "c2": [
+            56,
+            50
+          ],
+          "p1": [
+            56,
+            30
+          ],
+          "waypoints": [
+            [
+              36,
+              50
+            ],
+            [
+              56,
+              50
+            ],
+            [
+              56,
+              30
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w5-3-ponte",
+          "toId": "w5-4-torre",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            56,
+            30
+          ],
+          "c1": [
+            56,
+            60
+          ],
+          "c2": [
+            56,
+            60
+          ],
+          "p1": [
+            72,
+            60
+          ],
+          "waypoints": [
+            [
+              56,
+              30
+            ],
+            [
+              56,
+              60
+            ],
+            [
+              72,
+              60
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w5-4-torre",
+          "toId": "w5-5-castelo",
+          "fromOrder": 3,
+          "toOrder": 4,
+          "p0": [
+            72,
+            60
+          ],
+          "c1": [
+            88,
+            60
+          ],
+          "c2": [
+            88,
+            60
+          ],
+          "p1": [
+            88,
+            40
+          ],
+          "waypoints": [
+            [
+              72,
+              60
+            ],
+            [
+              88,
+              60
+            ],
+            [
+              88,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w5-3-ponte",
+          "toId": "w5-subworld-portal",
+          "fromOrder": 2,
+          "toOrder": 5,
+          "p0": [
+            56,
+            30
+          ],
+          "c1": [
+            56,
+            80
+          ],
+          "c2": [
+            56,
+            30
+          ],
+          "p1": [
+            56,
+            80
+          ],
+          "waypoints": [
+            [
+              56,
+              30
+            ],
+            [
+              56,
+              80
+            ]
+          ],
+          "lineStyle": "straight",
+          "eventId": 6
+        }
+      ],
+      "decorations": [
+        {
+          "id": "w5-cloud-1",
+          "kind": "cloud",
+          "gridX": 5,
+          "gridY": 6,
+          "x": 20,
+          "y": 30
+        },
+        {
+          "id": "w5-cloud-2",
+          "kind": "cloud",
+          "gridX": 11,
+          "gridY": 4,
+          "x": 44,
+          "y": 20
+        },
+        {
+          "id": "w5-cloud-3",
+          "kind": "cloud",
+          "gridX": 17,
+          "gridY": 5,
+          "x": 68,
+          "y": 25
+        },
+        {
+          "id": "w5-bridge-1",
+          "kind": "bridge",
+          "gridX": 11,
+          "gridY": 15,
+          "width": 12,
+          "height": 4,
+          "x": 44,
+          "y": 75
+        },
+        {
+          "id": "w5-fort-1",
+          "kind": "castle_fort",
+          "gridX": 22,
+          "gridY": 4,
+          "x": 88,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "world-6",
+      "number": 6,
+      "worldType": "main",
+      "subworldId": "subworld-6",
+      "name": "Mundo 6 · Névoa Assombrada",
+      "subtitle": "Mundo 6 · Bosque Sombrio & Mansões de Boo",
+      "playable": true,
+      "boardPalette": "haunted",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "A Névoa Assombrada esconde armadilhas ilusórias e galerias sem fim. Encontre as saídas certas até a Torre Espectral!",
+      "nodes": [
+        {
+          "id": "w6-1-campo",
+          "order": 0,
+          "code": "6-1",
+          "title": "Bosque Cinzento",
+          "subtitle": "Fronteira enevoada de Chronus",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:0223",
+          "hexId": "0223",
+          "gridX": 4,
+          "gridY": 10,
+          "mapX": 16,
+          "mapY": 50
+        },
+        {
+          "id": "w6-2-galeria",
+          "order": 1,
+          "code": "6-2",
+          "title": "Galeria dos Boos",
+          "subtitle": "Quadros que se movem no escuro",
+          "theme": "ghost_house",
+          "nodeKind": "stage",
+          "stageKey": "hex:0221",
+          "hexId": "0221",
+          "gridX": 9,
+          "gridY": 6,
+          "unlocksAfterNodeId": "w6-1-campo",
+          "mapX": 36,
+          "mapY": 30
+        },
+        {
+          "id": "w6-3-subsolo",
+          "order": 2,
+          "code": "6-3",
+          "title": "Subsolo Lacrado",
+          "subtitle": "Catacumbas sob a mansão",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:0224",
+          "hexId": "0224",
+          "gridX": 14,
+          "gridY": 12,
+          "unlocksAfterNodeId": "w6-2-galeria",
+          "mapX": 56,
+          "mapY": 60
+        },
+        {
+          "id": "w6-4-claustro",
+          "order": 3,
+          "code": "6-4",
+          "title": "Claustro Sombrio",
+          "subtitle": "Labirinto final de fantasmas",
+          "theme": "ghost_house",
+          "nodeKind": "stage",
+          "stageKey": "hex:0226",
+          "hexId": "0226",
+          "gridX": 18,
+          "gridY": 7,
+          "unlocksAfterNodeId": "w6-3-subsolo",
+          "mapX": 72,
+          "mapY": 35
+        },
+        {
+          "id": "w6-5-castelo",
+          "order": 4,
+          "code": "6-C",
+          "title": "Cidadela Espectral",
+          "subtitle": "6º Chefe: Arquiduque Boo",
+          "bossName": "Arquiduque Boo",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:0222",
+          "hexId": "0222",
+          "gridX": 22,
+          "gridY": 12,
+          "isCastle": true,
+          "unlocksAfterNodeId": "w6-4-claustro",
+          "mapX": 88,
+          "mapY": 60
+        },
+        {
+          "id": "w6-subworld-portal",
+          "order": 5,
+          "code": "S6",
+          "title": "Portal Submundo 6",
+          "subtitle": "Passagem para a Cripta dos Fantasmas",
+          "theme": "ghost_house",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "subworld-6",
+          "targetNodeId": "sw6-1-cripta",
+          "gridX": 9,
+          "gridY": 16,
+          "unlocksAfterNodeId": "w6-2-galeria",
+          "mapX": 36,
+          "mapY": 80
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "w6-1-campo",
+          "toId": "w6-2-galeria",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            50
+          ],
+          "c1": [
+            16,
+            30
+          ],
+          "c2": [
+            16,
+            30
+          ],
+          "p1": [
+            36,
+            30
+          ],
+          "waypoints": [
+            [
+              16,
+              50
+            ],
+            [
+              16,
+              30
+            ],
+            [
+              36,
+              30
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w6-2-galeria",
+          "toId": "w6-3-subsolo",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            36,
+            30
+          ],
+          "c1": [
+            56,
+            30
+          ],
+          "c2": [
+            56,
+            30
+          ],
+          "p1": [
+            56,
+            60
+          ],
+          "waypoints": [
+            [
+              36,
+              30
+            ],
+            [
+              56,
+              30
+            ],
+            [
+              56,
+              60
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w6-3-subsolo",
+          "toId": "w6-4-claustro",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            56,
+            60
+          ],
+          "c1": [
+            56,
+            35
+          ],
+          "c2": [
+            56,
+            35
+          ],
+          "p1": [
+            72,
+            35
+          ],
+          "waypoints": [
+            [
+              56,
+              60
+            ],
+            [
+              56,
+              35
+            ],
+            [
+              72,
+              35
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w6-4-claustro",
+          "toId": "w6-5-castelo",
+          "fromOrder": 3,
+          "toOrder": 4,
+          "p0": [
+            72,
+            35
+          ],
+          "c1": [
+            88,
+            35
+          ],
+          "c2": [
+            88,
+            35
+          ],
+          "p1": [
+            88,
+            60
+          ],
+          "waypoints": [
+            [
+              72,
+              35
+            ],
+            [
+              88,
+              35
+            ],
+            [
+              88,
+              60
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w6-2-galeria",
+          "toId": "w6-subworld-portal",
+          "fromOrder": 1,
+          "toOrder": 5,
+          "p0": [
+            36,
+            30
+          ],
+          "c1": [
+            36,
+            80
+          ],
+          "c2": [
+            36,
+            30
+          ],
+          "p1": [
+            36,
+            80
+          ],
+          "waypoints": [
+            [
+              36,
+              30
+            ],
+            [
+              36,
+              80
+            ]
+          ],
+          "lineStyle": "straight",
+          "eventId": 7
+        }
+      ],
+      "decorations": [
+        {
+          "id": "w6-htree-1",
+          "kind": "haunted_tree",
+          "gridX": 5,
+          "gridY": 5,
+          "x": 20,
+          "y": 25
+        },
+        {
+          "id": "w6-htree-2",
+          "kind": "haunted_tree",
+          "gridX": 13,
+          "gridY": 6,
+          "x": 52,
+          "y": 30
+        },
+        {
+          "id": "w6-htree-3",
+          "kind": "haunted_tree",
+          "gridX": 18,
+          "gridY": 15,
+          "x": 72,
+          "y": 75
+        },
+        {
+          "id": "w6-fort-1",
+          "kind": "castle_fort",
+          "gridX": 22,
+          "gridY": 6,
+          "x": 88,
+          "y": 30
+        },
+        {
+          "id": "w6-patrol-1",
+          "kind": "enemy_patrol",
+          "gridX": 14,
+          "gridY": 16,
+          "label": "Big Boo",
+          "x": 56,
+          "y": 80
+        }
+      ]
+    },
+    {
+      "id": "world-7",
+      "number": 7,
+      "worldType": "main",
+      "subworldId": "subworld-7",
+      "name": "Mundo 7 · Império Vulcânico",
+      "subtitle": "Mundo 7 · Terras Escuras & Castelo Final",
+      "playable": true,
+      "boardPalette": "volcano",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "O Império Vulcânico é o último bastião de Chronus e Bowser! Atravesse muralhas de magma e salve a princesa femboy no Castelo Supremo.",
+      "nodes": [
+        {
+          "id": "w7-1-muralha",
+          "order": 0,
+          "code": "7-1",
+          "title": "Muralha de Magma",
+          "subtitle": "Invasão ao território vulcânico",
+          "theme": "castle",
+          "nodeKind": "stage",
+          "stageKey": "hex:0228",
+          "hexId": "0228",
+          "gridX": 4,
+          "gridY": 13,
+          "mapX": 16,
+          "mapY": 65
+        },
+        {
+          "id": "w7-2-forja",
+          "order": 1,
+          "code": "7-2",
+          "title": "Forja Ardente",
+          "subtitle": "Caldeirões e pontes de aço",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:022E",
+          "hexId": "022E",
+          "gridX": 9,
+          "gridY": 8,
+          "unlocksAfterNodeId": "w7-1-muralha",
+          "mapX": 36,
+          "mapY": 40
+        },
+        {
+          "id": "w7-3-caldeira",
+          "order": 2,
+          "code": "7-3",
+          "title": "Caldeira Subterrânea",
+          "subtitle": "Caverna de lava incandescente",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:0229",
+          "hexId": "0229",
+          "gridX": 14,
+          "gridY": 14,
+          "unlocksAfterNodeId": "w7-2-forja",
+          "mapX": 56,
+          "mapY": 70
+        },
+        {
+          "id": "w7-4-trono",
+          "order": 3,
+          "code": "7-4",
+          "title": "Bastilha de Chronus",
+          "subtitle": "Última linha antes do confronto final",
+          "theme": "castle",
+          "nodeKind": "stage",
+          "stageKey": "hex:022C",
+          "hexId": "022C",
+          "gridX": 18,
+          "gridY": 8,
+          "unlocksAfterNodeId": "w7-3-caldeira",
+          "mapX": 72,
+          "mapY": 40
+        },
+        {
+          "id": "w7-5-castelo",
+          "order": 4,
+          "code": "7-C",
+          "title": "Castelo Supremo Bowser",
+          "subtitle": "7º Chefe Final: Bowser & Chronus",
+          "bossName": "Bowser & Chronus",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:0227",
+          "hexId": "0227",
+          "gridX": 22,
+          "gridY": 11,
+          "isCastle": true,
+          "unlocksAfterNodeId": "w7-4-trono",
+          "mapX": 88,
+          "mapY": 55
+        },
+        {
+          "id": "w7-subworld-portal",
+          "order": 5,
+          "code": "S7",
+          "title": "Portal Submundo 7",
+          "subtitle": "Fenda direta ao Núcleo de Lava",
+          "theme": "castle",
+          "nodeKind": "star_warp",
+          "targetIslandId": "subworld-7",
+          "targetNodeId": "sw7-1-nucleo",
+          "gridX": 14,
+          "gridY": 5,
+          "unlocksAfterNodeId": "w7-3-caldeira",
+          "mapX": 56,
+          "mapY": 25
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "w7-1-muralha",
+          "toId": "w7-2-forja",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            65
+          ],
+          "c1": [
+            16,
+            40
+          ],
+          "c2": [
+            16,
+            40
+          ],
+          "p1": [
+            36,
+            40
+          ],
+          "waypoints": [
+            [
+              16,
+              65
+            ],
+            [
+              16,
+              40
+            ],
+            [
+              36,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w7-2-forja",
+          "toId": "w7-3-caldeira",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            36,
+            40
+          ],
+          "c1": [
+            56,
+            40
+          ],
+          "c2": [
+            56,
+            40
+          ],
+          "p1": [
+            56,
+            70
+          ],
+          "waypoints": [
+            [
+              36,
+              40
+            ],
+            [
+              56,
+              40
+            ],
+            [
+              56,
+              70
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w7-3-caldeira",
+          "toId": "w7-4-trono",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            56,
+            70
+          ],
+          "c1": [
+            56,
+            40
+          ],
+          "c2": [
+            56,
+            40
+          ],
+          "p1": [
+            72,
+            40
+          ],
+          "waypoints": [
+            [
+              56,
+              70
+            ],
+            [
+              56,
+              40
+            ],
+            [
+              72,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w7-4-trono",
+          "toId": "w7-5-castelo",
+          "fromOrder": 3,
+          "toOrder": 4,
+          "p0": [
+            72,
+            40
+          ],
+          "c1": [
+            88,
+            40
+          ],
+          "c2": [
+            88,
+            40
+          ],
+          "p1": [
+            88,
+            55
+          ],
+          "waypoints": [
+            [
+              72,
+              40
+            ],
+            [
+              88,
+              40
+            ],
+            [
+              88,
+              55
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "w7-3-caldeira",
+          "toId": "w7-subworld-portal",
+          "fromOrder": 2,
+          "toOrder": 5,
+          "p0": [
+            56,
+            70
+          ],
+          "c1": [
+            56,
+            25
+          ],
+          "c2": [
+            56,
+            70
+          ],
+          "p1": [
+            56,
+            25
+          ],
+          "waypoints": [
+            [
+              56,
+              70
+            ],
+            [
+              56,
+              25
+            ]
+          ],
+          "lineStyle": "straight",
+          "eventId": 8
+        }
+      ],
+      "decorations": [
+        {
+          "id": "w7-rock-1",
+          "kind": "rock",
+          "gridX": 4,
+          "gridY": 6,
+          "x": 16,
+          "y": 30
+        },
+        {
+          "id": "w7-rock-2",
+          "kind": "rock",
+          "gridX": 12,
+          "gridY": 16,
+          "x": 48,
+          "y": 80
+        },
+        {
+          "id": "w7-fort-1",
+          "kind": "castle_fort",
+          "gridX": 22,
+          "gridY": 5,
+          "x": 88,
+          "y": 25
+        },
+        {
+          "id": "w7-patrol-1",
+          "kind": "enemy_patrol",
+          "gridX": 17,
+          "gridY": 15,
+          "label": "Dry Bowser",
+          "x": 68,
+          "y": 75
+        }
+      ]
+    },
+    {
+      "id": "subworld-1",
+      "number": 1,
+      "worldType": "subworld",
+      "parentWorldId": "wikiworld",
+      "name": "Submundo 1 · Caverna das Raízes",
+      "subtitle": "Submundo 1 · Área secreta conectada à Ilha WikiWorldWeb",
+      "playable": true,
+      "boardPalette": "haunted",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "Submundo 1 abaixo da Ilha WikiWorldWeb! Túneis ocultos e um lago subterrâneo guardam atalhos e tesouros.",
+      "nodes": [
+        {
+          "id": "sw1-return",
+          "order": 0,
+          "code": "M1",
+          "title": "Voltar ao Mundo 1",
+          "subtitle": "Cano de retorno para Ilha WikiWorldWeb",
+          "theme": "overworld",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "wikiworld",
+          "targetNodeId": "w1-subworld-portal",
+          "gridX": 4,
+          "gridY": 10,
+          "mapX": 16,
+          "mapY": 50
+        },
+        {
+          "id": "sw1-1-raizes",
+          "order": 1,
+          "code": "S1-1",
+          "title": "Gruta das Raízes",
+          "subtitle": "Submundo 1 · Túnel inicial",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:0201",
+          "hexId": "0201",
+          "gridX": 10,
+          "gridY": 10,
+          "mapX": 40,
+          "mapY": 50
+        },
+        {
+          "id": "sw1-2-recife",
+          "order": 2,
+          "code": "S1-2",
+          "title": "Lago Subterrâneo",
+          "subtitle": "Águas frias nas cavernas",
+          "theme": "underwater",
+          "nodeKind": "stage",
+          "stageKey": "hex:0202",
+          "hexId": "0202",
+          "gridX": 16,
+          "gridY": 6,
+          "unlocksAfterNodeId": "sw1-1-raizes",
+          "mapX": 64,
+          "mapY": 30
+        },
+        {
+          "id": "sw1-3-bastiao",
+          "order": 3,
+          "code": "S1-C",
+          "title": "Bastião Subterrâneo",
+          "subtitle": "Subchefe das Raízes",
+          "bossName": "Guardião das Raízes",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:0204",
+          "hexId": "0204",
+          "gridX": 21,
+          "gridY": 11,
+          "isCastle": true,
+          "unlocksAfterNodeId": "sw1-2-recife",
+          "mapX": 84,
+          "mapY": 55
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "sw1-return",
+          "toId": "sw1-1-raizes",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            50
+          ],
+          "c1": [
+            40,
+            50
+          ],
+          "c2": [
+            16,
+            50
+          ],
+          "p1": [
+            40,
+            50
+          ],
+          "waypoints": [
+            [
+              16,
+              50
+            ],
+            [
+              40,
+              50
+            ]
+          ],
+          "lineStyle": "straight"
+        },
+        {
+          "fromId": "sw1-1-raizes",
+          "toId": "sw1-2-recife",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            40,
+            50
+          ],
+          "c1": [
+            40,
+            30
+          ],
+          "c2": [
+            40,
+            30
+          ],
+          "p1": [
+            64,
+            30
+          ],
+          "waypoints": [
+            [
+              40,
+              50
+            ],
+            [
+              40,
+              30
+            ],
+            [
+              64,
+              30
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw1-2-recife",
+          "toId": "sw1-3-bastiao",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            64,
+            30
+          ],
+          "c1": [
+            84,
+            30
+          ],
+          "c2": [
+            84,
+            30
+          ],
+          "p1": [
+            84,
+            55
+          ],
+          "waypoints": [
+            [
+              64,
+              30
+            ],
+            [
+              84,
+              30
+            ],
+            [
+              84,
+              55
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        }
+      ],
+      "decorations": [
+        {
+          "id": "sw1-rock-1",
+          "kind": "rock",
+          "gridX": 7,
+          "gridY": 5,
+          "x": 28,
+          "y": 25
+        },
+        {
+          "id": "sw1-water-1",
+          "kind": "water",
+          "gridX": 16,
+          "gridY": 14,
+          "width": 12,
+          "height": 10,
+          "x": 64,
+          "y": 70
+        },
+        {
+          "id": "sw1-fort-1",
+          "kind": "castle_fort",
+          "gridX": 21,
+          "gridY": 5,
+          "x": 84,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "subworld-2",
+      "number": 2,
+      "worldType": "subworld",
+      "parentWorldId": "island2",
+      "name": "Submundo 2 · Pirâmide Oculta",
+      "subtitle": "Submundo 2 · Câmaras secretas sob as dunas de Chronus",
+      "playable": true,
+      "boardPalette": "desert",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "Nas profundezas da Pirâmide Oculta de Chronus estão armadilhas de pedra e tesouros perdidos.",
+      "nodes": [
+        {
+          "id": "sw2-return",
+          "order": 0,
+          "code": "M2",
+          "title": "Voltar ao Mundo 2",
+          "subtitle": "Saída para Terras de Chronus",
+          "theme": "overworld",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "island2",
+          "targetNodeId": "w2-subworld-portal",
+          "gridX": 4,
+          "gridY": 10,
+          "mapX": 16,
+          "mapY": 50
+        },
+        {
+          "id": "sw2-1-tumba",
+          "order": 1,
+          "code": "S2-1",
+          "title": "Tumba de Arenito",
+          "subtitle": "Submundo 2 · Câmara 1",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:022A",
+          "hexId": "022A",
+          "gridX": 10,
+          "gridY": 7,
+          "mapX": 40,
+          "mapY": 35
+        },
+        {
+          "id": "sw2-2-catacumba",
+          "order": 2,
+          "code": "S2-2",
+          "title": "Catacumba Dourada",
+          "subtitle": "Corredor de armadilhas",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:022B",
+          "hexId": "022B",
+          "gridX": 16,
+          "gridY": 14,
+          "unlocksAfterNodeId": "sw2-1-tumba",
+          "mapX": 64,
+          "mapY": 70
+        },
+        {
+          "id": "sw2-3-esfinge",
+          "order": 3,
+          "code": "S2-C",
+          "title": "Santuário da Esfinge",
+          "subtitle": "Subchefe da Pirâmide",
+          "bossName": "Faraó Koopa",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:022D",
+          "hexId": "022D",
+          "gridX": 21,
+          "gridY": 9,
+          "isCastle": true,
+          "unlocksAfterNodeId": "sw2-2-catacumba",
+          "mapX": 84,
+          "mapY": 45
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "sw2-return",
+          "toId": "sw2-1-tumba",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            50
+          ],
+          "c1": [
+            16,
+            35
+          ],
+          "c2": [
+            16,
+            35
+          ],
+          "p1": [
+            40,
+            35
+          ],
+          "waypoints": [
+            [
+              16,
+              50
+            ],
+            [
+              16,
+              35
+            ],
+            [
+              40,
+              35
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw2-1-tumba",
+          "toId": "sw2-2-catacumba",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            40,
+            35
+          ],
+          "c1": [
+            64,
+            35
+          ],
+          "c2": [
+            64,
+            35
+          ],
+          "p1": [
+            64,
+            70
+          ],
+          "waypoints": [
+            [
+              40,
+              35
+            ],
+            [
+              64,
+              35
+            ],
+            [
+              64,
+              70
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw2-2-catacumba",
+          "toId": "sw2-3-esfinge",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            64,
+            70
+          ],
+          "c1": [
+            64,
+            45
+          ],
+          "c2": [
+            64,
+            45
+          ],
+          "p1": [
+            84,
+            45
+          ],
+          "waypoints": [
+            [
+              64,
+              70
+            ],
+            [
+              64,
+              45
+            ],
+            [
+              84,
+              45
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        }
+      ],
+      "decorations": [
+        {
+          "id": "sw2-rock-1",
+          "kind": "rock",
+          "gridX": 14,
+          "gridY": 5,
+          "x": 56,
+          "y": 25
+        },
+        {
+          "id": "sw2-hill-1",
+          "kind": "hill",
+          "gridX": 7,
+          "gridY": 15,
+          "x": 28,
+          "y": 75
+        },
+        {
+          "id": "sw2-fort-1",
+          "kind": "castle_fort",
+          "gridX": 21,
+          "gridY": 4,
+          "x": 84,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "subworld-3",
+      "number": 3,
+      "worldType": "subworld",
+      "parentWorldId": "world-3",
+      "name": "Submundo 3 · Fossa Abissal",
+      "subtitle": "Submundo 3 · Profundezas do Arquipélago Marinho",
+      "playable": true,
+      "boardPalette": "ocean",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "A Fossa Abissal guarda corais luminosos e ruínas submersas jamais mapeadas.",
+      "nodes": [
+        {
+          "id": "sw3-return",
+          "order": 0,
+          "code": "M3",
+          "title": "Voltar ao Mundo 3",
+          "subtitle": "Subir ao Arquipélago Marinho",
+          "theme": "underwater",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "world-3",
+          "targetNodeId": "w3-subworld-portal",
+          "gridX": 4,
+          "gridY": 9,
+          "mapX": 16,
+          "mapY": 45
+        },
+        {
+          "id": "sw3-1-fossa",
+          "order": 1,
+          "code": "S3-1",
+          "title": "Fenda Oceânica",
+          "subtitle": "Submundo 3 · Águas profundas",
+          "theme": "underwater",
+          "nodeKind": "stage",
+          "stageKey": "hex:0211",
+          "hexId": "0211",
+          "gridX": 10,
+          "gridY": 14,
+          "mapX": 40,
+          "mapY": 70
+        },
+        {
+          "id": "sw3-2-marinho",
+          "order": 2,
+          "code": "S3-2",
+          "title": "Jardim Abissal",
+          "subtitle": "Correnteza de águas vivas",
+          "theme": "underwater",
+          "nodeKind": "stage",
+          "stageKey": "hex:0216",
+          "hexId": "0216",
+          "gridX": 16,
+          "gridY": 8,
+          "unlocksAfterNodeId": "sw3-1-fossa",
+          "mapX": 64,
+          "mapY": 40
+        },
+        {
+          "id": "sw3-3-kraken",
+          "order": 3,
+          "code": "S3-C",
+          "title": "Cidadela Submersa",
+          "subtitle": "Subchefe Abissal",
+          "bossName": "Blooper Rei",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:021B",
+          "hexId": "021B",
+          "gridX": 21,
+          "gridY": 12,
+          "isCastle": true,
+          "unlocksAfterNodeId": "sw3-2-marinho",
+          "mapX": 84,
+          "mapY": 60
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "sw3-return",
+          "toId": "sw3-1-fossa",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            45
+          ],
+          "c1": [
+            40,
+            45
+          ],
+          "c2": [
+            40,
+            45
+          ],
+          "p1": [
+            40,
+            70
+          ],
+          "waypoints": [
+            [
+              16,
+              45
+            ],
+            [
+              40,
+              45
+            ],
+            [
+              40,
+              70
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw3-1-fossa",
+          "toId": "sw3-2-marinho",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            40,
+            70
+          ],
+          "c1": [
+            40,
+            40
+          ],
+          "c2": [
+            40,
+            40
+          ],
+          "p1": [
+            64,
+            40
+          ],
+          "waypoints": [
+            [
+              40,
+              70
+            ],
+            [
+              40,
+              40
+            ],
+            [
+              64,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw3-2-marinho",
+          "toId": "sw3-3-kraken",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            64,
+            40
+          ],
+          "c1": [
+            84,
+            40
+          ],
+          "c2": [
+            84,
+            40
+          ],
+          "p1": [
+            84,
+            60
+          ],
+          "waypoints": [
+            [
+              64,
+              40
+            ],
+            [
+              84,
+              40
+            ],
+            [
+              84,
+              60
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        }
+      ],
+      "decorations": [
+        {
+          "id": "sw3-water-1",
+          "kind": "water",
+          "gridX": 12,
+          "gridY": 7,
+          "width": 14,
+          "height": 14,
+          "x": 48,
+          "y": 35
+        },
+        {
+          "id": "sw3-bridge-1",
+          "kind": "bridge",
+          "gridX": 13,
+          "gridY": 15,
+          "width": 10,
+          "height": 4,
+          "x": 52,
+          "y": 75
+        },
+        {
+          "id": "sw3-fort-1",
+          "kind": "castle_fort",
+          "gridX": 21,
+          "gridY": 5,
+          "x": 84,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "subworld-4",
+      "number": 4,
+      "worldType": "subworld",
+      "parentWorldId": "world-4",
+      "name": "Submundo 4 · Minas Subterrâneas",
+      "subtitle": "Submundo 4 · Túneis escavados sob o Vale dos Gigantes",
+      "playable": true,
+      "boardPalette": "volcano",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "Debaixo das árvores colossais ficam as Minas Subterrâneas com trilhos antigos e rochas gigantes.",
+      "nodes": [
+        {
+          "id": "sw4-return",
+          "order": 0,
+          "code": "M4",
+          "title": "Voltar ao Mundo 4",
+          "subtitle": "Retornar ao Vale dos Gigantes",
+          "theme": "overworld",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "world-4",
+          "targetNodeId": "w4-subworld-portal",
+          "gridX": 4,
+          "gridY": 11,
+          "mapX": 16,
+          "mapY": 55
+        },
+        {
+          "id": "sw4-1-minas",
+          "order": 1,
+          "code": "S4-1",
+          "title": "Caverna dos Cristais",
+          "subtitle": "Submundo 4 · Galerias profundas",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:0215",
+          "hexId": "0215",
+          "gridX": 10,
+          "gridY": 6,
+          "mapX": 40,
+          "mapY": 30
+        },
+        {
+          "id": "sw4-2-galeria",
+          "order": 2,
+          "code": "S4-2",
+          "title": "Galeria dos Ecoantes",
+          "subtitle": "Passagem de pedras gigantes",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:021F",
+          "hexId": "021F",
+          "gridX": 16,
+          "gridY": 13,
+          "unlocksAfterNodeId": "sw4-1-minas",
+          "mapX": 64,
+          "mapY": 65
+        },
+        {
+          "id": "sw4-3-caldeira",
+          "order": 3,
+          "code": "S4-C",
+          "title": "Caldeira das Minas",
+          "subtitle": "Subchefe das Minas",
+          "bossName": "Buzzy Titã",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:0213",
+          "hexId": "0213",
+          "gridX": 21,
+          "gridY": 8,
+          "isCastle": true,
+          "unlocksAfterNodeId": "sw4-2-galeria",
+          "mapX": 84,
+          "mapY": 40
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "sw4-return",
+          "toId": "sw4-1-minas",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            55
+          ],
+          "c1": [
+            16,
+            30
+          ],
+          "c2": [
+            16,
+            30
+          ],
+          "p1": [
+            40,
+            30
+          ],
+          "waypoints": [
+            [
+              16,
+              55
+            ],
+            [
+              16,
+              30
+            ],
+            [
+              40,
+              30
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw4-1-minas",
+          "toId": "sw4-2-galeria",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            40,
+            30
+          ],
+          "c1": [
+            64,
+            30
+          ],
+          "c2": [
+            64,
+            30
+          ],
+          "p1": [
+            64,
+            65
+          ],
+          "waypoints": [
+            [
+              40,
+              30
+            ],
+            [
+              64,
+              30
+            ],
+            [
+              64,
+              65
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw4-2-galeria",
+          "toId": "sw4-3-caldeira",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            64,
+            65
+          ],
+          "c1": [
+            64,
+            40
+          ],
+          "c2": [
+            64,
+            40
+          ],
+          "p1": [
+            84,
+            40
+          ],
+          "waypoints": [
+            [
+              64,
+              65
+            ],
+            [
+              64,
+              40
+            ],
+            [
+              84,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        }
+      ],
+      "decorations": [
+        {
+          "id": "sw4-rock-1",
+          "kind": "rock",
+          "gridX": 6,
+          "gridY": 5,
+          "x": 24,
+          "y": 25
+        },
+        {
+          "id": "sw4-rock-2",
+          "kind": "rock",
+          "gridX": 15,
+          "gridY": 6,
+          "x": 60,
+          "y": 30
+        },
+        {
+          "id": "sw4-fort-1",
+          "kind": "castle_fort",
+          "gridX": 21,
+          "gridY": 4,
+          "x": 84,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "subworld-5",
+      "number": 5,
+      "worldType": "subworld",
+      "parentWorldId": "world-5",
+      "name": "Submundo 5 · Estrada Estelar",
+      "subtitle": "Submundo 5 · Rota especial entre constelações",
+      "playable": true,
+      "boardPalette": "haunted",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "A Estrada Estelar conecta os céus do Mundo 5 a desafios secretos de gravidade e precisão!",
+      "nodes": [
+        {
+          "id": "sw5-return",
+          "order": 0,
+          "code": "M5",
+          "title": "Voltar ao Mundo 5",
+          "subtitle": "Voltar às Nuvens do Céu",
+          "theme": "overworld",
+          "nodeKind": "star_warp",
+          "targetIslandId": "world-5",
+          "targetNodeId": "w5-subworld-portal",
+          "gridX": 4,
+          "gridY": 10,
+          "mapX": 16,
+          "mapY": 50
+        },
+        {
+          "id": "sw5-1-estrela",
+          "order": 1,
+          "code": "S5-1",
+          "title": "Trilha Estelar",
+          "subtitle": "Submundo 5 · Setor Alfa",
+          "theme": "overworld",
+          "nodeKind": "stage",
+          "stageKey": "hex:022E",
+          "hexId": "022E",
+          "gridX": 10,
+          "gridY": 10,
+          "mapX": 40,
+          "mapY": 50
+        },
+        {
+          "id": "sw5-2-cometa",
+          "order": 2,
+          "code": "S5-2",
+          "title": "Caverna do Cometa",
+          "subtitle": "Gruta flutuante nas estrelas",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:0230",
+          "hexId": "0230",
+          "gridX": 16,
+          "gridY": 5,
+          "unlocksAfterNodeId": "sw5-1-estrela",
+          "mapX": 64,
+          "mapY": 25
+        },
+        {
+          "id": "sw5-3-observatorio",
+          "order": 3,
+          "code": "S5-C",
+          "title": "Observatório Estelar",
+          "subtitle": "Subchefe Celestial",
+          "bossName": "Cometa Koopa",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:0232",
+          "hexId": "0232",
+          "gridX": 21,
+          "gridY": 11,
+          "isCastle": true,
+          "unlocksAfterNodeId": "sw5-2-cometa",
+          "mapX": 84,
+          "mapY": 55
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "sw5-return",
+          "toId": "sw5-1-estrela",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            50
+          ],
+          "c1": [
+            40,
+            50
+          ],
+          "c2": [
+            16,
+            50
+          ],
+          "p1": [
+            40,
+            50
+          ],
+          "waypoints": [
+            [
+              16,
+              50
+            ],
+            [
+              40,
+              50
+            ]
+          ],
+          "lineStyle": "straight"
+        },
+        {
+          "fromId": "sw5-1-estrela",
+          "toId": "sw5-2-cometa",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            40,
+            50
+          ],
+          "c1": [
+            40,
+            25
+          ],
+          "c2": [
+            40,
+            25
+          ],
+          "p1": [
+            64,
+            25
+          ],
+          "waypoints": [
+            [
+              40,
+              50
+            ],
+            [
+              40,
+              25
+            ],
+            [
+              64,
+              25
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw5-2-cometa",
+          "toId": "sw5-3-observatorio",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            64,
+            25
+          ],
+          "c1": [
+            84,
+            25
+          ],
+          "c2": [
+            84,
+            25
+          ],
+          "p1": [
+            84,
+            55
+          ],
+          "waypoints": [
+            [
+              64,
+              25
+            ],
+            [
+              84,
+              25
+            ],
+            [
+              84,
+              55
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        }
+      ],
+      "decorations": [
+        {
+          "id": "sw5-cloud-1",
+          "kind": "cloud",
+          "gridX": 7,
+          "gridY": 5,
+          "x": 28,
+          "y": 25
+        },
+        {
+          "id": "sw5-cloud-2",
+          "kind": "cloud",
+          "gridX": 14,
+          "gridY": 15,
+          "x": 56,
+          "y": 75
+        },
+        {
+          "id": "sw5-fort-1",
+          "kind": "castle_fort",
+          "gridX": 21,
+          "gridY": 5,
+          "x": 84,
+          "y": 25
+        }
+      ]
+    },
+    {
+      "id": "subworld-6",
+      "number": 6,
+      "worldType": "subworld",
+      "parentWorldId": "world-6",
+      "name": "Submundo 6 · Cripta dos Fantasmas",
+      "subtitle": "Submundo 6 · Porões secretos da Névoa Assombrada",
+      "playable": true,
+      "boardPalette": "haunted",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "Nos porões da Cripta dos Fantasmas residem os espectros mais antigos a serviço de Chronus.",
+      "nodes": [
+        {
+          "id": "sw6-return",
+          "order": 0,
+          "code": "M6",
+          "title": "Voltar ao Mundo 6",
+          "subtitle": "Subir à Névoa Assombrada",
+          "theme": "ghost_house",
+          "nodeKind": "subworld_portal",
+          "targetIslandId": "world-6",
+          "targetNodeId": "w6-subworld-portal",
+          "gridX": 4,
+          "gridY": 12,
+          "mapX": 16,
+          "mapY": 60
+        },
+        {
+          "id": "sw6-1-cripta",
+          "order": 1,
+          "code": "S6-1",
+          "title": "Salão dos Sussurros",
+          "subtitle": "Submundo 6 · Câmara 1",
+          "theme": "ghost_house",
+          "nodeKind": "stage",
+          "stageKey": "hex:0208",
+          "hexId": "0208",
+          "gridX": 10,
+          "gridY": 7,
+          "mapX": 40,
+          "mapY": 35
+        },
+        {
+          "id": "sw6-2-porao",
+          "order": 2,
+          "code": "S6-2",
+          "title": "Porão Assombrado",
+          "subtitle": "Corredor de espelhos",
+          "theme": "ghost_house",
+          "nodeKind": "stage",
+          "stageKey": "hex:0212",
+          "hexId": "0212",
+          "gridX": 16,
+          "gridY": 13,
+          "unlocksAfterNodeId": "sw6-1-cripta",
+          "mapX": 64,
+          "mapY": 65
+        },
+        {
+          "id": "sw6-3-santuario",
+          "order": 3,
+          "code": "S6-C",
+          "title": "Santuário Sombrio",
+          "subtitle": "Subchefe da Cripta",
+          "bossName": "Rei Dry Bones",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:0236",
+          "hexId": "0236",
+          "gridX": 21,
+          "gridY": 8,
+          "isCastle": true,
+          "unlocksAfterNodeId": "sw6-2-porao",
+          "mapX": 84,
+          "mapY": 40
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "sw6-return",
+          "toId": "sw6-1-cripta",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            60
+          ],
+          "c1": [
+            16,
+            35
+          ],
+          "c2": [
+            16,
+            35
+          ],
+          "p1": [
+            40,
+            35
+          ],
+          "waypoints": [
+            [
+              16,
+              60
+            ],
+            [
+              16,
+              35
+            ],
+            [
+              40,
+              35
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw6-1-cripta",
+          "toId": "sw6-2-porao",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            40,
+            35
+          ],
+          "c1": [
+            64,
+            35
+          ],
+          "c2": [
+            64,
+            35
+          ],
+          "p1": [
+            64,
+            65
+          ],
+          "waypoints": [
+            [
+              40,
+              35
+            ],
+            [
+              64,
+              35
+            ],
+            [
+              64,
+              65
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw6-2-porao",
+          "toId": "sw6-3-santuario",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            64,
+            65
+          ],
+          "c1": [
+            64,
+            40
+          ],
+          "c2": [
+            64,
+            40
+          ],
+          "p1": [
+            84,
+            40
+          ],
+          "waypoints": [
+            [
+              64,
+              65
+            ],
+            [
+              64,
+              40
+            ],
+            [
+              84,
+              40
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        }
+      ],
+      "decorations": [
+        {
+          "id": "sw6-htree-1",
+          "kind": "haunted_tree",
+          "gridX": 6,
+          "gridY": 5,
+          "x": 24,
+          "y": 25
+        },
+        {
+          "id": "sw6-htree-2",
+          "kind": "haunted_tree",
+          "gridX": 14,
+          "gridY": 6,
+          "x": 56,
+          "y": 30
+        },
+        {
+          "id": "sw6-fort-1",
+          "kind": "castle_fort",
+          "gridX": 21,
+          "gridY": 4,
+          "x": 84,
+          "y": 20
+        }
+      ]
+    },
+    {
+      "id": "subworld-7",
+      "number": 7,
+      "worldType": "subworld",
+      "parentWorldId": "world-7",
+      "name": "Submundo 7 · Núcleo de Lava",
+      "subtitle": "Submundo 7 · Abismo secreto sob o Castelo de Bowser",
+      "playable": true,
+      "boardPalette": "volcano",
+      "overworldGrid": {
+        "cols": 25,
+        "rows": 20
+      },
+      "introStory": "O Núcleo de Lava é a área secreta mais extrema do jogo, escondida sob a fortaleza de Chronus e Bowser!",
+      "nodes": [
+        {
+          "id": "sw7-return",
+          "order": 0,
+          "code": "M7",
+          "title": "Voltar ao Mundo 7",
+          "subtitle": "Subir ao Império Vulcânico",
+          "theme": "castle",
+          "nodeKind": "star_warp",
+          "targetIslandId": "world-7",
+          "targetNodeId": "w7-subworld-portal",
+          "gridX": 4,
+          "gridY": 9,
+          "mapX": 16,
+          "mapY": 45
+        },
+        {
+          "id": "sw7-1-nucleo",
+          "order": 1,
+          "code": "S7-1",
+          "title": "Câmara de Magma",
+          "subtitle": "Submundo 7 · Setor Vulcânico",
+          "theme": "underground",
+          "nodeKind": "stage",
+          "stageKey": "hex:0237",
+          "hexId": "0237",
+          "gridX": 10,
+          "gridY": 14,
+          "mapX": 40,
+          "mapY": 70
+        },
+        {
+          "id": "sw7-2-abismo",
+          "order": 2,
+          "code": "S7-2",
+          "title": "Mar de Brasas",
+          "subtitle": "Travessia extrema sob lava",
+          "theme": "underwater",
+          "nodeKind": "stage",
+          "stageKey": "hex:0238",
+          "hexId": "0238",
+          "gridX": 16,
+          "gridY": 7,
+          "unlocksAfterNodeId": "sw7-1-nucleo",
+          "mapX": 64,
+          "mapY": 35
+        },
+        {
+          "id": "sw7-3-cidadela",
+          "order": 3,
+          "code": "S7-C",
+          "title": "Altar do Núcleo",
+          "subtitle": "Subchefe Secreto Final",
+          "bossName": "Chronus Ômega",
+          "theme": "castle",
+          "nodeKind": "castle",
+          "stageKey": "hex:023A",
+          "hexId": "023A",
+          "gridX": 21,
+          "gridY": 12,
+          "isCastle": true,
+          "unlocksAfterNodeId": "sw7-2-abismo",
+          "mapX": 84,
+          "mapY": 60
+        }
+      ],
+      "paths": [
+        {
+          "fromId": "sw7-return",
+          "toId": "sw7-1-nucleo",
+          "fromOrder": 0,
+          "toOrder": 1,
+          "p0": [
+            16,
+            45
+          ],
+          "c1": [
+            40,
+            45
+          ],
+          "c2": [
+            40,
+            45
+          ],
+          "p1": [
+            40,
+            70
+          ],
+          "waypoints": [
+            [
+              16,
+              45
+            ],
+            [
+              40,
+              45
+            ],
+            [
+              40,
+              70
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw7-1-nucleo",
+          "toId": "sw7-2-abismo",
+          "fromOrder": 1,
+          "toOrder": 2,
+          "p0": [
+            40,
+            70
+          ],
+          "c1": [
+            40,
+            35
+          ],
+          "c2": [
+            40,
+            35
+          ],
+          "p1": [
+            64,
+            35
+          ],
+          "waypoints": [
+            [
+              40,
+              70
+            ],
+            [
+              40,
+              35
+            ],
+            [
+              64,
+              35
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        },
+        {
+          "fromId": "sw7-2-abismo",
+          "toId": "sw7-3-cidadela",
+          "fromOrder": 2,
+          "toOrder": 3,
+          "p0": [
+            64,
+            35
+          ],
+          "c1": [
+            84,
+            35
+          ],
+          "c2": [
+            84,
+            35
+          ],
+          "p1": [
+            84,
+            60
+          ],
+          "waypoints": [
+            [
+              64,
+              35
+            ],
+            [
+              84,
+              35
+            ],
+            [
+              84,
+              60
+            ]
+          ],
+          "lineStyle": "orthogonal"
+        }
+      ],
+      "decorations": [
+        {
+          "id": "sw7-rock-1",
+          "kind": "rock",
+          "gridX": 7,
+          "gridY": 6,
+          "x": 28,
+          "y": 30
+        },
+        {
+          "id": "sw7-patrol-1",
+          "kind": "enemy_patrol",
+          "gridX": 14,
+          "gridY": 15,
+          "label": "Lava Guard",
+          "x": 56,
+          "y": 75
+        },
+        {
+          "id": "sw7-fort-1",
+          "kind": "castle_fort",
+          "gridX": 21,
+          "gridY": 5,
+          "x": 84,
+          "y": 25
+        }
+      ]
+    }
+  ]
+}

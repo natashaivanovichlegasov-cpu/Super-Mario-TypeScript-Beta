@@ -1,0 +1,344 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "world-4",
+  "number": 4,
+  "worldType": "main",
+  "subworldId": "subworld-4",
+  "name": "Mundo 4 · Vale dos Gigantes",
+  "subtitle": "Mundo 4 · Florestas Colossais & Abismos",
+  "playable": true,
+  "boardPalette": "grass",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "Tudo no Vale dos Gigantes tem proporções titânicas! Desvende os túneis de pedra e enfrente o Rei Koopa Colosso.",
+  "nodes": [
+    {
+      "id": "w4-1-vale",
+      "order": 0,
+      "code": "4-1",
+      "title": "Vale Verdejante",
+      "subtitle": "Campos altos de gramado gigante",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "hex:020F",
+      "hexId": "020F",
+      "gridX": 4,
+      "gridY": 8,
+      "mapX": 16,
+      "mapY": 40
+    },
+    {
+      "id": "w4-2-abismo",
+      "order": 1,
+      "code": "4-2",
+      "title": "Abismo de Pedra",
+      "subtitle": "Cavernas profundas do vale",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:0210",
+      "hexId": "0210",
+      "gridX": 9,
+      "gridY": 13,
+      "unlocksAfterNodeId": "w4-1-vale",
+      "mapX": 36,
+      "mapY": 65
+    },
+    {
+      "id": "w4-3-bosque",
+      "order": 2,
+      "code": "4-3",
+      "title": "Bosque dos Sinos",
+      "subtitle": "Floresta densa com plataformas altas",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "hex:0214",
+      "hexId": "0214",
+      "gridX": 14,
+      "gridY": 8,
+      "unlocksAfterNodeId": "w4-2-abismo",
+      "mapX": 56,
+      "mapY": 40
+    },
+    {
+      "id": "w4-4-corredor",
+      "order": 3,
+      "code": "4-4",
+      "title": "Corredor Sombrio",
+      "subtitle": "Salão antigo cercado de névoa",
+      "theme": "ghost_house",
+      "nodeKind": "stage",
+      "stageKey": "hex:0217",
+      "hexId": "0217",
+      "gridX": 18,
+      "gridY": 14,
+      "unlocksAfterNodeId": "w4-3-bosque",
+      "mapX": 72,
+      "mapY": 70
+    },
+    {
+      "id": "w4-5-castelo",
+      "order": 4,
+      "code": "4-C",
+      "title": "Fortaleza Colossal",
+      "subtitle": "4º Chefe: Rei Koopa Colosso",
+      "bossName": "Rei Koopa Colosso",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:0218",
+      "hexId": "0218",
+      "gridX": 22,
+      "gridY": 10,
+      "isCastle": true,
+      "unlocksAfterNodeId": "w4-4-corredor",
+      "mapX": 88,
+      "mapY": 50
+    },
+    {
+      "id": "w4-subworld-portal",
+      "order": 5,
+      "code": "S4",
+      "title": "Portal Submundo 4",
+      "subtitle": "Desce às Minas Subterrâneas",
+      "theme": "underground",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "subworld-4",
+      "targetNodeId": "sw4-1-minas",
+      "gridX": 9,
+      "gridY": 17,
+      "unlocksAfterNodeId": "w4-2-abismo",
+      "mapX": 36,
+      "mapY": 85
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "w4-1-vale",
+      "toId": "w4-2-abismo",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        40
+      ],
+      "c1": [
+        36,
+        40
+      ],
+      "c2": [
+        36,
+        40
+      ],
+      "p1": [
+        36,
+        65
+      ],
+      "waypoints": [
+        [
+          16,
+          40
+        ],
+        [
+          36,
+          40
+        ],
+        [
+          36,
+          65
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w4-2-abismo",
+      "toId": "w4-3-bosque",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        36,
+        65
+      ],
+      "c1": [
+        36,
+        40
+      ],
+      "c2": [
+        36,
+        40
+      ],
+      "p1": [
+        56,
+        40
+      ],
+      "waypoints": [
+        [
+          36,
+          65
+        ],
+        [
+          36,
+          40
+        ],
+        [
+          56,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w4-3-bosque",
+      "toId": "w4-4-corredor",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        56,
+        40
+      ],
+      "c1": [
+        72,
+        40
+      ],
+      "c2": [
+        72,
+        40
+      ],
+      "p1": [
+        72,
+        70
+      ],
+      "waypoints": [
+        [
+          56,
+          40
+        ],
+        [
+          72,
+          40
+        ],
+        [
+          72,
+          70
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w4-4-corredor",
+      "toId": "w4-5-castelo",
+      "fromOrder": 3,
+      "toOrder": 4,
+      "p0": [
+        72,
+        70
+      ],
+      "c1": [
+        72,
+        50
+      ],
+      "c2": [
+        72,
+        50
+      ],
+      "p1": [
+        88,
+        50
+      ],
+      "waypoints": [
+        [
+          72,
+          70
+        ],
+        [
+          72,
+          50
+        ],
+        [
+          88,
+          50
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w4-2-abismo",
+      "toId": "w4-subworld-portal",
+      "fromOrder": 1,
+      "toOrder": 5,
+      "p0": [
+        36,
+        65
+      ],
+      "c1": [
+        36,
+        85
+      ],
+      "c2": [
+        36,
+        65
+      ],
+      "p1": [
+        36,
+        85
+      ],
+      "waypoints": [
+        [
+          36,
+          65
+        ],
+        [
+          36,
+          85
+        ]
+      ],
+      "lineStyle": "straight",
+      "eventId": 5
+    }
+  ],
+  "decorations": [
+    {
+      "id": "w4-trees-1",
+      "kind": "trees",
+      "gridX": 5,
+      "gridY": 14,
+      "x": 20,
+      "y": 70
+    },
+    {
+      "id": "w4-hill-1",
+      "kind": "hill",
+      "gridX": 11,
+      "gridY": 5,
+      "x": 44,
+      "y": 25
+    },
+    {
+      "id": "w4-rock-1",
+      "kind": "rock",
+      "gridX": 16,
+      "gridY": 16,
+      "x": 64,
+      "y": 80
+    },
+    {
+      "id": "w4-fort-1",
+      "kind": "castle_fort",
+      "gridX": 22,
+      "gridY": 5,
+      "x": 88,
+      "y": 25
+    },
+    {
+      "id": "w4-patrol-1",
+      "kind": "enemy_patrol",
+      "gridX": 14,
+      "gridY": 12,
+      "label": "Sledge Bro",
+      "x": 56,
+      "y": 60
+    }
+  ]
+}

@@ -1,0 +1,223 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "subworld-4",
+  "number": 4,
+  "worldType": "subworld",
+  "parentWorldId": "world-4",
+  "name": "Submundo 4 · Minas Subterrâneas",
+  "subtitle": "Submundo 4 · Túneis escavados sob o Vale dos Gigantes",
+  "playable": true,
+  "boardPalette": "volcano",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "Debaixo das árvores colossais ficam as Minas Subterrâneas com trilhos antigos e rochas gigantes.",
+  "nodes": [
+    {
+      "id": "sw4-return",
+      "order": 0,
+      "code": "M4",
+      "title": "Voltar ao Mundo 4",
+      "subtitle": "Retornar ao Vale dos Gigantes",
+      "theme": "overworld",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "world-4",
+      "targetNodeId": "w4-subworld-portal",
+      "gridX": 4,
+      "gridY": 11,
+      "mapX": 16,
+      "mapY": 55
+    },
+    {
+      "id": "sw4-1-minas",
+      "order": 1,
+      "code": "S4-1",
+      "title": "Caverna dos Cristais",
+      "subtitle": "Submundo 4 · Galerias profundas",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:0215",
+      "hexId": "0215",
+      "gridX": 10,
+      "gridY": 6,
+      "mapX": 40,
+      "mapY": 30
+    },
+    {
+      "id": "sw4-2-galeria",
+      "order": 2,
+      "code": "S4-2",
+      "title": "Galeria dos Ecoantes",
+      "subtitle": "Passagem de pedras gigantes",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:021F",
+      "hexId": "021F",
+      "gridX": 16,
+      "gridY": 13,
+      "unlocksAfterNodeId": "sw4-1-minas",
+      "mapX": 64,
+      "mapY": 65
+    },
+    {
+      "id": "sw4-3-caldeira",
+      "order": 3,
+      "code": "S4-C",
+      "title": "Caldeira das Minas",
+      "subtitle": "Subchefe das Minas",
+      "bossName": "Buzzy Titã",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:0213",
+      "hexId": "0213",
+      "gridX": 21,
+      "gridY": 8,
+      "isCastle": true,
+      "unlocksAfterNodeId": "sw4-2-galeria",
+      "mapX": 84,
+      "mapY": 40
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "sw4-return",
+      "toId": "sw4-1-minas",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        55
+      ],
+      "c1": [
+        16,
+        30
+      ],
+      "c2": [
+        16,
+        30
+      ],
+      "p1": [
+        40,
+        30
+      ],
+      "waypoints": [
+        [
+          16,
+          55
+        ],
+        [
+          16,
+          30
+        ],
+        [
+          40,
+          30
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw4-1-minas",
+      "toId": "sw4-2-galeria",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        40,
+        30
+      ],
+      "c1": [
+        64,
+        30
+      ],
+      "c2": [
+        64,
+        30
+      ],
+      "p1": [
+        64,
+        65
+      ],
+      "waypoints": [
+        [
+          40,
+          30
+        ],
+        [
+          64,
+          30
+        ],
+        [
+          64,
+          65
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw4-2-galeria",
+      "toId": "sw4-3-caldeira",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        64,
+        65
+      ],
+      "c1": [
+        64,
+        40
+      ],
+      "c2": [
+        64,
+        40
+      ],
+      "p1": [
+        84,
+        40
+      ],
+      "waypoints": [
+        [
+          64,
+          65
+        ],
+        [
+          64,
+          40
+        ],
+        [
+          84,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    }
+  ],
+  "decorations": [
+    {
+      "id": "sw4-rock-1",
+      "kind": "rock",
+      "gridX": 6,
+      "gridY": 5,
+      "x": 24,
+      "y": 25
+    },
+    {
+      "id": "sw4-rock-2",
+      "kind": "rock",
+      "gridX": 15,
+      "gridY": 6,
+      "x": 60,
+      "y": 30
+    },
+    {
+      "id": "sw4-fort-1",
+      "kind": "castle_fort",
+      "gridX": 21,
+      "gridY": 4,
+      "x": 84,
+      "y": 20
+    }
+  ]
+}

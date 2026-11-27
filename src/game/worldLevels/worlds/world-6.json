@@ -1,0 +1,344 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "world-6",
+  "number": 6,
+  "worldType": "main",
+  "subworldId": "subworld-6",
+  "name": "Mundo 6 · Névoa Assombrada",
+  "subtitle": "Mundo 6 · Bosque Sombrio & Mansões de Boo",
+  "playable": true,
+  "boardPalette": "haunted",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "A Névoa Assombrada esconde armadilhas ilusórias e galerias sem fim. Encontre as saídas certas até a Torre Espectral!",
+  "nodes": [
+    {
+      "id": "w6-1-campo",
+      "order": 0,
+      "code": "6-1",
+      "title": "Bosque Cinzento",
+      "subtitle": "Fronteira enevoada de Chronus",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "hex:0223",
+      "hexId": "0223",
+      "gridX": 4,
+      "gridY": 10,
+      "mapX": 16,
+      "mapY": 50
+    },
+    {
+      "id": "w6-2-galeria",
+      "order": 1,
+      "code": "6-2",
+      "title": "Galeria dos Boos",
+      "subtitle": "Quadros que se movem no escuro",
+      "theme": "ghost_house",
+      "nodeKind": "stage",
+      "stageKey": "hex:0221",
+      "hexId": "0221",
+      "gridX": 9,
+      "gridY": 6,
+      "unlocksAfterNodeId": "w6-1-campo",
+      "mapX": 36,
+      "mapY": 30
+    },
+    {
+      "id": "w6-3-subsolo",
+      "order": 2,
+      "code": "6-3",
+      "title": "Subsolo Lacrado",
+      "subtitle": "Catacumbas sob a mansão",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:0224",
+      "hexId": "0224",
+      "gridX": 14,
+      "gridY": 12,
+      "unlocksAfterNodeId": "w6-2-galeria",
+      "mapX": 56,
+      "mapY": 60
+    },
+    {
+      "id": "w6-4-claustro",
+      "order": 3,
+      "code": "6-4",
+      "title": "Claustro Sombrio",
+      "subtitle": "Labirinto final de fantasmas",
+      "theme": "ghost_house",
+      "nodeKind": "stage",
+      "stageKey": "hex:0226",
+      "hexId": "0226",
+      "gridX": 18,
+      "gridY": 7,
+      "unlocksAfterNodeId": "w6-3-subsolo",
+      "mapX": 72,
+      "mapY": 35
+    },
+    {
+      "id": "w6-5-castelo",
+      "order": 4,
+      "code": "6-C",
+      "title": "Cidadela Espectral",
+      "subtitle": "6º Chefe: Arquiduque Boo",
+      "bossName": "Arquiduque Boo",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:0222",
+      "hexId": "0222",
+      "gridX": 22,
+      "gridY": 12,
+      "isCastle": true,
+      "unlocksAfterNodeId": "w6-4-claustro",
+      "mapX": 88,
+      "mapY": 60
+    },
+    {
+      "id": "w6-subworld-portal",
+      "order": 5,
+      "code": "S6",
+      "title": "Portal Submundo 6",
+      "subtitle": "Passagem para a Cripta dos Fantasmas",
+      "theme": "ghost_house",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "subworld-6",
+      "targetNodeId": "sw6-1-cripta",
+      "gridX": 9,
+      "gridY": 16,
+      "unlocksAfterNodeId": "w6-2-galeria",
+      "mapX": 36,
+      "mapY": 80
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "w6-1-campo",
+      "toId": "w6-2-galeria",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        50
+      ],
+      "c1": [
+        16,
+        30
+      ],
+      "c2": [
+        16,
+        30
+      ],
+      "p1": [
+        36,
+        30
+      ],
+      "waypoints": [
+        [
+          16,
+          50
+        ],
+        [
+          16,
+          30
+        ],
+        [
+          36,
+          30
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w6-2-galeria",
+      "toId": "w6-3-subsolo",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        36,
+        30
+      ],
+      "c1": [
+        56,
+        30
+      ],
+      "c2": [
+        56,
+        30
+      ],
+      "p1": [
+        56,
+        60
+      ],
+      "waypoints": [
+        [
+          36,
+          30
+        ],
+        [
+          56,
+          30
+        ],
+        [
+          56,
+          60
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w6-3-subsolo",
+      "toId": "w6-4-claustro",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        56,
+        60
+      ],
+      "c1": [
+        56,
+        35
+      ],
+      "c2": [
+        56,
+        35
+      ],
+      "p1": [
+        72,
+        35
+      ],
+      "waypoints": [
+        [
+          56,
+          60
+        ],
+        [
+          56,
+          35
+        ],
+        [
+          72,
+          35
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w6-4-claustro",
+      "toId": "w6-5-castelo",
+      "fromOrder": 3,
+      "toOrder": 4,
+      "p0": [
+        72,
+        35
+      ],
+      "c1": [
+        88,
+        35
+      ],
+      "c2": [
+        88,
+        35
+      ],
+      "p1": [
+        88,
+        60
+      ],
+      "waypoints": [
+        [
+          72,
+          35
+        ],
+        [
+          88,
+          35
+        ],
+        [
+          88,
+          60
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w6-2-galeria",
+      "toId": "w6-subworld-portal",
+      "fromOrder": 1,
+      "toOrder": 5,
+      "p0": [
+        36,
+        30
+      ],
+      "c1": [
+        36,
+        80
+      ],
+      "c2": [
+        36,
+        30
+      ],
+      "p1": [
+        36,
+        80
+      ],
+      "waypoints": [
+        [
+          36,
+          30
+        ],
+        [
+          36,
+          80
+        ]
+      ],
+      "lineStyle": "straight",
+      "eventId": 7
+    }
+  ],
+  "decorations": [
+    {
+      "id": "w6-htree-1",
+      "kind": "haunted_tree",
+      "gridX": 5,
+      "gridY": 5,
+      "x": 20,
+      "y": 25
+    },
+    {
+      "id": "w6-htree-2",
+      "kind": "haunted_tree",
+      "gridX": 13,
+      "gridY": 6,
+      "x": 52,
+      "y": 30
+    },
+    {
+      "id": "w6-htree-3",
+      "kind": "haunted_tree",
+      "gridX": 18,
+      "gridY": 15,
+      "x": 72,
+      "y": 75
+    },
+    {
+      "id": "w6-fort-1",
+      "kind": "castle_fort",
+      "gridX": 22,
+      "gridY": 6,
+      "x": 88,
+      "y": 30
+    },
+    {
+      "id": "w6-patrol-1",
+      "kind": "enemy_patrol",
+      "gridX": 14,
+      "gridY": 16,
+      "label": "Big Boo",
+      "x": 56,
+      "y": 80
+    }
+  ]
+}

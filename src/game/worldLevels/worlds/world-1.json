@@ -1,0 +1,431 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "wikiworld",
+  "number": 1,
+  "worldType": "main",
+  "subworldId": "subworld-1",
+  "name": "Ilha WikiWorldWeb",
+  "subtitle": "Mundo 1 · 6 fases + Portal para o Submundo 1",
+  "playable": true,
+  "boardPalette": "grass",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "Olá, seja bem vindo ao mundo fantastico de WazzimaGiygg. Parece que desta vez o problema também é o caluniador, de nome Chronus, junto com Bowser. Vamos explorar os mundos para poder salvar a princesa femboy",
+  "nodes": [
+    {
+      "id": "wiki-1-overworld",
+      "order": 0,
+      "code": "W-1",
+      "title": "Overworld",
+      "subtitle": "Planícies de Yoshi's Island · Cano secreto à caverna da chave",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "wiki-1-overworld",
+      "hexId": "0105",
+      "mapX": 16,
+      "mapY": 64,
+      "gridX": 4,
+      "gridY": 13
+    },
+    {
+      "id": "wiki-2-caverna",
+      "order": 1,
+      "code": "W-2",
+      "title": "Caverna",
+      "subtitle": "Grutas subterrâneas e túneis de pedra",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "wiki-2-caverna",
+      "hexId": "0106",
+      "mapX": 34,
+      "mapY": 40,
+      "gridX": 9,
+      "gridY": 8,
+      "unlocksAfterNodeId": "wiki-1-overworld"
+    },
+    {
+      "id": "wiki-3-agua",
+      "order": 2,
+      "code": "W-3",
+      "title": "Água",
+      "subtitle": "Lagoa costeira com recifes e corais",
+      "theme": "underwater",
+      "nodeKind": "stage",
+      "stageKey": "wiki-3-agua",
+      "hexId": "0107",
+      "mapX": 52,
+      "mapY": 64,
+      "gridX": 13,
+      "gridY": 13,
+      "unlocksAfterNodeId": "wiki-2-caverna"
+    },
+    {
+      "id": "wiki-4-mansao",
+      "order": 3,
+      "code": "W-4",
+      "title": "Mansão Fantasma",
+      "subtitle": "Boos, Dry Bones e salões assombrados",
+      "theme": "ghost_house",
+      "nodeKind": "stage",
+      "stageKey": "wiki-4-mansao",
+      "hexId": "0108",
+      "mapX": 68,
+      "mapY": 40,
+      "gridX": 17,
+      "gridY": 8,
+      "unlocksAfterNodeId": "wiki-3-agua"
+    },
+    {
+      "id": "wiki-5-castelo",
+      "order": 4,
+      "code": "W-5",
+      "title": "Castelo de Johannnnes89",
+      "subtitle": "Fortaleza final da ilha · 1º Chefe: Lorde Ignis Koopa",
+      "bossName": "Lorde Ignis Koopa",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "wiki-5-castelo",
+      "hexId": "0109",
+      "mapX": 86,
+      "mapY": 54,
+      "gridX": 22,
+      "gridY": 11,
+      "isCastle": true,
+      "unlocksAfterNodeId": "wiki-4-mansao"
+    },
+    {
+      "id": "wiki-switch-yellow",
+      "order": 5,
+      "code": "PA",
+      "title": "Palácio Interruptor Amarelo",
+      "subtitle": "Saída secreta de W-1 (cano do subsolo · Chave + Fechadura). Ativa blocos [!] amarelos",
+      "theme": "underground",
+      "nodeKind": "switch_palace",
+      "stageKey": "wiki-switch-yellow",
+      "hexId": "0110",
+      "mapX": 28,
+      "mapY": 76,
+      "gridX": 7,
+      "gridY": 15,
+      "isSwitchPalace": true,
+      "switchColor": "yellow",
+      "unlocksAfterSecretNodeId": "wiki-1-overworld"
+    },
+    {
+      "id": "w1-subworld-portal",
+      "order": 6,
+      "code": "S1",
+      "title": "Portal Submundo 1",
+      "subtitle": "Passagem oculta para o Submundo 1 · Caverna das Raízes",
+      "theme": "underground",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "subworld-1",
+      "targetNodeId": "sw1-1-raizes",
+      "mapX": 34,
+      "mapY": 20,
+      "gridX": 9,
+      "gridY": 4,
+      "unlocksAfterNodeId": "wiki-2-caverna"
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "wiki-1-overworld",
+      "toId": "wiki-2-caverna",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        64
+      ],
+      "c1": [
+        16,
+        40
+      ],
+      "c2": [
+        16,
+        40
+      ],
+      "p1": [
+        34,
+        40
+      ],
+      "waypoints": [
+        [
+          16,
+          64
+        ],
+        [
+          16,
+          40
+        ],
+        [
+          34,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "wiki-2-caverna",
+      "toId": "wiki-3-agua",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        34,
+        40
+      ],
+      "c1": [
+        52,
+        40
+      ],
+      "c2": [
+        52,
+        40
+      ],
+      "p1": [
+        52,
+        64
+      ],
+      "waypoints": [
+        [
+          34,
+          40
+        ],
+        [
+          52,
+          40
+        ],
+        [
+          52,
+          64
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "wiki-3-agua",
+      "toId": "wiki-4-mansao",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        52,
+        64
+      ],
+      "c1": [
+        52,
+        40
+      ],
+      "c2": [
+        52,
+        40
+      ],
+      "p1": [
+        68,
+        40
+      ],
+      "waypoints": [
+        [
+          52,
+          64
+        ],
+        [
+          52,
+          40
+        ],
+        [
+          68,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "wiki-4-mansao",
+      "toId": "wiki-5-castelo",
+      "fromOrder": 3,
+      "toOrder": 4,
+      "p0": [
+        68,
+        40
+      ],
+      "c1": [
+        86,
+        40
+      ],
+      "c2": [
+        86,
+        40
+      ],
+      "p1": [
+        86,
+        54
+      ],
+      "waypoints": [
+        [
+          68,
+          40
+        ],
+        [
+          86,
+          40
+        ],
+        [
+          86,
+          54
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "wiki-1-overworld",
+      "toId": "wiki-switch-yellow",
+      "fromOrder": 0,
+      "toOrder": 5,
+      "p0": [
+        16,
+        64
+      ],
+      "c1": [
+        16,
+        76
+      ],
+      "c2": [
+        16,
+        76
+      ],
+      "p1": [
+        28,
+        76
+      ],
+      "waypoints": [
+        [
+          16,
+          64
+        ],
+        [
+          16,
+          76
+        ],
+        [
+          28,
+          76
+        ]
+      ],
+      "lineStyle": "orthogonal",
+      "isSecretRoute": true,
+      "eventId": 1
+    },
+    {
+      "fromId": "wiki-2-caverna",
+      "toId": "w1-subworld-portal",
+      "fromOrder": 1,
+      "toOrder": 6,
+      "p0": [
+        34,
+        40
+      ],
+      "c1": [
+        34,
+        20
+      ],
+      "c2": [
+        34,
+        40
+      ],
+      "p1": [
+        34,
+        20
+      ],
+      "waypoints": [
+        [
+          34,
+          40
+        ],
+        [
+          34,
+          20
+        ]
+      ],
+      "lineStyle": "straight",
+      "eventId": 2
+    }
+  ],
+  "decorations": [
+    {
+      "id": "dec-water-lagoon",
+      "kind": "water",
+      "x": 45,
+      "y": 54,
+      "width": 16,
+      "height": 22
+    },
+    {
+      "id": "dec-bridge-agua",
+      "kind": "bridge",
+      "x": 47,
+      "y": 40,
+      "width": 10,
+      "height": 4
+    },
+    {
+      "id": "dec-hill-1",
+      "kind": "hill",
+      "x": 11,
+      "y": 32
+    },
+    {
+      "id": "dec-hill-2",
+      "kind": "hill",
+      "x": 38,
+      "y": 24
+    },
+    {
+      "id": "dec-trees-1",
+      "kind": "trees",
+      "x": 24,
+      "y": 52
+    },
+    {
+      "id": "dec-trees-2",
+      "kind": "trees",
+      "x": 10,
+      "y": 78
+    },
+    {
+      "id": "dec-rock-cave",
+      "kind": "rock",
+      "x": 34,
+      "y": 26
+    },
+    {
+      "id": "dec-haunted-1",
+      "kind": "haunted_tree",
+      "x": 62,
+      "y": 24
+    },
+    {
+      "id": "dec-haunted-2",
+      "kind": "haunted_tree",
+      "x": 76,
+      "y": 28
+    },
+    {
+      "id": "dec-castle-fort",
+      "kind": "castle_fort",
+      "x": 86,
+      "y": 38
+    },
+    {
+      "id": "dec-patrol-1",
+      "kind": "enemy_patrol",
+      "x": 42,
+      "y": 78,
+      "label": "Hammer Bro"
+    }
+  ]
+}

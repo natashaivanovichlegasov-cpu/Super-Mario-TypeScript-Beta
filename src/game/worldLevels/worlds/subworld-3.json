@@ -1,0 +1,227 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "subworld-3",
+  "number": 3,
+  "worldType": "subworld",
+  "parentWorldId": "world-3",
+  "name": "Submundo 3 · Fossa Abissal",
+  "subtitle": "Submundo 3 · Profundezas do Arquipélago Marinho",
+  "playable": true,
+  "boardPalette": "ocean",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "A Fossa Abissal guarda corais luminosos e ruínas submersas jamais mapeadas.",
+  "nodes": [
+    {
+      "id": "sw3-return",
+      "order": 0,
+      "code": "M3",
+      "title": "Voltar ao Mundo 3",
+      "subtitle": "Subir ao Arquipélago Marinho",
+      "theme": "underwater",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "world-3",
+      "targetNodeId": "w3-subworld-portal",
+      "gridX": 4,
+      "gridY": 9,
+      "mapX": 16,
+      "mapY": 45
+    },
+    {
+      "id": "sw3-1-fossa",
+      "order": 1,
+      "code": "S3-1",
+      "title": "Fenda Oceânica",
+      "subtitle": "Submundo 3 · Águas profundas",
+      "theme": "underwater",
+      "nodeKind": "stage",
+      "stageKey": "hex:0211",
+      "hexId": "0211",
+      "gridX": 10,
+      "gridY": 14,
+      "mapX": 40,
+      "mapY": 70
+    },
+    {
+      "id": "sw3-2-marinho",
+      "order": 2,
+      "code": "S3-2",
+      "title": "Jardim Abissal",
+      "subtitle": "Correnteza de águas vivas",
+      "theme": "underwater",
+      "nodeKind": "stage",
+      "stageKey": "hex:0216",
+      "hexId": "0216",
+      "gridX": 16,
+      "gridY": 8,
+      "unlocksAfterNodeId": "sw3-1-fossa",
+      "mapX": 64,
+      "mapY": 40
+    },
+    {
+      "id": "sw3-3-kraken",
+      "order": 3,
+      "code": "S3-C",
+      "title": "Cidadela Submersa",
+      "subtitle": "Subchefe Abissal",
+      "bossName": "Blooper Rei",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:021B",
+      "hexId": "021B",
+      "gridX": 21,
+      "gridY": 12,
+      "isCastle": true,
+      "unlocksAfterNodeId": "sw3-2-marinho",
+      "mapX": 84,
+      "mapY": 60
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "sw3-return",
+      "toId": "sw3-1-fossa",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        45
+      ],
+      "c1": [
+        40,
+        45
+      ],
+      "c2": [
+        40,
+        45
+      ],
+      "p1": [
+        40,
+        70
+      ],
+      "waypoints": [
+        [
+          16,
+          45
+        ],
+        [
+          40,
+          45
+        ],
+        [
+          40,
+          70
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw3-1-fossa",
+      "toId": "sw3-2-marinho",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        40,
+        70
+      ],
+      "c1": [
+        40,
+        40
+      ],
+      "c2": [
+        40,
+        40
+      ],
+      "p1": [
+        64,
+        40
+      ],
+      "waypoints": [
+        [
+          40,
+          70
+        ],
+        [
+          40,
+          40
+        ],
+        [
+          64,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw3-2-marinho",
+      "toId": "sw3-3-kraken",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        64,
+        40
+      ],
+      "c1": [
+        84,
+        40
+      ],
+      "c2": [
+        84,
+        40
+      ],
+      "p1": [
+        84,
+        60
+      ],
+      "waypoints": [
+        [
+          64,
+          40
+        ],
+        [
+          84,
+          40
+        ],
+        [
+          84,
+          60
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    }
+  ],
+  "decorations": [
+    {
+      "id": "sw3-water-1",
+      "kind": "water",
+      "gridX": 12,
+      "gridY": 7,
+      "width": 14,
+      "height": 14,
+      "x": 48,
+      "y": 35
+    },
+    {
+      "id": "sw3-bridge-1",
+      "kind": "bridge",
+      "gridX": 13,
+      "gridY": 15,
+      "width": 10,
+      "height": 4,
+      "x": 52,
+      "y": 75
+    },
+    {
+      "id": "sw3-fort-1",
+      "kind": "castle_fort",
+      "gridX": 21,
+      "gridY": 5,
+      "x": 84,
+      "y": 25
+    }
+  ]
+}

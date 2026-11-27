@@ -1,0 +1,223 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "subworld-6",
+  "number": 6,
+  "worldType": "subworld",
+  "parentWorldId": "world-6",
+  "name": "Submundo 6 · Cripta dos Fantasmas",
+  "subtitle": "Submundo 6 · Porões secretos da Névoa Assombrada",
+  "playable": true,
+  "boardPalette": "haunted",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "Nos porões da Cripta dos Fantasmas residem os espectros mais antigos a serviço de Chronus.",
+  "nodes": [
+    {
+      "id": "sw6-return",
+      "order": 0,
+      "code": "M6",
+      "title": "Voltar ao Mundo 6",
+      "subtitle": "Subir à Névoa Assombrada",
+      "theme": "ghost_house",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "world-6",
+      "targetNodeId": "w6-subworld-portal",
+      "gridX": 4,
+      "gridY": 12,
+      "mapX": 16,
+      "mapY": 60
+    },
+    {
+      "id": "sw6-1-cripta",
+      "order": 1,
+      "code": "S6-1",
+      "title": "Salão dos Sussurros",
+      "subtitle": "Submundo 6 · Câmara 1",
+      "theme": "ghost_house",
+      "nodeKind": "stage",
+      "stageKey": "hex:0208",
+      "hexId": "0208",
+      "gridX": 10,
+      "gridY": 7,
+      "mapX": 40,
+      "mapY": 35
+    },
+    {
+      "id": "sw6-2-porao",
+      "order": 2,
+      "code": "S6-2",
+      "title": "Porão Assombrado",
+      "subtitle": "Corredor de espelhos",
+      "theme": "ghost_house",
+      "nodeKind": "stage",
+      "stageKey": "hex:0212",
+      "hexId": "0212",
+      "gridX": 16,
+      "gridY": 13,
+      "unlocksAfterNodeId": "sw6-1-cripta",
+      "mapX": 64,
+      "mapY": 65
+    },
+    {
+      "id": "sw6-3-santuario",
+      "order": 3,
+      "code": "S6-C",
+      "title": "Santuário Sombrio",
+      "subtitle": "Subchefe da Cripta",
+      "bossName": "Rei Dry Bones",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:0236",
+      "hexId": "0236",
+      "gridX": 21,
+      "gridY": 8,
+      "isCastle": true,
+      "unlocksAfterNodeId": "sw6-2-porao",
+      "mapX": 84,
+      "mapY": 40
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "sw6-return",
+      "toId": "sw6-1-cripta",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        60
+      ],
+      "c1": [
+        16,
+        35
+      ],
+      "c2": [
+        16,
+        35
+      ],
+      "p1": [
+        40,
+        35
+      ],
+      "waypoints": [
+        [
+          16,
+          60
+        ],
+        [
+          16,
+          35
+        ],
+        [
+          40,
+          35
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw6-1-cripta",
+      "toId": "sw6-2-porao",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        40,
+        35
+      ],
+      "c1": [
+        64,
+        35
+      ],
+      "c2": [
+        64,
+        35
+      ],
+      "p1": [
+        64,
+        65
+      ],
+      "waypoints": [
+        [
+          40,
+          35
+        ],
+        [
+          64,
+          35
+        ],
+        [
+          64,
+          65
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "sw6-2-porao",
+      "toId": "sw6-3-santuario",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        64,
+        65
+      ],
+      "c1": [
+        64,
+        40
+      ],
+      "c2": [
+        64,
+        40
+      ],
+      "p1": [
+        84,
+        40
+      ],
+      "waypoints": [
+        [
+          64,
+          65
+        ],
+        [
+          64,
+          40
+        ],
+        [
+          84,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    }
+  ],
+  "decorations": [
+    {
+      "id": "sw6-htree-1",
+      "kind": "haunted_tree",
+      "gridX": 6,
+      "gridY": 5,
+      "x": 24,
+      "y": 25
+    },
+    {
+      "id": "sw6-htree-2",
+      "kind": "haunted_tree",
+      "gridX": 14,
+      "gridY": 6,
+      "x": 56,
+      "y": 30
+    },
+    {
+      "id": "sw6-fort-1",
+      "kind": "castle_fort",
+      "gridX": 21,
+      "gridY": 4,
+      "x": 84,
+      "y": 20
+    }
+  ]
+}

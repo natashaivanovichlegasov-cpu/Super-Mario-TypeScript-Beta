@@ -1,0 +1,345 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "world-5",
+  "number": 5,
+  "worldType": "main",
+  "subworldId": "subworld-5",
+  "name": "Mundo 5 · Nuvens do Céu",
+  "subtitle": "Mundo 5 · Torre Celestial & Estrada das Nuvens",
+  "playable": true,
+  "boardPalette": "ocean",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "Acima das montanhas fica a Nação das Nuvens! Salte entre pontes aéreas e enfrente o Barão Alado na Cidadela Celeste.",
+  "nodes": [
+    {
+      "id": "w5-1-mirante",
+      "order": 0,
+      "code": "5-1",
+      "title": "Mirante das Nuvens",
+      "subtitle": "Subida às correntes de vento",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "hex:0219",
+      "hexId": "0219",
+      "gridX": 4,
+      "gridY": 14,
+      "mapX": 16,
+      "mapY": 70
+    },
+    {
+      "id": "w5-2-fosso",
+      "order": 1,
+      "code": "5-2",
+      "title": "Fosso Aéreo",
+      "subtitle": "Túneis escavados no pico",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:021A",
+      "hexId": "021A",
+      "gridX": 9,
+      "gridY": 10,
+      "unlocksAfterNodeId": "w5-1-mirante",
+      "mapX": 36,
+      "mapY": 50
+    },
+    {
+      "id": "w5-3-ponte",
+      "order": 2,
+      "code": "5-3",
+      "title": "Ponte das Águias",
+      "subtitle": "Travessia suspensa nas alturas",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "hex:021E",
+      "hexId": "021E",
+      "gridX": 14,
+      "gridY": 6,
+      "unlocksAfterNodeId": "w5-2-fosso",
+      "mapX": 56,
+      "mapY": 30
+    },
+    {
+      "id": "w5-4-torre",
+      "order": 3,
+      "code": "5-4",
+      "title": "Torre Nebulosa",
+      "subtitle": "Salão flutuante dos espectros",
+      "theme": "ghost_house",
+      "nodeKind": "stage",
+      "stageKey": "hex:021C",
+      "hexId": "021C",
+      "gridX": 18,
+      "gridY": 12,
+      "unlocksAfterNodeId": "w5-3-ponte",
+      "mapX": 72,
+      "mapY": 60
+    },
+    {
+      "id": "w5-5-castelo",
+      "order": 4,
+      "code": "5-C",
+      "title": "Cidadela Celeste",
+      "subtitle": "5º Chefe: Barão Alado",
+      "bossName": "Barão Alado",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:021D",
+      "hexId": "021D",
+      "gridX": 22,
+      "gridY": 8,
+      "isCastle": true,
+      "unlocksAfterNodeId": "w5-4-torre",
+      "mapX": 88,
+      "mapY": 40
+    },
+    {
+      "id": "w5-subworld-portal",
+      "order": 5,
+      "code": "S5",
+      "title": "Portal Submundo 5",
+      "subtitle": "Warp para a Estrada Estelar",
+      "theme": "ghost_house",
+      "nodeKind": "star_warp",
+      "targetIslandId": "subworld-5",
+      "targetNodeId": "sw5-1-estrela",
+      "gridX": 14,
+      "gridY": 16,
+      "unlocksAfterNodeId": "w5-3-ponte",
+      "mapX": 56,
+      "mapY": 80
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "w5-1-mirante",
+      "toId": "w5-2-fosso",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        70
+      ],
+      "c1": [
+        16,
+        50
+      ],
+      "c2": [
+        16,
+        50
+      ],
+      "p1": [
+        36,
+        50
+      ],
+      "waypoints": [
+        [
+          16,
+          70
+        ],
+        [
+          16,
+          50
+        ],
+        [
+          36,
+          50
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w5-2-fosso",
+      "toId": "w5-3-ponte",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        36,
+        50
+      ],
+      "c1": [
+        56,
+        50
+      ],
+      "c2": [
+        56,
+        50
+      ],
+      "p1": [
+        56,
+        30
+      ],
+      "waypoints": [
+        [
+          36,
+          50
+        ],
+        [
+          56,
+          50
+        ],
+        [
+          56,
+          30
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w5-3-ponte",
+      "toId": "w5-4-torre",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        56,
+        30
+      ],
+      "c1": [
+        56,
+        60
+      ],
+      "c2": [
+        56,
+        60
+      ],
+      "p1": [
+        72,
+        60
+      ],
+      "waypoints": [
+        [
+          56,
+          30
+        ],
+        [
+          56,
+          60
+        ],
+        [
+          72,
+          60
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w5-4-torre",
+      "toId": "w5-5-castelo",
+      "fromOrder": 3,
+      "toOrder": 4,
+      "p0": [
+        72,
+        60
+      ],
+      "c1": [
+        88,
+        60
+      ],
+      "c2": [
+        88,
+        60
+      ],
+      "p1": [
+        88,
+        40
+      ],
+      "waypoints": [
+        [
+          72,
+          60
+        ],
+        [
+          88,
+          60
+        ],
+        [
+          88,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w5-3-ponte",
+      "toId": "w5-subworld-portal",
+      "fromOrder": 2,
+      "toOrder": 5,
+      "p0": [
+        56,
+        30
+      ],
+      "c1": [
+        56,
+        80
+      ],
+      "c2": [
+        56,
+        30
+      ],
+      "p1": [
+        56,
+        80
+      ],
+      "waypoints": [
+        [
+          56,
+          30
+        ],
+        [
+          56,
+          80
+        ]
+      ],
+      "lineStyle": "straight",
+      "eventId": 6
+    }
+  ],
+  "decorations": [
+    {
+      "id": "w5-cloud-1",
+      "kind": "cloud",
+      "gridX": 5,
+      "gridY": 6,
+      "x": 20,
+      "y": 30
+    },
+    {
+      "id": "w5-cloud-2",
+      "kind": "cloud",
+      "gridX": 11,
+      "gridY": 4,
+      "x": 44,
+      "y": 20
+    },
+    {
+      "id": "w5-cloud-3",
+      "kind": "cloud",
+      "gridX": 17,
+      "gridY": 5,
+      "x": 68,
+      "y": 25
+    },
+    {
+      "id": "w5-bridge-1",
+      "kind": "bridge",
+      "gridX": 11,
+      "gridY": 15,
+      "width": 12,
+      "height": 4,
+      "x": 44,
+      "y": 75
+    },
+    {
+      "id": "w5-fort-1",
+      "kind": "castle_fort",
+      "gridX": 22,
+      "gridY": 4,
+      "x": 88,
+      "y": 20
+    }
+  ]
+}

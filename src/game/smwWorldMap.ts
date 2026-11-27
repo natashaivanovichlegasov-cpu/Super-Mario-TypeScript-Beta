@@ -5,10 +5,32 @@
 
 import { LevelData, SmwSwitchColor } from './types.ts';
 import {
+  cloneLevelData,
+  createSecretVault,
+  createWorld1_1,
+  createWorld1_2,
+  createWorld1_4,
+  createWorld2_2,
+  createWorldGhostHouse,
   normalizeHexLevelCode,
   parseWorldStageFromJson,
   type WorldStageJsonDefaults,
 } from './levels.ts';
+import defaultWorldMapJson from './worldLevels/world-map.json';
+import world1Json from './worldLevels/worlds/world-1.json';
+import world2Json from './worldLevels/worlds/world-2.json';
+import world3Json from './worldLevels/worlds/world-3.json';
+import world4Json from './worldLevels/worlds/world-4.json';
+import world5Json from './worldLevels/worlds/world-5.json';
+import world6Json from './worldLevels/worlds/world-6.json';
+import world7Json from './worldLevels/worlds/world-7.json';
+import subworld1Json from './worldLevels/worlds/subworld-1.json';
+import subworld2Json from './worldLevels/worlds/subworld-2.json';
+import subworld3Json from './worldLevels/worlds/subworld-3.json';
+import subworld4Json from './worldLevels/worlds/subworld-4.json';
+import subworld5Json from './worldLevels/worlds/subworld-5.json';
+import subworld6Json from './worldLevels/worlds/subworld-6.json';
+import subworld7Json from './worldLevels/worlds/subworld-7.json';
 import wiki1OverworldJson from './worldLevels/wiki-1-overworld.json';
 import smwWiki1SecretJson from './worldLevels/smw-wiki-1-secret.json';
 import wiki2CavernaJson from './worldLevels/wiki-2-caverna.json';
@@ -29,36 +51,63 @@ export const SMW_WORLD_ISLAND_NAME = 'Ilha WikiWorldWeb';
 export const SMW_INTRO_STORY =
   'Olá, seja bem vindo ao mundo fantastico de WazzimaGiygg. Parece que desta vez o problema também é o caluniador, de nome Chronus, junto com Bowser. Vamos explorar os mundos para poder salvar a princesa femboy';
 
-export type SmwIslandId = 'wikiworld' | 'island2';
+export type SmwIslandId = 'wikiworld' | 'island2' | string;
+export type SmwWorldType = 'main' | 'subworld';
+
+export const LM_OVERWORLD_GRID_COLS = 25;
+export const LM_OVERWORLD_GRID_ROWS = 20;
 
 export const SMW_ISLAND2_UNAVAILABLE_MSG = '(Versão Beta) ainda não disponível para jogar';
+
+export type SmwBoardPalette = 'grass' | 'desert' | 'ocean' | 'haunted' | 'volcano';
+
+export type SmwMapDecorationKind =
+  | 'hill'
+  | 'trees'
+  | 'water'
+  | 'bridge'
+  | 'rock'
+  | 'haunted_tree'
+  | 'castle_fort'
+  | 'cloud'
+  | 'enemy_patrol';
+
+export interface SmwMapDecoration {
+  id: string;
+  kind: SmwMapDecorationKind;
+  x: number;
+  y: number;
+  gridX?: number;
+  gridY?: number;
+  width?: number;
+  height?: number;
+  label?: string;
+}
 
 export interface SmwIslandInfo {
   id: SmwIslandId;
   number: number;
+  worldType?: SmwWorldType;
+  parentWorldId?: string;
+  subworldId?: string;
+  overworldGrid?: { cols: number; rows: number };
   name: string;
   subtitle: string;
   playable: boolean;
+  boardPalette?: SmwBoardPalette;
+  introStory?: string;
 }
 
-export const SMW_ISLANDS: SmwIslandInfo[] = [
-  {
-    id: 'wikiworld',
-    number: 1,
-    name: SMW_WORLD_ISLAND_NAME,
-    subtitle: 'Ilha 1 · 6 fases jogáveis',
-    playable: true,
-  },
-  {
-    id: 'island2',
-    number: 2,
-    name: 'Ilha 2 · Terras de Chronus',
-    subtitle: SMW_ISLAND2_UNAVAILABLE_MSG,
-    playable: false,
-  },
-];
-
 export const JOHANNNNES_CASTLE_1_BOSS_NAME = 'Lorde Ignis Koopa';
+
+export type SmwNodeKind =
+  | 'stage'
+  | 'castle'
+  | 'switch_palace'
+  | 'pipe'
+  | 'toad_house'
+  | 'subworld_portal'
+  | 'star_warp';
 
 export interface SmwMapNode {
   id: string;
@@ -68,8 +117,16 @@ export interface SmwMapNode {
   subtitle: string;
   bossName?: string;
   theme: LevelData['theme'];
+  nodeKind?: SmwNodeKind;
+  stageKey?: string;
+  hexId?: string;
   mapX: number;
   mapY: number;
+  gridX?: number;
+  gridY?: number;
+  targetIslandId?: string;
+  targetNodeId?: string;
+  eventId?: number;
   isCastle?: boolean;
   isSwitchPalace?: boolean;
   switchColor?: SmwSwitchColor;
@@ -117,78 +174,6 @@ export const SMW_DEV_ONLY_SWITCH_PALACES: SmwDevSwitchPalaceInfo[] = [
   },
 ];
 
-export const SMW_WIKIWORLD_NODES: SmwMapNode[] = [
-  {
-    id: 'wiki-1-overworld',
-    order: 0,
-    code: 'W-1',
-    title: 'Overworld',
-    subtitle: "Planícies de Yoshi's Island · Cano secreto à caverna da chave",
-    theme: 'overworld',
-    mapX: 16,
-    mapY: 64,
-  },
-  {
-    id: 'wiki-2-caverna',
-    order: 1,
-    code: 'W-2',
-    title: 'Caverna',
-    subtitle: 'Grutas subterrâneas e túneis de pedra',
-    theme: 'underground',
-    mapX: 34,
-    mapY: 41,
-    unlocksAfterNodeId: 'wiki-1-overworld',
-  },
-  {
-    id: 'wiki-3-agua',
-    order: 2,
-    code: 'W-3',
-    title: 'Água',
-    subtitle: 'Lagoa costeira com recifes e corais',
-    theme: 'underwater',
-    mapX: 51,
-    mapY: 66,
-    unlocksAfterNodeId: 'wiki-2-caverna',
-  },
-  {
-    id: 'wiki-4-mansao',
-    order: 3,
-    code: 'W-4',
-    title: 'Mansão Fantasma',
-    subtitle: 'Boos, Dry Bones e salões assombrados',
-    theme: 'ghost_house',
-    mapX: 68,
-    mapY: 38,
-    unlocksAfterNodeId: 'wiki-3-agua',
-  },
-  {
-    id: 'wiki-5-castelo',
-    order: 4,
-    code: 'W-5',
-    title: 'Castelo de Johannnnes89',
-    subtitle: `Fortaleza final da ilha · 1º Chefe: ${JOHANNNNES_CASTLE_1_BOSS_NAME}`,
-    bossName: JOHANNNNES_CASTLE_1_BOSS_NAME,
-    theme: 'castle',
-    mapX: 85,
-    mapY: 53,
-    isCastle: true,
-    unlocksAfterNodeId: 'wiki-4-mansao',
-  },
-  {
-    id: 'wiki-switch-yellow',
-    order: 5,
-    code: 'PA',
-    title: 'Palácio Interruptor Amarelo',
-    subtitle: 'Saída secreta de W-1 (cano do subsolo · Chave + Fechadura). Ativa blocos [!] amarelos',
-    theme: 'underground',
-    mapX: 29,
-    mapY: 72,
-    isSwitchPalace: true,
-    switchColor: 'yellow',
-    unlocksAfterSecretNodeId: 'wiki-1-overworld',
-  },
-];
-
 export interface SmwPathSegment {
   fromId: string;
   toId: string;
@@ -198,154 +183,686 @@ export interface SmwPathSegment {
   c1: [number, number];
   c2: [number, number];
   p1: [number, number];
+  waypoints?: [number, number][];
+  lineStyle?: 'straight' | 'orthogonal';
+  isSecretRoute?: boolean;
+  eventId?: number;
 }
 
-export const SMW_PATH_SEGMENTS: SmwPathSegment[] = [
-  {
-    fromId: 'wiki-1-overworld',
-    toId: 'wiki-2-caverna',
-    fromOrder: 0,
-    toOrder: 1,
-    p0: [16, 64],
-    c1: [24, 62],
-    c2: [25, 44],
-    p1: [34, 41],
-  },
-  {
-    fromId: 'wiki-2-caverna',
-    toId: 'wiki-3-agua',
-    fromOrder: 1,
-    toOrder: 2,
-    p0: [34, 41],
-    c1: [42, 40],
-    c2: [43, 64],
-    p1: [51, 66],
-  },
-  {
-    fromId: 'wiki-3-agua',
-    toId: 'wiki-4-mansao',
-    fromOrder: 2,
-    toOrder: 3,
-    p0: [51, 66],
-    c1: [60, 64],
-    c2: [59, 41],
-    p1: [68, 38],
-  },
-  {
-    fromId: 'wiki-4-mansao',
-    toId: 'wiki-5-castelo',
-    fromOrder: 3,
-    toOrder: 4,
-    p0: [68, 38],
-    c1: [77, 36],
-    c2: [77, 54],
-    p1: [85, 53],
-  },
-  {
-    fromId: 'wiki-1-overworld',
-    toId: 'wiki-switch-yellow',
-    fromOrder: 0,
-    toOrder: 5,
-    p0: [16, 64],
-    c1: [19, 71],
-    c2: [24, 73],
-    p1: [29, 72],
-  },
+export interface SmwWorldIslandConfig extends SmwIslandInfo {
+  nodes: SmwMapNode[];
+  paths: SmwPathSegment[];
+  decorations?: SmwMapDecoration[];
+}
+
+export interface SmwWorldMapJson {
+  format: 'smb-world-map';
+  version: 1;
+  design: 'smb3';
+  defaultIslandId: string;
+  islands: SmwWorldIslandConfig[];
+}
+
+export interface WorldFileEntry {
+  id: string;
+  number: number;
+  worldType: SmwWorldType;
+  filename: string;
+  rawJson: unknown;
+}
+
+export const WORLD_JSON_FILES_REGISTRY: readonly WorldFileEntry[] = [
+  { id: 'wikiworld', number: 1, worldType: 'main', filename: 'worlds/world-1.json', rawJson: world1Json },
+  { id: 'island2', number: 2, worldType: 'main', filename: 'worlds/world-2.json', rawJson: world2Json },
+  { id: 'world-3', number: 3, worldType: 'main', filename: 'worlds/world-3.json', rawJson: world3Json },
+  { id: 'world-4', number: 4, worldType: 'main', filename: 'worlds/world-4.json', rawJson: world4Json },
+  { id: 'world-5', number: 5, worldType: 'main', filename: 'worlds/world-5.json', rawJson: world5Json },
+  { id: 'world-6', number: 6, worldType: 'main', filename: 'worlds/world-6.json', rawJson: world6Json },
+  { id: 'world-7', number: 7, worldType: 'main', filename: 'worlds/world-7.json', rawJson: world7Json },
+  { id: 'subworld-1', number: 1, worldType: 'subworld', filename: 'worlds/subworld-1.json', rawJson: subworld1Json },
+  { id: 'subworld-2', number: 2, worldType: 'subworld', filename: 'worlds/subworld-2.json', rawJson: subworld2Json },
+  { id: 'subworld-3', number: 3, worldType: 'subworld', filename: 'worlds/subworld-3.json', rawJson: subworld3Json },
+  { id: 'subworld-4', number: 4, worldType: 'subworld', filename: 'worlds/subworld-4.json', rawJson: subworld4Json },
+  { id: 'subworld-5', number: 5, worldType: 'subworld', filename: 'worlds/subworld-5.json', rawJson: subworld5Json },
+  { id: 'subworld-6', number: 6, worldType: 'subworld', filename: 'worlds/subworld-6.json', rawJson: subworld6Json },
+  { id: 'subworld-7', number: 7, worldType: 'subworld', filename: 'worlds/subworld-7.json', rawJson: subworld7Json },
 ];
 
-export const SMW_ISLAND2_NODES: SmwMapNode[] = [
-  {
-    id: 'island2-1-entrada',
-    order: 0,
-    code: '2-1',
-    title: 'Fase 2-1',
-    subtitle: SMW_ISLAND2_UNAVAILABLE_MSG,
-    theme: 'overworld',
-    mapX: 28,
-    mapY: 59,
-    betaPlaceholderMessage: SMW_ISLAND2_UNAVAILABLE_MSG,
-  },
-  {
-    id: 'island2-2-ruinas',
-    order: 1,
-    code: '2-2',
-    title: 'Fase 2-2',
-    subtitle: SMW_ISLAND2_UNAVAILABLE_MSG,
-    theme: 'underground',
-    mapX: 52,
-    mapY: 42,
-    unlocksAfterNodeId: 'island2-1-entrada',
-    betaPlaceholderMessage: SMW_ISLAND2_UNAVAILABLE_MSG,
-  },
-  {
-    id: 'island2-3-fortaleza',
-    order: 2,
-    code: '2-C',
-    title: 'Fortaleza de Chronus',
-    subtitle: SMW_ISLAND2_UNAVAILABLE_MSG,
-    theme: 'castle',
-    mapX: 75,
-    mapY: 55,
-    isCastle: true,
-    unlocksAfterNodeId: 'island2-2-ruinas',
-    betaPlaceholderMessage: SMW_ISLAND2_UNAVAILABLE_MSG,
-  },
-];
+const VALID_BOARD_PALETTES = new Set<SmwBoardPalette>([
+  'grass',
+  'desert',
+  'ocean',
+  'haunted',
+  'volcano',
+]);
 
-export const SMW_ISLAND2_PATH_SEGMENTS: SmwPathSegment[] = [
-  {
-    fromId: 'island2-1-entrada',
-    toId: 'island2-2-ruinas',
-    fromOrder: 0,
-    toOrder: 1,
-    p0: [28, 59],
-    c1: [38, 55],
-    c2: [43, 44],
-    p1: [52, 42],
-  },
-  {
-    fromId: 'island2-2-ruinas',
-    toId: 'island2-3-fortaleza',
-    fromOrder: 1,
-    toOrder: 2,
-    p0: [52, 42],
-    c1: [62, 40],
-    c2: [66, 54],
-    p1: [75, 55],
-  },
-];
+const VALID_DECOR_KINDS = new Set<SmwMapDecorationKind>([
+  'hill',
+  'trees',
+  'water',
+  'bridge',
+  'rock',
+  'haunted_tree',
+  'castle_fort',
+  'cloud',
+  'enemy_patrol',
+]);
 
+const VALID_NODE_THEMES = new Set<LevelData['theme']>([
+  'overworld',
+  'underground',
+  'castle',
+  'underwater',
+  'ghost_house',
+]);
+
+function clampPercent(val: unknown, fallback: number): number {
+  if (typeof val !== 'number' || !Number.isFinite(val)) return fallback;
+  return Math.max(4, Math.min(96, Math.round(val * 10) / 10));
+}
+
+export function gridCoordToPercent(
+  gridX: number,
+  gridY: number,
+  cols: number = LM_OVERWORLD_GRID_COLS,
+  rows: number = LM_OVERWORLD_GRID_ROWS
+): { mapX: number; mapY: number } {
+  const stepX = 100 / Math.max(10, cols);
+  const stepY = 100 / Math.max(10, rows);
+  return {
+    mapX: clampPercent(gridX * stepX, 50),
+    mapY: clampPercent(gridY * stepY, 50),
+  };
+}
+
+export function percentToGridCoord(
+  mapX: number,
+  mapY: number,
+  cols: number = LM_OVERWORLD_GRID_COLS,
+  rows: number = LM_OVERWORLD_GRID_ROWS
+): { gridX: number; gridY: number } {
+  const stepX = 100 / Math.max(10, cols);
+  const stepY = 100 / Math.max(10, rows);
+  return {
+    gridX: Math.max(1, Math.min(cols - 1, Math.round(mapX / stepX))),
+    gridY: Math.max(1, Math.min(rows - 1, Math.round(mapY / stepY))),
+  };
+}
+
+export function isSmwPortalNode(node: Pick<SmwMapNode, 'nodeKind' | 'targetIslandId'>): boolean {
+  return (
+    node.nodeKind === 'subworld_portal' ||
+    node.nodeKind === 'star_warp' ||
+    Boolean(node.targetIslandId)
+  );
+}
+
+function normalizePoint(raw: unknown, fallback: [number, number]): [number, number] {
+  if (!Array.isArray(raw) || raw.length < 2) return [fallback[0], fallback[1]];
+  return [clampPercent(raw[0], fallback[0]), clampPercent(raw[1], fallback[1])];
+}
+
+export function buildOrthogonalWaypoints(
+  from: [number, number],
+  to: [number, number],
+  mode: 'hv' | 'vh' | 'direct' = 'hv'
+): [number, number][] {
+  const [x0, y0] = from;
+  const [x1, y1] = to;
+  if (mode === 'direct' || Math.abs(x0 - x1) < 0.5 || Math.abs(y0 - y1) < 0.5) {
+    return [
+      [x0, y0],
+      [x1, y1],
+    ];
+  }
+  if (mode === 'vh') {
+    return [
+      [x0, y0],
+      [x0, y1],
+      [x1, y1],
+    ];
+  }
+  return [
+    [x0, y0],
+    [x1, y0],
+    [x1, y1],
+  ];
+}
+
+function parseSingleIslandObject(
+  rawIsland: unknown,
+  idx: number
+): SmwWorldIslandConfig {
+  if (!rawIsland || typeof rawIsland !== 'object') {
+    throw new Error(`Ilha #${idx + 1} inválida no JSON do Mundo.`);
+  }
+  const isl = rawIsland as Record<string, unknown>;
+  const id =
+    typeof isl.id === 'string' && isl.id.trim()
+      ? isl.id.trim()
+      : idx === 0
+      ? 'wikiworld'
+      : `island-${idx + 1}`;
+  const number =
+    typeof isl.number === 'number' && Number.isFinite(isl.number)
+      ? Math.max(1, Math.floor(isl.number))
+      : idx + 1;
+  const worldType: SmwWorldType =
+    isl.worldType === 'subworld' || id.startsWith('subworld') ? 'subworld' : 'main';
+  const parentWorldId =
+    typeof isl.parentWorldId === 'string' && isl.parentWorldId.trim()
+      ? isl.parentWorldId.trim()
+      : undefined;
+  const subworldId =
+    typeof isl.subworldId === 'string' && isl.subworldId.trim()
+      ? isl.subworldId.trim()
+      : undefined;
+  const rawGrid =
+    isl.overworldGrid && typeof isl.overworldGrid === 'object'
+      ? (isl.overworldGrid as Record<string, unknown>)
+      : null;
+  const cols =
+    rawGrid && typeof rawGrid.cols === 'number' && Number.isFinite(rawGrid.cols)
+      ? Math.max(10, Math.min(50, Math.round(rawGrid.cols)))
+      : LM_OVERWORLD_GRID_COLS;
+  const rows =
+    rawGrid && typeof rawGrid.rows === 'number' && Number.isFinite(rawGrid.rows)
+      ? Math.max(10, Math.min(40, Math.round(rawGrid.rows)))
+      : LM_OVERWORLD_GRID_ROWS;
+
+  const name =
+    typeof isl.name === 'string' && isl.name.trim()
+      ? isl.name.trim()
+      : worldType === 'subworld'
+      ? `Submundo ${number}`
+      : `Mundo ${number}`;
+  const subtitle =
+    typeof isl.subtitle === 'string'
+      ? isl.subtitle.trim()
+      : `${worldType === 'subworld' ? 'Submundo' : 'Mundo'} ${number} · Modo World SMB3`;
+  const playable = typeof isl.playable === 'boolean' ? isl.playable : true;
+  const boardPalette: SmwBoardPalette = VALID_BOARD_PALETTES.has(
+    isl.boardPalette as SmwBoardPalette
+  )
+    ? (isl.boardPalette as SmwBoardPalette)
+    : 'grass';
+  const introStory =
+    typeof isl.introStory === 'string' && isl.introStory.trim()
+      ? isl.introStory.trim()
+      : SMW_INTRO_STORY;
+
+  if (!Array.isArray(isl.nodes) || isl.nodes.length === 0) {
+    throw new Error(`O mapa "${name}" deve possuir ao menos 1 nó.`);
+  }
+
+  const nodes: SmwMapNode[] = isl.nodes.map((rawNode, nIdx) => {
+    const n = (rawNode && typeof rawNode === 'object' ? rawNode : {}) as Record<string, unknown>;
+    const nodeId =
+      typeof n.id === 'string' && n.id.trim()
+        ? n.id.trim()
+        : `${id}-node-${nIdx + 1}`;
+    const rawTheme = String(n.theme || 'overworld') as LevelData['theme'];
+    const theme: LevelData['theme'] = VALID_NODE_THEMES.has(rawTheme) ? rawTheme : 'overworld';
+    const isCastle = Boolean(n.isCastle || n.nodeKind === 'castle' || (theme === 'castle' && n.nodeKind !== 'stage' && n.nodeKind !== 'subworld_portal' && n.nodeKind !== 'star_warp'));
+    const isSwitchPalace = Boolean(n.isSwitchPalace || n.nodeKind === 'switch_palace');
+    const rawSwitchColor = String(n.switchColor || '') as SmwSwitchColor;
+    const switchColor: SmwSwitchColor | undefined =
+      rawSwitchColor === 'yellow' ||
+      rawSwitchColor === 'green' ||
+      rawSwitchColor === 'red' ||
+      rawSwitchColor === 'pink' ||
+      rawSwitchColor === 'blue'
+        ? rawSwitchColor
+        : isSwitchPalace
+        ? 'yellow'
+        : undefined;
+
+    const hasExplicitMapX = typeof n.mapX === 'number' && Number.isFinite(n.mapX);
+    const hasExplicitMapY = typeof n.mapY === 'number' && Number.isFinite(n.mapY);
+    const hasExplicitGridX = typeof n.gridX === 'number' && Number.isFinite(n.gridX);
+    const hasExplicitGridY = typeof n.gridY === 'number' && Number.isFinite(n.gridY);
+    const fromGrid = gridCoordToPercent(
+      hasExplicitGridX ? (n.gridX as number) : 4 + ((nIdx * 4) % 18),
+      hasExplicitGridY ? (n.gridY as number) : nIdx % 2 === 0 ? 12 : 8,
+      cols,
+      rows
+    );
+    const mapX = hasExplicitMapX ? clampPercent(n.mapX, fromGrid.mapX) : fromGrid.mapX;
+    const mapY = hasExplicitMapY ? clampPercent(n.mapY, fromGrid.mapY) : fromGrid.mapY;
+    const computedGrid = percentToGridCoord(mapX, mapY, cols, rows);
+    const gridX = hasExplicitGridX
+      ? Math.max(1, Math.min(cols - 1, Math.round(n.gridX as number)))
+      : computedGrid.gridX;
+    const gridY = hasExplicitGridY
+      ? Math.max(1, Math.min(rows - 1, Math.round(n.gridY as number)))
+      : computedGrid.gridY;
+
+    const parsedKind: SmwNodeKind =
+      n.nodeKind === 'stage' ||
+      n.nodeKind === 'castle' ||
+      n.nodeKind === 'switch_palace' ||
+      n.nodeKind === 'pipe' ||
+      n.nodeKind === 'toad_house' ||
+      n.nodeKind === 'subworld_portal' ||
+      n.nodeKind === 'star_warp'
+        ? n.nodeKind
+        : isCastle
+        ? 'castle'
+        : isSwitchPalace
+        ? 'switch_palace'
+        : 'stage';
+
+    return {
+      id: nodeId,
+      order:
+        typeof n.order === 'number' && Number.isFinite(n.order)
+          ? Math.max(0, Math.floor(n.order))
+          : nIdx,
+      code:
+        typeof n.code === 'string' && n.code.trim()
+          ? n.code.trim().toUpperCase().slice(0, 6)
+          : `W-${nIdx + 1}`,
+      title:
+        typeof n.title === 'string' && n.title.trim()
+          ? n.title.trim()
+          : `Fase ${nIdx + 1}`,
+      subtitle: typeof n.subtitle === 'string' ? n.subtitle.trim() : '',
+      ...(typeof n.bossName === 'string' && n.bossName.trim()
+        ? { bossName: n.bossName.trim() }
+        : {}),
+      theme,
+      nodeKind: parsedKind,
+      ...(typeof n.stageKey === 'string' && n.stageKey.trim()
+        ? { stageKey: n.stageKey.trim() }
+        : {}),
+      ...(typeof n.hexId === 'string' && n.hexId.trim()
+        ? { hexId: normalizeHexLevelCode(n.hexId) || n.hexId.trim().toUpperCase() }
+        : {}),
+      mapX,
+      mapY,
+      gridX,
+      gridY,
+      ...(typeof n.targetIslandId === 'string' && n.targetIslandId.trim()
+        ? { targetIslandId: n.targetIslandId.trim() }
+        : {}),
+      ...(typeof n.targetNodeId === 'string' && n.targetNodeId.trim()
+        ? { targetNodeId: n.targetNodeId.trim() }
+        : {}),
+      ...(typeof n.eventId === 'number' && Number.isFinite(n.eventId)
+        ? { eventId: Math.max(0, Math.min(255, Math.floor(n.eventId))) }
+        : {}),
+      ...(isCastle ? { isCastle: true } : {}),
+      ...(isSwitchPalace ? { isSwitchPalace: true } : {}),
+      ...(switchColor ? { switchColor } : {}),
+      ...(typeof n.unlocksAfterNodeId === 'string' && n.unlocksAfterNodeId.trim()
+        ? { unlocksAfterNodeId: n.unlocksAfterNodeId.trim() }
+        : {}),
+      ...(typeof n.unlocksAfterSecretNodeId === 'string' && n.unlocksAfterSecretNodeId.trim()
+        ? { unlocksAfterSecretNodeId: n.unlocksAfterSecretNodeId.trim() }
+        : {}),
+      ...(typeof n.betaPlaceholderMessage === 'string' && n.betaPlaceholderMessage.trim()
+        ? { betaPlaceholderMessage: n.betaPlaceholderMessage.trim() }
+        : {}),
+    };
+  });
+
+  const nodeById = new Map(nodes.map(n => [n.id, n]));
+  const rawPaths = Array.isArray(isl.paths) ? isl.paths : [];
+  const paths: SmwPathSegment[] = rawPaths
+    .map((rawSeg): SmwPathSegment | null => {
+      if (!rawSeg || typeof rawSeg !== 'object') return null;
+      const s = rawSeg as Record<string, unknown>;
+      const fromId = typeof s.fromId === 'string' ? s.fromId.trim() : '';
+      const toId = typeof s.toId === 'string' ? s.toId.trim() : '';
+      const fromNode = nodeById.get(fromId);
+      const toNode = nodeById.get(toId);
+      if (!fromNode || !toNode || fromId === toId) return null;
+
+      const p0: [number, number] = [fromNode.mapX, fromNode.mapY];
+      const p1: [number, number] = [toNode.mapX, toNode.mapY];
+      let waypoints: [number, number][];
+      if (Array.isArray(s.waypoints) && s.waypoints.length >= 2) {
+        waypoints = s.waypoints.map((pt, wIdx) =>
+          normalizePoint(
+            pt,
+            wIdx === 0 ? p0 : wIdx === (s.waypoints as unknown[]).length - 1 ? p1 : p0
+          )
+        );
+        waypoints[0] = p0;
+        waypoints[waypoints.length - 1] = p1;
+      } else {
+        waypoints = buildOrthogonalWaypoints(p0, p1, 'hv');
+      }
+      const midPt = waypoints[Math.min(1, waypoints.length - 1)];
+      const c1 = normalizePoint(s.c1, midPt);
+      const c2 = normalizePoint(s.c2, waypoints[Math.max(0, waypoints.length - 2)]);
+      const lineStyle: 'straight' | 'orthogonal' =
+        s.lineStyle === 'straight' ? 'straight' : 'orthogonal';
+
+      return {
+        fromId,
+        toId,
+        fromOrder:
+          typeof s.fromOrder === 'number' && Number.isFinite(s.fromOrder)
+            ? s.fromOrder
+            : fromNode.order,
+        toOrder:
+          typeof s.toOrder === 'number' && Number.isFinite(s.toOrder)
+            ? s.toOrder
+            : toNode.order,
+        p0,
+        c1,
+        c2,
+        p1,
+        waypoints,
+        lineStyle,
+        ...(s.isSecretRoute === true || Boolean(toNode.unlocksAfterSecretNodeId === fromId)
+          ? { isSecretRoute: true }
+          : {}),
+        ...(typeof s.eventId === 'number' && Number.isFinite(s.eventId)
+          ? { eventId: Math.max(0, Math.min(255, Math.floor(s.eventId))) }
+          : {}),
+      };
+    })
+    .filter((x): x is SmwPathSegment => Boolean(x));
+
+  const decorations: SmwMapDecoration[] = Array.isArray(isl.decorations)
+    ? isl.decorations
+        .map((rawDec, dIdx): SmwMapDecoration | null => {
+          if (!rawDec || typeof rawDec !== 'object') return null;
+          const d = rawDec as Record<string, unknown>;
+          const kind = String(d.kind || '') as SmwMapDecorationKind;
+          if (!VALID_DECOR_KINDS.has(kind)) return null;
+          const hasGridX = typeof d.gridX === 'number' && Number.isFinite(d.gridX);
+          const hasGridY = typeof d.gridY === 'number' && Number.isFinite(d.gridY);
+          const fromGrid = gridCoordToPercent(
+            hasGridX ? (d.gridX as number) : 12,
+            hasGridY ? (d.gridY as number) : 10,
+            cols,
+            rows
+          );
+          const x =
+            typeof d.x === 'number' && Number.isFinite(d.x)
+              ? clampPercent(d.x, fromGrid.mapX)
+              : fromGrid.mapX;
+          const y =
+            typeof d.y === 'number' && Number.isFinite(d.y)
+              ? clampPercent(d.y, fromGrid.mapY)
+              : fromGrid.mapY;
+          const cGrid = percentToGridCoord(x, y, cols, rows);
+          return {
+            id:
+              typeof d.id === 'string' && d.id.trim()
+                ? d.id.trim()
+                : `${id}-dec-${dIdx + 1}`,
+            kind,
+            x,
+            y,
+            gridX: hasGridX ? Math.round(d.gridX as number) : cGrid.gridX,
+            gridY: hasGridY ? Math.round(d.gridY as number) : cGrid.gridY,
+            ...(typeof d.width === 'number' && Number.isFinite(d.width)
+              ? { width: Math.max(6, Math.min(48, d.width)) }
+              : {}),
+            ...(typeof d.height === 'number' && Number.isFinite(d.height)
+              ? { height: Math.max(4, Math.min(40, d.height)) }
+              : {}),
+            ...(typeof d.label === 'string' && d.label.trim()
+              ? { label: d.label.trim().slice(0, 24) }
+              : {}),
+          };
+        })
+        .filter((x): x is SmwMapDecoration => Boolean(x))
+    : [];
+
+  return {
+    id,
+    number,
+    worldType,
+    ...(parentWorldId ? { parentWorldId } : {}),
+    ...(subworldId ? { subworldId } : {}),
+    overworldGrid: { cols, rows },
+    name,
+    subtitle,
+    playable,
+    boardPalette,
+    introStory,
+    nodes,
+    paths,
+    decorations,
+  };
+}
+
+export function parseSingleWorldJson(rawInput: string | unknown): SmwWorldIslandConfig {
+  let parsed: unknown = rawInput;
+  if (typeof rawInput === 'string') {
+    try {
+      parsed = JSON.parse(rawInput);
+    } catch {
+      throw new Error('Arquivo JSON do Mundo inválido ou corrompido.');
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Estrutura do JSON do Mundo inválida.');
+  }
+  const obj = parsed as Record<string, unknown>;
+  if (Array.isArray(obj.islands)) {
+    if (obj.islands.length === 0) {
+      throw new Error('JSON do Mundo precisa conter ao menos 1 ilha em "islands".');
+    }
+    return parseSingleIslandObject(obj.islands[0], 0);
+  }
+  if (obj.island && typeof obj.island === 'object') {
+    return parseSingleIslandObject(obj.island, 0);
+  }
+  return parseSingleIslandObject(obj, 0);
+}
+
+export function parseWorldMapJson(rawInput: string | unknown): SmwWorldMapJson {
+  let parsed: unknown = rawInput;
+  if (typeof rawInput === 'string') {
+    try {
+      parsed = JSON.parse(rawInput);
+    } catch {
+      throw new Error('Arquivo JSON do Mundo inválido ou corrompido.');
+    }
+  }
+  if (!parsed || typeof parsed !== 'object') {
+    throw new Error('Estrutura raiz do JSON do Mundo inválida.');
+  }
+  const root = parsed as Record<string, unknown>;
+  const rawIslands: unknown[] | null = Array.isArray(root.islands)
+    ? root.islands
+    : Array.isArray(root.nodes)
+    ? [root]
+    : null;
+  if (!rawIslands || rawIslands.length === 0) {
+    throw new Error('JSON do Mundo precisa conter "islands" ou uma definição de mapa com "nodes".');
+  }
+
+  const islands: SmwWorldIslandConfig[] = rawIslands.map((rawIsland, idx) =>
+    parseSingleIslandObject(rawIsland, idx)
+  );
+
+  const requestedDefault =
+    typeof root.defaultIslandId === 'string' &&
+    islands.some(isl => isl.id === root.defaultIslandId)
+      ? root.defaultIslandId
+      : islands[0].id;
+
+  return {
+    format: 'smb-world-map',
+    version: 1,
+    design: 'smb3',
+    defaultIslandId: requestedDefault,
+    islands,
+  };
+}
+
+export function cloneWorldMapJson(world: SmwWorldMapJson): SmwWorldMapJson {
+  return parseWorldMapJson(world);
+}
+
+export function serializeWorldMapToJson(world: SmwWorldMapJson): string {
+  return JSON.stringify(parseWorldMapJson(world), null, 2);
+}
+
+export function serializeSingleWorldToJson(island: SmwWorldIslandConfig): string {
+  const normalized = parseSingleIslandObject(island, 0);
+  return JSON.stringify(
+    {
+      format: 'smb-world-single',
+      version: 1,
+      design: 'smb3',
+      ...normalized,
+    },
+    null,
+    2
+  );
+}
+
+export function mergeSingleWorldIntoPack(
+  pack: SmwWorldMapJson,
+  singleIsland: SmwWorldIslandConfig
+): SmwWorldMapJson {
+  const cloned = cloneWorldMapJson(pack);
+  const normalized = parseSingleIslandObject(singleIsland, 0);
+  const existingIdx = cloned.islands.findIndex(i => i.id === normalized.id);
+  if (existingIdx >= 0) {
+    cloned.islands[existingIdx] = normalized;
+  } else {
+    cloned.islands.push(normalized);
+  }
+  return cloned;
+}
+
+export function getMainWorlds(world: SmwWorldMapJson): SmwWorldIslandConfig[] {
+  return world.islands.filter(isl => isl.worldType !== 'subworld');
+}
+
+export function getSubworlds(world: SmwWorldMapJson): SmwWorldIslandConfig[] {
+  return world.islands.filter(isl => isl.worldType === 'subworld');
+}
+
+export function getLinkedSubworld(
+  world: SmwWorldMapJson,
+  mainWorldId: string
+): SmwWorldIslandConfig | null {
+  const main = world.islands.find(i => i.id === mainWorldId);
+  if (main?.subworldId) {
+    const found = world.islands.find(i => i.id === main.subworldId);
+    if (found) return found;
+  }
+  return world.islands.find(i => i.worldType === 'subworld' && i.parentWorldId === mainWorldId) || null;
+}
+
+export function getLinkedParentWorld(
+  world: SmwWorldMapJson,
+  subworldId: string
+): SmwWorldIslandConfig | null {
+  const sub = world.islands.find(i => i.id === subworldId);
+  if (sub?.parentWorldId) {
+    const found = world.islands.find(i => i.id === sub.parentWorldId);
+    if (found) return found;
+  }
+  return world.islands.find(i => i.worldType !== 'subworld' && i.subworldId === subworldId) || null;
+}
+
+const ASSEMBLED_DEFAULT_FROM_WORLD_FILES: SmwWorldMapJson = parseWorldMapJson({
+  format: 'smb-world-map',
+  version: 1,
+  design: 'smb3',
+  defaultIslandId: 'wikiworld',
+  islands:
+    WORLD_JSON_FILES_REGISTRY.length > 0
+      ? WORLD_JSON_FILES_REGISTRY.map(entry => entry.rawJson)
+      : (defaultWorldMapJson as { islands: unknown[] }).islands,
+});
+
+const DEFAULT_PARSED_WORLD_MAP: SmwWorldMapJson =
+  ASSEMBLED_DEFAULT_FROM_WORLD_FILES.islands.length >= 14
+    ? ASSEMBLED_DEFAULT_FROM_WORLD_MAP_FALLBACK(ASSEMBLED_DEFAULT_FROM_WORLD_FILES)
+    : parseWorldMapJson(defaultWorldMapJson);
+
+function ASSEMBLED_DEFAULT_FROM_WORLD_MAP_FALLBACK(w: SmwWorldMapJson): SmwWorldMapJson {
+  return w;
+}
+
+export function getDefaultWorldMapJson(): SmwWorldMapJson {
+  return cloneWorldMapJson(DEFAULT_PARSED_WORLD_MAP);
+}
+
+const DEFAULT_WIKIWORLD_ISLAND =
+  DEFAULT_PARSED_WORLD_MAP.islands.find(i => i.id === 'wikiworld') ||
+  DEFAULT_PARSED_WORLD_MAP.islands[0];
+
+const DEFAULT_ISLAND2 =
+  DEFAULT_PARSED_WORLD_MAP.islands.find(i => i.id === 'island2') ||
+  DEFAULT_PARSED_WORLD_MAP.islands[1];
+
+export const SMW_ISLANDS: SmwIslandInfo[] = DEFAULT_PARSED_WORLD_MAP.islands.map(isl => ({
+  id: isl.id,
+  number: isl.number,
+  worldType: isl.worldType,
+  parentWorldId: isl.parentWorldId,
+  subworldId: isl.subworldId,
+  overworldGrid: isl.overworldGrid,
+  name: isl.name,
+  subtitle: isl.subtitle,
+  playable: isl.playable,
+  boardPalette: isl.boardPalette,
+  introStory: isl.introStory,
+}));
+
+export const SMW_WIKIWORLD_NODES: SmwMapNode[] = DEFAULT_WIKIWORLD_ISLAND.nodes;
+export const SMW_PATH_SEGMENTS: SmwPathSegment[] = DEFAULT_WIKIWORLD_ISLAND.paths;
+export const SMW_ISLAND2_NODES: SmwMapNode[] = DEFAULT_ISLAND2 ? DEFAULT_ISLAND2.nodes : [];
+export const SMW_ISLAND2_PATH_SEGMENTS: SmwPathSegment[] = DEFAULT_ISLAND2
+  ? DEFAULT_ISLAND2.paths
+  : [];
+
+/**
+ * Evaluates position & tangent along a straight-line SMB3 path segment (orthogonal waypoints or linear p0->p1).
+ */
 export function evaluateSmwPathSegment(
   seg: SmwPathSegment,
   t: number
 ): { x: number; y: number; dx: number; dy: number } {
-  const u = 1 - t;
-  const tt = t * t;
-  const uu = u * u;
-  const uuu = uu * u;
-  const ttt = tt * t;
+  const clampedT = Math.max(0, Math.min(1, t));
+  const pts: [number, number][] =
+    seg.waypoints && seg.waypoints.length >= 2 ? seg.waypoints : [seg.p0, seg.p1];
 
-  const x =
-    uuu * seg.p0[0] +
-    3 * uu * t * seg.c1[0] +
-    3 * u * tt * seg.c2[0] +
-    ttt * seg.p1[0];
-  const y =
-    uuu * seg.p0[1] +
-    3 * uu * t * seg.c1[1] +
-    3 * u * tt * seg.c2[1] +
-    ttt * seg.p1[1];
+  const legLengths: number[] = [];
+  let totalLen = 0;
+  for (let i = 0; i < pts.length - 1; i++) {
+    const len = Math.hypot(pts[i + 1][0] - pts[i][0], pts[i + 1][1] - pts[i][1]);
+    legLengths.push(len);
+    totalLen += len;
+  }
 
-  const dx =
-    3 * uu * (seg.c1[0] - seg.p0[0]) +
-    6 * u * t * (seg.c2[0] - seg.c1[0]) +
-    3 * tt * (seg.p1[0] - seg.c2[0]);
-  const dy =
-    3 * uu * (seg.c1[1] - seg.p0[1]) +
-    6 * u * t * (seg.c2[1] - seg.c1[1]) +
-    3 * tt * (seg.p1[1] - seg.c2[1]);
+  if (totalLen <= 0.0001) {
+    return { x: pts[0][0], y: pts[0][1], dx: 0, dy: 0 };
+  }
 
-  return { x, y, dx, dy };
+  let targetDist = clampedT * totalLen;
+  for (let i = 0; i < legLengths.length; i++) {
+    const len = legLengths[i];
+    const a = pts[i];
+    const b = pts[i + 1];
+    if (targetDist <= len || i === legLengths.length - 1) {
+      const localT = len > 0.0001 ? Math.max(0, Math.min(1, targetDist / len)) : 0;
+      return {
+        x: a[0] + (b[0] - a[0]) * localT,
+        y: a[1] + (b[1] - a[1]) * localT,
+        dx: b[0] - a[0],
+        dy: b[1] - a[1],
+      };
+    }
+    targetDist -= len;
+  }
+
+  const last = pts[pts.length - 1];
+  const prev = pts[pts.length - 2];
+  return { x: last[0], y: last[1], dx: last[0] - prev[0], dy: last[1] - prev[1] };
 }
 
 export interface SmwWalkStep {
@@ -387,17 +904,21 @@ export function findSmwMapPath(
 }
 
 /**
- * Resolves graph-connected neighbor movement along the World Map roads so the player
+ * Resolves graph-connected neighbor movement along the World Map straight roads so the player
  * can walk both forward and backward through every unlocked stage (R1.16.UC.4).
  */
 export function resolveSmwDirectionalStep(
   fromNodeId: string,
   direction: 'up' | 'down' | 'left' | 'right',
   progress: SmwBetaProgress,
-  islandId: SmwIslandId = 'wikiworld'
+  islandId: SmwIslandId = 'wikiworld',
+  overrideConfig?: { nodes: SmwMapNode[]; segments: SmwPathSegment[]; playable?: boolean }
 ): SmwMapNode | null {
-  const nodes = islandId === 'island2' ? SMW_ISLAND2_NODES : SMW_WIKIWORLD_NODES;
-  const segments = islandId === 'island2' ? SMW_ISLAND2_PATH_SEGMENTS : SMW_PATH_SEGMENTS;
+  const defaultIsland =
+    DEFAULT_PARSED_WORLD_MAP.islands.find(i => i.id === islandId) || DEFAULT_WIKIWORLD_ISLAND;
+  const nodes = overrideConfig?.nodes ?? defaultIsland.nodes;
+  const segments = overrideConfig?.segments ?? defaultIsland.paths;
+  const islandPlayable = overrideConfig?.playable ?? defaultIsland.playable;
   const current = nodes.find(n => n.id === fromNodeId);
   if (!current) return null;
 
@@ -417,10 +938,9 @@ export function resolveSmwDirectionalStep(
   for (const nid of neighborIds) {
     const cand = nodes.find(n => n.id === nid);
     if (!cand) continue;
-    const isAccessible =
-      islandId === 'island2'
-        ? cand.order === 0
-        : isSmwNodeUnlocked(cand.id, progress);
+    const isAccessible = !islandPlayable
+      ? cand.order === 0
+      : isSmwNodeUnlocked(cand.id, progress, nodes);
     if (!isAccessible) continue;
 
     const dx = cand.mapX - current.mapX;
@@ -948,6 +1468,80 @@ export function createSmwWikiWorldStage(nodeId: string): LevelData {
   return createSmwWiki1OverworldStage();
 }
 
+/**
+ * Resolves the playable LevelData for any World Map node (from built-in world-map.json
+ * or a custom World JSON created/edited in the World Editor).
+ */
+export function resolveWorldStageForNode(
+  node: SmwMapNode,
+  customLevels: LevelData[] = [],
+  worldName: string = SMW_WORLD_ISLAND_NAME
+): LevelData {
+  const ref = (node.stageKey || '').trim();
+  let stage: LevelData | null = null;
+  let matchedCustomName: string | null = null;
+
+  if (ref) {
+    const customId = ref.startsWith('custom:') ? ref.slice('custom:'.length) : ref;
+    const customMatch = customLevels.find(l => l.id === customId);
+    if (customMatch) {
+      stage = cloneLevelData(customMatch);
+      matchedCustomName = customMatch.name;
+    } else if (ref.startsWith('hex:')) {
+      stage = resolveHexLevelTarget(ref.slice(4)).level;
+    } else if (WORLD_STAGE_BY_KEY.has(ref)) {
+      stage = loadWorldStageByKey(ref);
+    } else if (ref === 'secret-vault') {
+      stage = createSecretVault();
+    } else if (ref === 'world-1-1') {
+      stage = createWorld1_1();
+    } else if (ref === 'world-1-2') {
+      stage = createWorld1_2();
+    } else if (ref === 'world-2-2') {
+      stage = createWorld2_2();
+    } else if (ref === 'world-ghost') {
+      stage = createWorldGhostHouse();
+    } else if (ref === 'world-1-4') {
+      stage = createWorld1_4();
+    }
+  }
+
+  if (!stage && node.hexId) {
+    const normHex = normalizeHexLevelCode(node.hexId);
+    if (normHex && HEX_CATALOG_BY_CODE.has(normHex)) {
+      stage = HEX_CATALOG_BY_CODE.get(normHex)!.loadLevel();
+    }
+  }
+
+  if (!stage) {
+    if (WORLD_STAGE_BY_KEY.has(node.id)) {
+      stage = loadWorldStageByKey(node.id);
+    } else if (node.isSwitchPalace && node.switchColor) {
+      stage = loadWorldStageByKey(`wiki-switch-${node.switchColor}`);
+    } else if (node.theme === 'underground') {
+      stage = createWorld1_2();
+    } else if (node.theme === 'underwater') {
+      stage = createWorld2_2();
+    } else if (node.theme === 'ghost_house') {
+      stage = createWorldGhostHouse();
+    } else if (node.theme === 'castle' || node.isCastle) {
+      stage = createWorld1_4();
+    } else {
+      stage = createSmwWiki1OverworldStage();
+    }
+  }
+
+  return {
+    ...stage,
+    name: (matchedCustomName || node.code || stage.name).toUpperCase().slice(0, 16),
+    biomeLabel: node.title ? `${worldName.toUpperCase()} · ${node.title.toUpperCase()}` : stage.biomeLabel,
+    smwNodeId: node.id,
+    smwWorldName: worldName,
+    bossName: node.bossName ?? stage.bossName,
+    isCustom: false,
+  };
+}
+
 export interface SmwBetaProgress {
   clearedNodeIds: string[];
   secretClearedNodeIds?: string[];
@@ -1029,26 +1623,39 @@ export function saveSmwBetaProgress(_progress: SmwBetaProgress): void {
   }
 }
 
+function getAllBuiltInNodeIds(): Set<string> {
+  const ids = new Set<string>();
+  for (const isl of DEFAULT_PARSED_WORLD_MAP.islands) {
+    for (const n of isl.nodes) ids.add(n.id);
+  }
+  for (const p of SMW_DEV_ONLY_SWITCH_PALACES) ids.add(p.id);
+  return ids;
+}
+
+function getAllBuiltInIslandIds(): Set<string> {
+  return new Set(DEFAULT_PARSED_WORLD_MAP.islands.map(i => i.id));
+}
+
 function sanitizeSaveSlot(raw: unknown, expectedIndex: number): SmwSaveSlotData | null {
   if (!raw || typeof raw !== 'object') return null;
   const obj = raw as Partial<SmwSaveSlotData>;
-  const validMapIds = new Set(SMW_WIKIWORLD_NODES.map(n => n.id));
-  const validAllIds = new Set([
-    ...SMW_WIKIWORLD_NODES.map(n => n.id),
-    ...SMW_DEV_ONLY_SWITCH_PALACES.map(p => p.id),
-  ]);
+  const validAllIds = getAllBuiltInNodeIds();
+  const validIslandIds = getAllBuiltInIslandIds();
   const clearedNodeIds = Array.isArray(obj.clearedNodeIds)
-    ? obj.clearedNodeIds.filter((id): id is string => typeof id === 'string' && validAllIds.has(id))
+    ? obj.clearedNodeIds.filter((id): id is string => typeof id === 'string' && (validAllIds.has(id) || id.length > 0))
     : [];
   const secretClearedNodeIds = Array.isArray(obj.secretClearedNodeIds)
-    ? obj.secretClearedNodeIds.filter((id): id is string => typeof id === 'string' && validAllIds.has(id))
+    ? obj.secretClearedNodeIds.filter((id): id is string => typeof id === 'string' && (validAllIds.has(id) || id.length > 0))
     : [];
   const selectedNodeId =
-    typeof obj.selectedNodeId === 'string' && validMapIds.has(obj.selectedNodeId)
-      ? obj.selectedNodeId
+    typeof obj.selectedNodeId === 'string' && obj.selectedNodeId.trim()
+      ? obj.selectedNodeId.trim()
       : 'wiki-1-overworld';
   const selectedIslandId: SmwIslandId =
-    obj.selectedIslandId === 'island2' ? 'island2' : 'wikiworld';
+    typeof obj.selectedIslandId === 'string' &&
+    (validIslandIds.has(obj.selectedIslandId) || obj.selectedIslandId.trim().length > 0)
+      ? obj.selectedIslandId.trim()
+      : 'wikiworld';
   const wallet =
     typeof obj.goalPointsWallet === 'number' && Number.isFinite(obj.goalPointsWallet)
       ? Math.max(0, Math.min(99, Math.floor(obj.goalPointsWallet)))
@@ -1119,16 +1726,14 @@ export function saveSmwToSlot(
   const current = loadSmwSaveSlots(storage);
   if (idx < 0 || idx >= SMW_SAVE_SLOTS_COUNT) return current;
 
-  const validMapIds = new Set(SMW_WIKIWORLD_NODES.map(n => n.id));
-  const validAllIds = new Set([
-    ...SMW_WIKIWORLD_NODES.map(n => n.id),
-    ...SMW_DEV_ONLY_SWITCH_PALACES.map(p => p.id),
-  ]);
-  const clearedNodeIds = progress.clearedNodeIds.filter(id => validAllIds.has(id));
-  const secretClearedNodeIds = (progress.secretClearedNodeIds ?? []).filter(id => validAllIds.has(id));
-  const selectedNodeId = validMapIds.has(progress.selectedNodeId)
-    ? progress.selectedNodeId
-    : 'wiki-1-overworld';
+  const clearedNodeIds = progress.clearedNodeIds.filter(id => typeof id === 'string' && id.length > 0);
+  const secretClearedNodeIds = (progress.secretClearedNodeIds ?? []).filter(
+    id => typeof id === 'string' && id.length > 0
+  );
+  const selectedNodeId =
+    typeof progress.selectedNodeId === 'string' && progress.selectedNodeId.trim()
+      ? progress.selectedNodeId
+      : 'wiki-1-overworld';
 
   const nextSlot: SmwSaveSlotData = {
     slotIndex: idx,
@@ -1137,7 +1742,7 @@ export function saveSmwToSlot(
     clearedNodeIds,
     secretClearedNodeIds,
     selectedNodeId,
-    selectedIslandId: progress.selectedIslandId === 'island2' ? 'island2' : 'wikiworld',
+    selectedIslandId: progress.selectedIslandId || 'wikiworld',
     yellowSwitchUnlocked: Boolean(
       progress.yellowSwitchUnlocked || clearedNodeIds.includes('wiki-switch-yellow')
     ),
@@ -1217,12 +1822,13 @@ export function applySmwSlotToProgress(slot: SmwSaveSlotData): SmwBetaProgress {
 
 export function isSmwNodeUnlocked(
   nodeIdOrOrder: string | number,
-  progress: SmwBetaProgress
+  progress: SmwBetaProgress,
+  nodes: SmwMapNode[] = SMW_WIKIWORLD_NODES
 ): boolean {
   const node =
     typeof nodeIdOrOrder === 'string'
-      ? SMW_WIKIWORLD_NODES.find(n => n.id === nodeIdOrOrder)
-      : SMW_WIKIWORLD_NODES.find(n => n.order === nodeIdOrOrder) || SMW_WIKIWORLD_NODES[nodeIdOrOrder];
+      ? nodes.find(n => n.id === nodeIdOrOrder)
+      : nodes.find(n => n.order === nodeIdOrOrder) || nodes[nodeIdOrOrder];
   if (!node) return false;
   if (node.order === 0) return true;
   if (node.unlocksAfterSecretNodeId) {
@@ -1244,13 +1850,12 @@ export function isSmwNodeUnlocked(
 export function applySmwStageCompletion(
   prev: SmwBetaProgress,
   nodeId: string,
-  meta?: { secretExit?: boolean }
+  meta?: { secretExit?: boolean },
+  nodes: SmwMapNode[] = SMW_WIKIWORLD_NODES
 ): SmwBetaProgress {
-  const currNode = SMW_WIKIWORLD_NODES.find(n => n.id === nodeId);
+  const currNode = nodes.find(n => n.id === nodeId);
   const isDevOnlyPalace = SMW_DEV_ONLY_SWITCH_PALACES.some(p => p.id === nodeId);
-  const secretBranchChild = SMW_WIKIWORLD_NODES.find(
-    n => n.unlocksAfterSecretNodeId === nodeId
-  );
+  const secretBranchChild = nodes.find(n => n.unlocksAfterSecretNodeId === nodeId);
   const isSecretBranchOnlyExit = Boolean(meta?.secretExit && secretBranchChild);
 
   const prevSecret = prev.secretClearedNodeIds ?? [];
@@ -1264,13 +1869,25 @@ export function applySmwStageCompletion(
     ? prev.clearedNodeIds
     : [...prev.clearedNodeIds, nodeId];
 
+  const fallbackFirstId = nodes[0]?.id || 'wiki-1-overworld';
   const nextNode =
     nodeId === 'wiki-switch-yellow'
       ? nextCleared.includes('wiki-1-overworld')
-        ? SMW_WIKIWORLD_NODES.find(n => n.id === 'wiki-2-caverna')
-        : SMW_WIKIWORLD_NODES.find(n => n.id === 'wiki-1-overworld')
-      : SMW_WIKIWORLD_NODES.find(n => n.unlocksAfterNodeId === nodeId) ??
-        (currNode && currNode.order < 4 ? SMW_WIKIWORLD_NODES[currNode.order + 1] : undefined);
+        ? nodes.find(n => n.id === 'wiki-2-caverna') ??
+          nodes.find(n => n.unlocksAfterNodeId === 'wiki-1-overworld' && !isSmwPortalNode(n))
+        : nodes.find(n => n.id === 'wiki-1-overworld') ?? nodes[0]
+      : nodes.find(
+          n => n.unlocksAfterNodeId === nodeId && !isSmwPortalNode(n) && !n.isSwitchPalace
+        ) ??
+        nodes.find(n => n.unlocksAfterNodeId === nodeId) ??
+        (currNode
+          ? nodes.find(
+              n =>
+                n.order === currNode.order + 1 &&
+                !n.unlocksAfterSecretNodeId &&
+                !isSmwPortalNode(n)
+            )
+          : undefined);
 
   const secretChildCompleted = Boolean(
     secretBranchChild &&
@@ -1279,9 +1896,9 @@ export function applySmwStageCompletion(
   );
 
   const nextSelected = isDevOnlyPalace
-    ? SMW_WIKIWORLD_NODES.some(n => n.id === prev.selectedNodeId)
+    ? nodes.some(n => n.id === prev.selectedNodeId)
       ? prev.selectedNodeId
-      : 'wiki-1-overworld'
+      : fallbackFirstId
     : isSecretBranchOnlyExit && secretBranchChild
     ? !secretChildCompleted
       ? secretBranchChild.id
@@ -1296,15 +1913,25 @@ export function applySmwStageCompletion(
     secretClearedNodeIds: nextSecret,
     selectedNodeId: nextSelected,
     yellowSwitchUnlocked:
-      prev.yellowSwitchUnlocked || nodeId === 'wiki-switch-yellow',
+      prev.yellowSwitchUnlocked ||
+      nodeId === 'wiki-switch-yellow' ||
+      Boolean(currNode?.isSwitchPalace && currNode.switchColor === 'yellow'),
     greenSwitchUnlocked:
-      Boolean(prev.greenSwitchUnlocked) || nodeId === 'wiki-switch-green',
+      Boolean(prev.greenSwitchUnlocked) ||
+      nodeId === 'wiki-switch-green' ||
+      Boolean(currNode?.isSwitchPalace && currNode.switchColor === 'green'),
     redSwitchUnlocked:
-      Boolean(prev.redSwitchUnlocked) || nodeId === 'wiki-switch-red',
+      Boolean(prev.redSwitchUnlocked) ||
+      nodeId === 'wiki-switch-red' ||
+      Boolean(currNode?.isSwitchPalace && currNode.switchColor === 'red'),
     pinkSwitchUnlocked:
-      Boolean(prev.pinkSwitchUnlocked) || nodeId === 'wiki-switch-pink',
+      Boolean(prev.pinkSwitchUnlocked) ||
+      nodeId === 'wiki-switch-pink' ||
+      Boolean(currNode?.isSwitchPalace && currNode.switchColor === 'pink'),
     blueSwitchUnlocked:
-      Boolean(prev.blueSwitchUnlocked) || nodeId === 'wiki-switch-blue',
+      Boolean(prev.blueSwitchUnlocked) ||
+      nodeId === 'wiki-switch-blue' ||
+      Boolean(currNode?.isSwitchPalace && currNode.switchColor === 'blue'),
   };
 }
 
@@ -1346,9 +1973,10 @@ export function isSmwNodeCompletedAndLocked(
 
 export function canEnterSmwNode(
   nodeId: string,
-  progress: SmwBetaProgress
+  progress: SmwBetaProgress,
+  nodes: SmwMapNode[] = SMW_WIKIWORLD_NODES
 ): boolean {
-  return isSmwNodeUnlocked(nodeId, progress) && !isSmwNodeCompletedAndLocked(nodeId, progress);
+  return isSmwNodeUnlocked(nodeId, progress, nodes) && !isSmwNodeCompletedAndLocked(nodeId, progress);
 }
 
 /**

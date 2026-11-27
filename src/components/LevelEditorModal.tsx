@@ -47,6 +47,11 @@ import {
   Globe,
   LogIn,
   LogOut,
+  Map as MapIcon,
+  ArrowLeft,
+  ArrowRight,
+  FlipHorizontal,
+  Replace,
 } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { signInWithGoogle, signOutGoogle, subscribeAuth } from '../firebase.ts';
@@ -70,6 +75,7 @@ import {
   STAGE_W_COINS_COUNT,
   TerrainPresetId,
   applyTerrainPresetToLevel,
+  clearLevelScreenAt,
   cloneLevelData,
   createBlankCustomLevel,
   createSecretVault,
@@ -85,6 +91,7 @@ import {
   isCastleStageForYoshi,
   isGhostOutsideExitDoorWarp,
   isSurfaceExitPipeWarp,
+  mirrorLevelHorizontally,
   parseImportedLevelFile,
   placeGhostDoorInLevel,
   placeKeyCavePipeInLevel,
@@ -94,8 +101,10 @@ import {
   placeWarpPipeInLevel,
   pruneGhostDoorWarps,
   pruneKeyCavePipeWarps,
+  replaceTileTypeInLevel,
   sanitizeCustomLevelEntities,
   serializeLevelToFileJson,
+  shiftLevelTiles,
   normalizeHexLevelCode,
   formatHexCoord,
   parseHexCoord,
@@ -103,12 +112,16 @@ import {
 import {
   WORLD_STAGE_JSON_REGISTRY,
   HEX_LEVEL_LIST,
+  SmwWorldMapJson,
+  cloneWorldMapJson,
   createSmwWiki1SecretRoom,
   createSmwWikiWorldStage,
+  getDefaultWorldMapJson,
   getWorldStageFilename,
   inspectHexLevelTarget,
   resolveHexLevelTarget,
 } from '../game/smwWorldMap.ts';
+import { WorldEditorPanel } from './WorldEditorPanel.tsx';
 import { SpriteAtlas } from '../game/sprites.ts';
 
 export const EDITOR_MAX_HISTORY = 35;
@@ -130,6 +143,9 @@ interface LevelEditorModalProps {
   editorImmortality?: boolean;
   onToggleEditorImmortality?: (enabled: boolean) => void;
   onOpenCommunityMode?: () => void;
+  worldMapConfig?: SmwWorldMapJson;
+  onApplyWorldMapJson?: (world: SmwWorldMapJson, openWorldMode?: boolean) => void;
+  onResetWorldMapJson?: () => void;
 }
 
 type EditorBrushKind =
@@ -271,6 +287,9 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
   editorImmortality = false,
   onToggleEditorImmortality,
   onOpenCommunityMode,
+  worldMapConfig,
+  onApplyWorldMapJson,
+  onResetWorldMapJson,
 }) => {
   const atlas = useMemo(() => SpriteAtlas.get(), []);
   const keyCavePipePreview = useMemo(() => {
@@ -488,6 +507,23 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
   const [cloudError, setCloudError] = useState('');
   const [cloudSuccess, setCloudSuccess] = useState('');
   const cloudFileInputRef = useRef<HTMLInputElement | null>(null);
+  const [editorSurface, setEditorSurface] = useState<'level' | 'world'>('level');
+  const [enemyFacing, setEnemyFacing] = useState<'left' | 'right'>('left');
+  const [replaceFromTile, setReplaceFromTile] = useState<TileType>('brick');
+  const [replaceToTile, setReplaceToTile] = useState<TileType>('hard_block');
+  const [activeScreenIdx, setActiveScreenIdx] = useState<number>(0);
+  const [worldDraft, setWorldDraft] = useState<SmwWorldMapJson>(() =>
+    worldMapConfig ? cloneWorldMapJson(worldMapConfig) : getDefaultWorldMapJson()
+  );
+  const worldUndoRef = useRef<SmwWorldMapJson[]>([]);
+  const worldRedoRef = useRef<SmwWorldMapJson[]>([]);
+  const [worldHistoryRev, setWorldHistoryRev] = useState(0);
+
+  useEffect(() => {
+    if (worldMapConfig) {
+      setWorldDraft(cloneWorldMapJson(worldMapConfig));
+    }
+  }, [worldMapConfig]);
 
   useEffect(() => {
     const unsub = subscribeAuth(user => setAuthUser(user));
@@ -604,7 +640,48 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
     notify('Refeito (Ctrl+Y)');
   }, [currentLevel, customLevels, onUpdateCustomLevels, notify]);
 
-  // Keyboard shortcuts: Ctrl+Z / Cmd+Z (Undo), Ctrl+Y / Cmd+Shift+Z (Redo), Escape (Pencil) — R1.16.FH.4
+  const handleChangeWorldDraft = useCallback(
+    (updater: (draft: SmwWorldMapJson) => void, recordUndo = true) => {
+      setWorldDraft(prev => {
+        if (recordUndo) {
+          worldUndoRef.current.push(cloneWorldMapJson(prev));
+          if (worldUndoRef.current.length > EDITOR_MAX_HISTORY) {
+            worldUndoRef.current.shift();
+          }
+          worldRedoRef.current = [];
+          setWorldHistoryRev(r => r + 1);
+        }
+        const next = cloneWorldMapJson(prev);
+        updater(next);
+        return next;
+      });
+    },
+    []
+  );
+
+  const handleWorldUndo = useCallback(() => {
+    const prev = worldUndoRef.current.pop();
+    if (!prev) return;
+    setWorldDraft(curr => {
+      worldRedoRef.current.push(cloneWorldMapJson(curr));
+      return prev;
+    });
+    setWorldHistoryRev(r => r + 1);
+    notify('Ação do mundo desfeita (Ctrl+Z)');
+  }, [notify]);
+
+  const handleWorldRedo = useCallback(() => {
+    const next = worldRedoRef.current.pop();
+    if (!next) return;
+    setWorldDraft(curr => {
+      worldUndoRef.current.push(cloneWorldMapJson(curr));
+      return next;
+    });
+    setWorldHistoryRev(r => r + 1);
+    notify('Ação do mundo refeita (Ctrl+Y)');
+  }, [notify]);
+
+  // Keyboard shortcuts: Ctrl+Z / Cmd+Z (Undo), Ctrl+Y / Cmd+Shift+Z (Redo), Escape (Pencil), B/R/G/I/M/V/E/+/- (Lunar Magic)
   useEffect(() => {
     if (!isOpen) return;
     const onKeyDown = (e: KeyboardEvent) => {
@@ -627,21 +704,54 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
         return;
       }
 
-      if (!(e.ctrlKey || e.metaKey) || e.altKey) return;
-      const lower = e.key.toLowerCase();
-      if (lower === 'z' && !e.shiftKey) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleUndo();
-      } else if (lower === 'y' || (lower === 'z' && e.shiftKey)) {
-        e.preventDefault();
-        e.stopPropagation();
-        handleRedo();
+      if ((e.ctrlKey || e.metaKey) && !e.altKey) {
+        const lower = e.key.toLowerCase();
+        if (lower === 'z' && !e.shiftKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (editorSurface === 'world') {
+            handleWorldUndo();
+          } else {
+            handleUndo();
+          }
+        } else if (lower === 'y' || (lower === 'z' && e.shiftKey)) {
+          e.preventDefault();
+          e.stopPropagation();
+          if (editorSurface === 'world') {
+            handleWorldRedo();
+          } else {
+            handleRedo();
+          }
+        }
+        return;
+      }
+
+      if (editorSurface === 'level' && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        const lower = e.key.toLowerCase();
+        if (lower === 'b') {
+          setToolMode('pencil');
+        } else if (lower === 'r') {
+          setToolMode('rect');
+        } else if (lower === 'g') {
+          setToolMode('fill');
+        } else if (lower === 'i') {
+          setToolMode('eyedropper');
+        } else if (lower === 'm') {
+          setToolMode('copy');
+        } else if (lower === 'v') {
+          setToolMode('paste');
+        } else if (lower === 'e') {
+          setSelectedBrushId('erase');
+        } else if (e.key === '+' || e.key === '=') {
+          setCellSize(s => (s === 16 ? 24 : 32));
+        } else if (e.key === '-' || e.key === '_') {
+          setCellSize(s => (s === 32 ? 24 : 16));
+        }
       }
     };
     window.addEventListener('keydown', onKeyDown, true);
     return () => window.removeEventListener('keydown', onKeyDown, true);
-  }, [isOpen, toolMode, handleUndo, handleRedo]);
+  }, [isOpen, editorSurface, toolMode, handleUndo, handleRedo, handleWorldUndo, handleWorldRedo]);
 
   const updateCurrentLevel = useCallback(
     (updater: (draft: LevelData) => LevelData, options?: { recordUndo?: boolean }) => {
@@ -1805,7 +1915,7 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
           draft.enemies = draft.enemies.filter(
             e => !(Math.abs(e.x - spawnX) < 12 && Math.abs(e.y - spawnY) < 16)
           );
-          draft.enemies.push({ type: brush.enemyType, x: spawnX, y: spawnY });
+          draft.enemies.push({ type: brush.enemyType, x: spawnX, y: spawnY, facing: enemyFacing });
           return draft;
         }
 
@@ -1818,6 +1928,7 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
       updateCurrentLevel,
       notifyError,
       customLevels,
+      enemyFacing,
       doorTargetMapId,
       doorTargetHex,
       warpPipeTargetMapId,
@@ -2657,6 +2768,14 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
         }
 
         ctx.drawImage(sprite, drawX, ey, w * scale, h * scale);
+        if (e.facing === 'right' || e.facing === 'left') {
+          ctx.save();
+          ctx.fillStyle = e.facing === 'right' ? '#38bdf8' : '#fde047';
+          ctx.font = `bold ${Math.max(8, Math.round(8 * scale))}px monospace`;
+          ctx.textAlign = 'center';
+          ctx.fillText(e.facing === 'right' ? '▶' : '◀', drawX + (w * scale) / 2, Math.max(8, ey - 2));
+          ctx.restore();
+        }
       });
 
       // Draw Keyholes & Carryables (Key, Blue P-Switch, Cyan P-Switch)
@@ -3267,6 +3386,23 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
     onClose();
   };
 
+  const launchPlayFromScreen = (screenIdx: number) => {
+    const testCopy = cloneLevelData(currentLevel);
+    const spawnTx = Math.max(1, Math.min(testCopy.width - 3, screenIdx * 16 + 2));
+    let safeTy = 11;
+    for (let ty = 3; ty < testCopy.height - 1; ty++) {
+      if (testCopy.tiles[ty + 1]?.[spawnTx] && !testCopy.tiles[ty]?.[spawnTx]) {
+        safeTy = ty;
+        break;
+      }
+    }
+    testCopy.marioStart = { x: spawnTx * 16, y: safeTy * 16 };
+    setShowMissingGoalAlert(false);
+    setPendingCampaignStart(false);
+    onPlayLevel(testCopy, { immortality: localImmortality });
+    onClose();
+  };
+
   const launchPlayCampaign = () => {
     if (campaignLevels.length === 0) return;
     setShowMissingGoalAlert(false);
@@ -3344,15 +3480,43 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
       <div className="relative w-full max-w-6xl bg-stone-900 border-2 border-amber-500/70 rounded-xl shadow-2xl p-3 sm:p-5 text-stone-100 max-h-[95vh] flex flex-col gap-3 overflow-hidden">
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-2 pb-2.5 border-b border-stone-800 shrink-0">
-          <div className="flex items-center gap-2.5">
+          <div className="flex flex-wrap items-center gap-2.5">
             <Hammer className="w-5 h-5 text-amber-400" />
             <div>
               <h2 className="text-sm sm:text-base font-['Press_Start_2P',monospace] text-amber-400">
-                EDITOR DE FASES
+                {editorSurface === 'world' ? 'EDITOR DO MUNDO (SMB3)' : 'EDITOR DE FASES'}
               </h2>
               <p className="text-[10px] sm:text-xs text-stone-400 font-mono">
-                Memória temporária (sessão atual) • Fases do editor não registram recordes
+                {editorSurface === 'world'
+                  ? 'Edite ilhas, nós e caminhos retos do Modo World via JSON'
+                  : 'Memória temporária (sessão atual) • Fases do editor não registram recordes'}
               </p>
+            </div>
+            <div className="flex items-center gap-1 bg-stone-950 border border-stone-700 rounded-lg p-0.5 ml-1">
+              <button
+                type="button"
+                onClick={() => setEditorSurface('level')}
+                className={`px-2.5 py-1 rounded text-[10px] font-['Press_Start_2P',monospace] flex items-center gap-1 cursor-pointer transition ${
+                  editorSurface === 'level'
+                    ? 'bg-amber-500 text-stone-950 font-bold'
+                    : 'text-stone-300 hover:bg-stone-800'
+                }`}
+              >
+                <Layers className="w-3 h-3" />
+                <span>FASE</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditorSurface('world')}
+                className={`px-2.5 py-1 rounded text-[10px] font-['Press_Start_2P',monospace] flex items-center gap-1 cursor-pointer transition ${
+                  editorSurface === 'world'
+                    ? 'bg-emerald-500 text-stone-950 font-bold'
+                    : 'text-stone-300 hover:bg-stone-800'
+                }`}
+              >
+                <MapIcon className="w-3 h-3" />
+                <span>MUNDO (SMB3)</span>
+              </button>
             </div>
           </div>
 
@@ -3367,68 +3531,72 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                 {statusError}
               </span>
             )}
-            <button
-              type="button"
-              onClick={handleToggleImmortality}
-              title="Permite jogar esta fase sem morrer para inimigos, lava, buracos ou tempo"
-              className={`px-3 py-2 rounded-lg border font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer transition ${
-                localImmortality
-                  ? 'bg-purple-950/90 border-purple-400 text-purple-200 shadow-lg shadow-purple-950/50'
-                  : 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-300'
-              }`}
-            >
-              <Shield className={`w-3.5 h-3.5 ${localImmortality ? 'text-purple-300 fill-purple-400/30' : 'text-stone-400'}`} />
-              <span>IMORTAL: {localImmortality ? 'ON' : 'OFF'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowHeaderPanel(v => !v)}
-              title="Configurações Lunar Magic: Música, Paleta de Céu, Tempo, Velocidade e Colunas"
-              className={`px-3 py-2 rounded-lg border font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer transition ${
-                showHeaderPanel
-                  ? 'bg-sky-950/90 border-sky-400 text-sky-200'
-                  : 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-300'
-              }`}
-            >
-              <SlidersHorizontal className="w-3.5 h-3.5 text-sky-400" />
-              <span>HEADER</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowExitsPanel(v => !v)}
-              title="Inspetor de Saídas de Tela, Canos Warp e Portas"
-              className={`px-3 py-2 rounded-lg border font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer transition ${
-                showExitsPanel || (currentLevel.pipeWarps?.length ?? 0) > 0
-                  ? 'bg-purple-950/90 border-purple-400 text-purple-200'
-                  : 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-300'
-              }`}
-            >
-              <ArrowRightLeft className="w-3.5 h-3.5 text-purple-400" />
-              <span>SAÍDAS ({currentLevel.pipeWarps?.length ?? 0})</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowCampaignPanel(v => !v)}
-              title="Montar campanha personalizada em sequência com suas fases editadas"
-              className={`px-3 py-2 rounded-lg border font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer transition ${
-                showCampaignPanel || campaignLevels.length > 0
-                  ? 'bg-amber-950/90 border-amber-400 text-amber-200'
-                  : 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-300'
-              }`}
-            >
-              <ListOrdered className="w-3.5 h-3.5 text-amber-400" />
-              <span>CAMPANHA ({campaignLevels.length})</span>
-            </button>
-            {campaignLevels.length > 0 && (
-              <button
-                type="button"
-                onClick={handleRequestPlayCampaign}
-                title="Jogar campanha personalizada do 1º ao último mapa na ordem definida"
-                className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-stone-950 font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
-              >
-                <Crown className="w-3.5 h-3.5 fill-stone-950" />
-                <span>JOGAR CAMPANHA</span>
-              </button>
+            {editorSurface === 'level' && (
+              <>
+                <button
+                  type="button"
+                  onClick={handleToggleImmortality}
+                  title="Permite jogar esta fase sem morrer para inimigos, lava, buracos ou tempo"
+                  className={`px-3 py-2 rounded-lg border font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer transition ${
+                    localImmortality
+                      ? 'bg-purple-950/90 border-purple-400 text-purple-200 shadow-lg shadow-purple-950/50'
+                      : 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-300'
+                  }`}
+                >
+                  <Shield className={`w-3.5 h-3.5 ${localImmortality ? 'text-purple-300 fill-purple-400/30' : 'text-stone-400'}`} />
+                  <span>IMORTAL: {localImmortality ? 'ON' : 'OFF'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowHeaderPanel(v => !v)}
+                  title="Configurações Lunar Magic: Música, Paleta de Céu, Tempo, Velocidade e Colunas"
+                  className={`px-3 py-2 rounded-lg border font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer transition ${
+                    showHeaderPanel
+                      ? 'bg-sky-950/90 border-sky-400 text-sky-200'
+                      : 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-300'
+                  }`}
+                >
+                  <SlidersHorizontal className="w-3.5 h-3.5 text-sky-400" />
+                  <span>HEADER</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowExitsPanel(v => !v)}
+                  title="Inspetor de Saídas de Tela, Canos Warp e Portas"
+                  className={`px-3 py-2 rounded-lg border font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer transition ${
+                    showExitsPanel || (currentLevel.pipeWarps?.length ?? 0) > 0
+                      ? 'bg-purple-950/90 border-purple-400 text-purple-200'
+                      : 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-300'
+                  }`}
+                >
+                  <ArrowRightLeft className="w-3.5 h-3.5 text-purple-400" />
+                  <span>SAÍDAS ({currentLevel.pipeWarps?.length ?? 0})</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowCampaignPanel(v => !v)}
+                  title="Montar campanha personalizada em sequência com suas fases editadas"
+                  className={`px-3 py-2 rounded-lg border font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] flex items-center gap-1.5 cursor-pointer transition ${
+                    showCampaignPanel || campaignLevels.length > 0
+                      ? 'bg-amber-950/90 border-amber-400 text-amber-200'
+                      : 'bg-stone-800 hover:bg-stone-700 border-stone-600 text-stone-300'
+                  }`}
+                >
+                  <ListOrdered className="w-3.5 h-3.5 text-amber-400" />
+                  <span>CAMPANHA ({campaignLevels.length})</span>
+                </button>
+                {campaignLevels.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={handleRequestPlayCampaign}
+                    title="Jogar campanha personalizada do 1º ao último mapa na ordem definida"
+                    className="px-3.5 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-stone-950 font-['Press_Start_2P',monospace] text-[9px] sm:text-[10px] font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Crown className="w-3.5 h-3.5 fill-stone-950" />
+                    <span>JOGAR CAMPANHA</span>
+                  </button>
+                )}
+              </>
             )}
             {onBackToMainMenu && (
               <button
@@ -3441,14 +3609,16 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                 <span>MENU INICIAL</span>
               </button>
             )}
-            <button
-              type="button"
-              onClick={handleRequestPlayLevel}
-              className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-stone-950 font-['Press_Start_2P',monospace] text-[10px] font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
-            >
-              <Play className="w-3.5 h-3.5 fill-stone-950" />
-              JOGAR FASE
-            </button>
+            {editorSurface === 'level' && (
+              <button
+                type="button"
+                onClick={handleRequestPlayLevel}
+                className="px-4 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-green-500 hover:from-emerald-500 hover:to-green-400 text-stone-950 font-['Press_Start_2P',monospace] text-[10px] font-bold shadow-lg flex items-center gap-1.5 cursor-pointer"
+              >
+                <Play className="w-3.5 h-3.5 fill-stone-950" />
+                JOGAR FASE
+              </button>
+            )}
             <button
               type="button"
               onClick={onClose}
@@ -3460,6 +3630,42 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
           </div>
         </div>
 
+        {editorSurface === 'world' ? (
+          <WorldEditorPanel
+            worldDraft={worldDraft}
+            customLevels={customLevels}
+            canUndo={(() => {
+              void worldHistoryRev;
+              return worldUndoRef.current.length > 0;
+            })()}
+            canRedo={(() => {
+              void worldHistoryRev;
+              return worldRedoRef.current.length > 0;
+            })()}
+            onUndo={handleWorldUndo}
+            onRedo={handleWorldRedo}
+            onChangeWorldDraft={handleChangeWorldDraft}
+            onResetDefault={() => {
+              const def = getDefaultWorldMapJson();
+              worldUndoRef.current.push(cloneWorldMapJson(worldDraft));
+              worldRedoRef.current = [];
+              setWorldHistoryRev(r => r + 1);
+              setWorldDraft(def);
+              onResetWorldMapJson?.();
+              notify('Mundo restaurado para o JSON padrão (SMB3)!');
+            }}
+            onApplyWorld={(openWorldMode: boolean) => {
+              const snapshot = cloneWorldMapJson(worldDraft);
+              onApplyWorldMapJson?.(snapshot, openWorldMode);
+              if (!openWorldMode) {
+                notify('Mundo JSON aplicado ao Modo World!');
+              }
+            }}
+            notify={notify}
+            notifyError={notifyError}
+          />
+        ) : (
+          <>
         {/* Slot & Level Metadata Bar */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-2.5 bg-stone-950/75 border border-stone-800 rounded-lg p-2.5 shrink-0 text-xs">
           {/* Temporary memory slots */}
@@ -3764,6 +3970,42 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                 <span>Fundo Layer 2 Bônus</span>
               </label>
 
+              <label className="flex items-center gap-1.5 text-stone-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(currentLevel.lowGravity)}
+                  onChange={e =>
+                    updateCurrentLevel(
+                      draft => {
+                        draft.lowGravity = e.target.checked || undefined;
+                        return draft;
+                      },
+                      { recordUndo: true }
+                    )
+                  }
+                  className="accent-purple-400"
+                />
+                <span>Gravidade Lunar (Baixa)</span>
+              </label>
+
+              <label className="flex items-center gap-1.5 text-stone-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(currentLevel.lockLeftScroll)}
+                  onChange={e =>
+                    updateCurrentLevel(
+                      draft => {
+                        draft.lockLeftScroll = e.target.checked || undefined;
+                        return draft;
+                      },
+                      { recordUndo: true }
+                    )
+                  }
+                  className="accent-amber-400"
+                />
+                <span>Travar Retorno da Câmera</span>
+              </label>
+
               <label className="flex items-center gap-1.5 text-stone-300">
                 <span className="text-stone-400">Tempo (s):</span>
                 <input
@@ -3953,6 +4195,169 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
                   className="px-2.5 py-1 rounded bg-sky-900/90 hover:bg-sky-800 border border-sky-500/60 text-sky-100 cursor-pointer"
                 >
                   Aplicar
+                </button>
+              </div>
+            </div>
+
+            {/* Lunar Magic Level-Wide Batch Operations: Shift, Mirror, Replace Block, Clear Screen */}
+            <div className="flex flex-wrap items-center justify-between gap-2 pt-1.5 border-t border-stone-800/80">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-stone-400">Deslocar Mapa:</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateCurrentLevel(
+                      draft => {
+                        shiftLevelTiles(draft, -1, 0);
+                        return draft;
+                      },
+                      { recordUndo: true }
+                    );
+                    notify('Mapa deslocado 1 bloco para a esquerda!');
+                  }}
+                  title="Deslocar blocos, moedas e inimigos 1 coluna para a esquerda"
+                  className="px-1.5 py-1 rounded bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-200 cursor-pointer flex items-center gap-0.5"
+                >
+                  <ArrowLeft className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateCurrentLevel(
+                      draft => {
+                        shiftLevelTiles(draft, 1, 0);
+                        return draft;
+                      },
+                      { recordUndo: true }
+                    );
+                    notify('Mapa deslocado 1 bloco para a direita!');
+                  }}
+                  title="Deslocar blocos, moedas e inimigos 1 coluna para a direita"
+                  className="px-1.5 py-1 rounded bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-200 cursor-pointer flex items-center gap-0.5"
+                >
+                  <ArrowRight className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateCurrentLevel(
+                      draft => {
+                        shiftLevelTiles(draft, 0, -1);
+                        return draft;
+                      },
+                      { recordUndo: true }
+                    );
+                    notify('Mapa deslocado 1 bloco para cima!');
+                  }}
+                  title="Deslocar blocos, moedas e inimigos 1 linha para cima"
+                  className="px-1.5 py-1 rounded bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-200 cursor-pointer flex items-center gap-0.5"
+                >
+                  <ArrowUp className="w-3 h-3" />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateCurrentLevel(
+                      draft => {
+                        shiftLevelTiles(draft, 0, 1);
+                        return draft;
+                      },
+                      { recordUndo: true }
+                    );
+                    notify('Mapa deslocado 1 bloco para baixo!');
+                  }}
+                  title="Deslocar blocos, moedas e inimigos 1 linha para baixo"
+                  className="px-1.5 py-1 rounded bg-stone-800 hover:bg-stone-700 border border-stone-700 text-stone-200 cursor-pointer flex items-center gap-0.5"
+                >
+                  <ArrowDown className="w-3 h-3" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateCurrentLevel(
+                      draft => {
+                        mirrorLevelHorizontally(draft);
+                        return draft;
+                      },
+                      { recordUndo: true }
+                    );
+                    notify('Mapa espelhado horizontalmente (Lunar Magic)!');
+                  }}
+                  className="px-2 py-1 rounded bg-indigo-950/90 hover:bg-indigo-900 border border-indigo-500/60 text-indigo-200 cursor-pointer flex items-center gap-1"
+                >
+                  <FlipHorizontal className="w-3 h-3" />
+                  <span>Espelhar ↔</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    updateCurrentLevel(
+                      draft => {
+                        clearLevelScreenAt(draft, activeScreenIdx, true);
+                        return draft;
+                      },
+                      { recordUndo: true }
+                    );
+                    notify(`Tela T${String(activeScreenIdx).padStart(2, '0')} limpa (chão preservado)!`);
+                  }}
+                  className="px-2 py-1 rounded bg-red-950/90 hover:bg-red-900 border border-red-500/60 text-red-200 cursor-pointer"
+                >
+                  Limpar Tela T{String(activeScreenIdx).padStart(2, '0')}
+                </button>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Replace className="w-3.5 h-3.5 text-amber-400" />
+                <span className="text-stone-400">Substituir Bloco:</span>
+                <select
+                  value={replaceFromTile}
+                  onChange={e => setReplaceFromTile(e.target.value as TileType)}
+                  className="bg-stone-900 border border-stone-700 rounded px-1.5 py-1 text-stone-200"
+                >
+                  <option value="brick">Tijolo</option>
+                  <option value="ground">Chão</option>
+                  <option value="hard_block">Bloco Duro</option>
+                  <option value="used_block">Bloco Usado</option>
+                  <option value="question">Bloco ?</option>
+                  <option value="cloud_block">Nuvem</option>
+                  <option value="donut_bridge">Ponte Donut</option>
+                  <option value="ice_block">Gelo</option>
+                  <option value="castle_brick">Castelo</option>
+                </select>
+                <span className="text-stone-500">→</span>
+                <select
+                  value={replaceToTile}
+                  onChange={e => setReplaceToTile(e.target.value as TileType)}
+                  className="bg-stone-900 border border-stone-700 rounded px-1.5 py-1 text-amber-200"
+                >
+                  <option value="hard_block">Bloco Duro</option>
+                  <option value="brick">Tijolo</option>
+                  <option value="ground">Chão</option>
+                  <option value="used_block">Bloco Usado</option>
+                  <option value="question">Bloco ?</option>
+                  <option value="cloud_block">Nuvem</option>
+                  <option value="donut_bridge">Ponte Donut</option>
+                  <option value="ice_block">Gelo</option>
+                  <option value="castle_brick">Castelo</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={() => {
+                    let count = 0;
+                    updateCurrentLevel(
+                      draft => {
+                        count = replaceTileTypeInLevel(draft, replaceFromTile, replaceToTile);
+                        return draft;
+                      },
+                      { recordUndo: true }
+                    );
+                    notify(`${count} bloco(s) substituído(s)!`);
+                  }}
+                  className="px-2 py-1 rounded bg-amber-600/90 hover:bg-amber-500 text-stone-950 font-bold cursor-pointer"
+                >
+                  Substituir
                 </button>
               </div>
             </div>
@@ -4852,6 +5257,34 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
           </div>
         )}
 
+        {activeTab === 'enemies' && (
+          <div className="flex flex-wrap items-center gap-3 px-3 py-1.5 bg-stone-950/60 border border-stone-800 rounded-lg text-[11px] font-mono shrink-0">
+            <span className="text-stone-400">Direção Inicial do Inimigo (Lunar Magic):</span>
+            <button
+              type="button"
+              onClick={() => setEnemyFacing('left')}
+              className={`px-2 py-1 rounded border cursor-pointer ${
+                enemyFacing === 'left'
+                  ? 'bg-amber-500/20 border-amber-400 text-amber-200'
+                  : 'bg-stone-900 border-stone-700 text-stone-300'
+              }`}
+            >
+              ◀ Esquerda
+            </button>
+            <button
+              type="button"
+              onClick={() => setEnemyFacing('right')}
+              className={`px-2 py-1 rounded border cursor-pointer ${
+                enemyFacing === 'right'
+                  ? 'bg-sky-500/20 border-sky-400 text-sky-200'
+                  : 'bg-stone-900 border-stone-700 text-stone-300'
+              }`}
+            >
+              ▶ Direita
+            </button>
+          </div>
+        )}
+
         {/* Palette Buttons */}
         <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto pr-1 shrink-0">
           {visiblePalette.map(opt => {
@@ -4973,6 +5406,45 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
             </div>
           </div>
 
+          {/* Lunar Magic Screen Navigator + Test From Screen + Interactive Minimap Strip */}
+          <div className="flex flex-wrap items-center gap-1.5 px-2 py-1 rounded bg-stone-950/90 border border-stone-800 shrink-0 text-[10px] font-mono">
+            <span className="text-sky-300 font-bold shrink-0">TELAS:</span>
+            <div className="flex flex-wrap items-center gap-1">
+              {Array.from({ length: Math.ceil(currentLevel.width / 16) }, (_, scr) => (
+                <button
+                  key={scr}
+                  type="button"
+                  onClick={() => {
+                    setActiveScreenIdx(scr);
+                    const scrollEl = scrollContainerRef.current;
+                    if (scrollEl) {
+                      scrollEl.scrollTo({
+                        left: Math.max(0, scr * 16 * cellSize),
+                        behavior: 'smooth',
+                      });
+                    }
+                  }}
+                  className={`px-1.5 py-0.5 rounded border cursor-pointer ${
+                    activeScreenIdx === scr
+                      ? 'bg-sky-500/30 border-sky-400 text-sky-100 font-bold'
+                      : 'bg-stone-900 hover:bg-stone-800 border-stone-700 text-stone-300'
+                  }`}
+                >
+                  T{String(scr).padStart(2, '0')}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={() => launchPlayFromScreen(activeScreenIdx)}
+              title={`Testar fase começando diretamente na Tela T${String(activeScreenIdx).padStart(2, '0')}`}
+              className="ml-auto px-2 py-0.5 rounded bg-emerald-700 hover:bg-emerald-600 border border-emerald-400/60 text-white font-bold flex items-center gap-1 cursor-pointer"
+            >
+              <Play className="w-3 h-3 fill-white" />
+              <span>Testar Desta Tela (T{String(activeScreenIdx).padStart(2, '0')})</span>
+            </button>
+          </div>
+
           {/* Lunar Magic Interactive Minimap Strip */}
           <div className="flex items-center gap-2 px-2 py-1 rounded bg-stone-950 border border-stone-800 shrink-0">
             <span className="text-[10px] font-mono text-sky-300 font-bold shrink-0">MINIMAPA</span>
@@ -5045,6 +5517,8 @@ export const LevelEditorModal: React.FC<LevelEditorModalProps> = ({
             </div>
           </div>
         </div>
+          </>
+        )}
 
         {/* Missing Stage Goal Warning Modal */}
         {showMissingGoalAlert && (

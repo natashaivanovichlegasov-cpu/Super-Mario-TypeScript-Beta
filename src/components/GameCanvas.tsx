@@ -37,7 +37,10 @@ import {
   SMW_DEV_ONLY_SWITCH_PALACES,
   SmwBetaProgress,
   SmwSaveSlotData,
+  SmwWorldMapJson,
+  cloneWorldMapJson,
   createSmwWikiWorldStage,
+  getDefaultWorldMapJson,
   loadSmwBetaProgress,
   isSmwNodeUnlocked,
   isSmwNodeCompletedAndLocked,
@@ -48,6 +51,7 @@ import {
   applySmwSlotToProgress,
   applySmwStageCompletion,
   canExitSmwStageWithSelect,
+  resolveWorldStageForNode,
 } from '../game/smwWorldMap.ts';
 import { getTopScore } from '../game/scoreboard.ts';
 import { CommunityLevelsModal } from './CommunityLevelsModal.tsx';
@@ -2582,10 +2586,19 @@ export const GameCanvas: React.FC = () => {
   const [customCampaignIds, setCustomCampaignIds] = useState<string[]>([]);
   const [editorImmortality, setEditorImmortality] = useState(false);
   const [isCustomLevelActive, setIsCustomLevelActive] = useState(false);
+  const [worldMapConfig, setWorldMapConfig] = useState<SmwWorldMapJson>(() => getDefaultWorldMapJson());
+  const [isCustomWorldMapLoaded, setIsCustomWorldMapLoaded] = useState(false);
+  const worldMapConfigRef = useRef<SmwWorldMapJson>(worldMapConfig);
+  const customLevelsRef = useRef<LevelData[]>(customLevels);
   const [multiplayerStatus, setMultiplayerStatus] = useState(() => multiplayerClient.getStatus());
   const [multiplayerNotice, setMultiplayerNotice] = useState<MultiplayerLogoffEvent | null>(null);
 
   useEffect(() => {
+    worldMapConfigRef.current = worldMapConfig;
+  }, [worldMapConfig]);
+
+  useEffect(() => {
+    customLevelsRef.current = customLevels;
     engineRef.current?.registerCustomLevels(customLevels);
   }, [customLevels]);
 
@@ -2806,8 +2819,11 @@ export const GameCanvas: React.FC = () => {
       }));
     };
     engine.onSmwStageCompleted = (nodeId: string, meta?: { secretExit?: boolean }) => {
-      const currNode = SMW_WIKIWORLD_NODES.find(n => n.id === nodeId);
-      setSmwProgress(prev => applySmwStageCompletion(prev, nodeId, meta));
+      const cfg = worldMapConfigRef.current;
+      const ownerIsland = cfg.islands.find(i => i.nodes.some(n => n.id === nodeId));
+      const activeNodes = ownerIsland?.nodes ?? SMW_WIKIWORLD_NODES;
+      const currNode = activeNodes.find(n => n.id === nodeId);
+      setSmwProgress(prev => applySmwStageCompletion(prev, nodeId, meta, activeNodes));
       if (currNode?.isCastle) {
         setSmwSaveSlots(loadSmwSaveSlots());
         setSmwCastleSaveTitle(currNode.title);
@@ -4459,11 +4475,15 @@ export const GameCanvas: React.FC = () => {
 
   const handleEnterSmwStage = useCallback(
     (nodeId: string) => {
-      const node = SMW_WIKIWORLD_NODES.find(n => n.id === nodeId);
-      if (!node || !isSmwNodeUnlocked(node.id, smwProgress)) return;
-      if (!canEnterSmwNode(node.id, smwProgress)) {
+      const cfg = worldMapConfig;
+      const ownerIsland =
+        cfg.islands.find(i => i.nodes.some(n => n.id === nodeId)) || cfg.islands[0];
+      const activeNodes = ownerIsland?.nodes ?? SMW_WIKIWORLD_NODES;
+      const node = activeNodes.find(n => n.id === nodeId);
+      if (!node || !isSmwNodeUnlocked(node.id, smwProgress, activeNodes)) return;
+      if (!canEnterSmwNode(node.id, smwProgress, activeNodes)) {
         if (isSmwNodeCompletedAndLocked(node.id, smwProgress)) {
-          setCheatToast('Palácio Interruptor Amarelo já concluído!');
+          setCheatToast('Palácio Interruptor já concluído!');
           setTimeout(() => setCheatToast(''), 3000);
         }
         return;
@@ -4476,6 +4496,7 @@ export const GameCanvas: React.FC = () => {
       const updated: SmwBetaProgress = {
         ...smwProgress,
         selectedNodeId: nodeId,
+        selectedIslandId: ownerIsland?.id ?? smwProgress.selectedIslandId,
         storySeen: true,
       };
       setSmwProgress(updated);
@@ -4501,6 +4522,7 @@ export const GameCanvas: React.FC = () => {
         pause: false,
       });
       if (engineRef.current) {
+        engineRef.current.registerCustomLevels(customLevels);
         engineRef.current.yellowSwitchUnlocked = updated.yellowSwitchUnlocked;
         engineRef.current.greenSwitchUnlocked = Boolean(updated.greenSwitchUnlocked);
         engineRef.current.redSwitchUnlocked = Boolean(updated.redSwitchUnlocked);
@@ -4508,7 +4530,8 @@ export const GameCanvas: React.FC = () => {
         engineRef.current.blueSwitchUnlocked = Boolean(updated.blueSwitchUnlocked);
         engineRef.current.goalPointsWallet = updated.goalPointsWallet ?? 0;
         engineRef.current.stats.goalPointsWallet = engineRef.current.goalPointsWallet;
-        engineRef.current.startSmwStage(createSmwWikiWorldStage(nodeId), false);
+        const stageLevel = resolveWorldStageForNode(node, customLevels, ownerIsland?.name);
+        engineRef.current.startSmwStage(stageLevel, false);
         setIsPaused(false);
         setIsGameOver(false);
         setIsStageClear(false);
@@ -4516,7 +4539,7 @@ export const GameCanvas: React.FC = () => {
         setMarioPower(engineRef.current.marioPower);
       }
     },
-    [smwProgress]
+    [smwProgress, worldMapConfig, customLevels]
   );
 
   const handleSaveSmwSlot = useCallback(
@@ -5163,21 +5186,63 @@ export const GameCanvas: React.FC = () => {
             saveSlots={smwSaveSlots}
             castleSavePromptNodeTitle={smwCastleSaveTitle}
             openLoadSignal={smwOpenLoadSignal}
+            worldMapConfig={worldMapConfig}
+            isCustomWorldLoaded={isCustomWorldMapLoaded}
+            onLoadWorldMapJson={nextWorld => {
+              const cloned = cloneWorldMapJson(nextWorld);
+              setWorldMapConfig(cloned);
+              setIsCustomWorldMapLoaded(true);
+              const firstIsland =
+                cloned.islands.find(i => i.id === cloned.defaultIslandId) || cloned.islands[0];
+              if (firstIsland) {
+                setSmwProgress(prev => ({
+                  ...prev,
+                  selectedIslandId: firstIsland.id,
+                  selectedNodeId: firstIsland.nodes[0]?.id || prev.selectedNodeId,
+                }));
+              }
+              setCheatToast('Mapa de mundo JSON carregado no Modo World (SMB3)!');
+              setTimeout(() => setCheatToast(''), 3000);
+            }}
+            onResetWorldMapJson={() => {
+              const def = getDefaultWorldMapJson();
+              setWorldMapConfig(def);
+              setIsCustomWorldMapLoaded(false);
+              const firstIsland =
+                def.islands.find(i => i.id === def.defaultIslandId) || def.islands[0];
+              if (firstIsland) {
+                setSmwProgress(prev => ({
+                  ...prev,
+                  selectedIslandId: firstIsland.id,
+                  selectedNodeId: firstIsland.nodes[0]?.id || 'wiki-1-overworld',
+                }));
+              }
+              setCheatToast('Mundo restaurado para o JSON padrão!');
+              setTimeout(() => setCheatToast(''), 3000);
+            }}
             onSelectNode={nodeId => {
               setSmwProgress(prev => ({ ...prev, selectedNodeId: nodeId }));
             }}
-            onSelectIsland={islandId => {
-              setSmwProgress(prev => ({ ...prev, selectedIslandId: islandId }));
+            onSelectIsland={(islandId, targetNodeId) => {
+              const targetIsland = worldMapConfig.islands.find(i => i.id === islandId);
+              setSmwProgress(prev => ({
+                ...prev,
+                selectedIslandId: islandId,
+                selectedNodeId: targetNodeId || targetIsland?.nodes[0]?.id || prev.selectedNodeId,
+              }));
             }}
             onEnterStage={handleEnterSmwStage}
             onDismissStory={() => {
               setSmwProgress(prev => (prev.storySeen ? prev : { ...prev, storySeen: true }));
             }}
             onResetProgress={() => {
+              const firstIsland =
+                worldMapConfig.islands.find(i => i.id === worldMapConfig.defaultIslandId) ||
+                worldMapConfig.islands[0];
               const reset: SmwBetaProgress = {
                 clearedNodeIds: [],
-                selectedNodeId: 'wiki-1-overworld',
-                selectedIslandId: 'wikiworld',
+                selectedNodeId: firstIsland?.nodes[0]?.id || 'wiki-1-overworld',
+                selectedIslandId: firstIsland?.id || 'wikiworld',
                 storySeen: true,
                 yellowSwitchUnlocked: false,
                 greenSwitchUnlocked: false,
@@ -5978,6 +6043,48 @@ export const GameCanvas: React.FC = () => {
           }
         }}
         onOpenCommunityMode={handleOpenCommunityMode}
+        worldMapConfig={worldMapConfig}
+        onApplyWorldMapJson={(nextWorld, openWorldMode) => {
+          const cloned = cloneWorldMapJson(nextWorld);
+          setWorldMapConfig(cloned);
+          setIsCustomWorldMapLoaded(true);
+          const firstIsland =
+            cloned.islands.find(i => i.id === cloned.defaultIslandId) || cloned.islands[0];
+          if (firstIsland) {
+            setSmwProgress(prev => ({
+              ...prev,
+              selectedIslandId: firstIsland.id,
+              selectedNodeId: firstIsland.nodes[0]?.id || prev.selectedNodeId,
+              storySeen: true,
+            }));
+          }
+          if (openWorldMode) {
+            SoundEngine.get().stopMusic();
+            setIsLevelEditorOpen(false);
+            setIsCampaignVictory(false);
+            setIsCustomLevelActive(false);
+            setActiveCommunityLevel(null);
+            setHasStarted(true);
+            setIsSmwModeActive(true);
+            setIsSmwMapOpen(true);
+            engineRef.current?.registerCustomLevels(customLevels);
+            engineRef.current?.returnToSmwOverworldState();
+          }
+        }}
+        onResetWorldMapJson={() => {
+          const def = getDefaultWorldMapJson();
+          setWorldMapConfig(def);
+          setIsCustomWorldMapLoaded(false);
+          const firstIsland =
+            def.islands.find(i => i.id === def.defaultIslandId) || def.islands[0];
+          if (firstIsland) {
+            setSmwProgress(prev => ({
+              ...prev,
+              selectedIslandId: firstIsland.id,
+              selectedNodeId: firstIsland.nodes[0]?.id || 'wiki-1-overworld',
+            }));
+          }
+        }}
       />
 
       {/* Modo Comunidade (Fases JSON na Nuvem via Firebase + Login Google) */}

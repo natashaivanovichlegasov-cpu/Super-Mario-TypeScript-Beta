@@ -25,6 +25,30 @@ export interface UpdateEntry {
 
 export const GAME_UPDATES: UpdateEntry[] = [
   {
+    uid: 'R1.26.1J9.0',
+    version: 'R1.26.1J9.0',
+    label: 'Correção · 7 Mundos + 7 Submundos (JSON & Lunar Magic)',
+    title: 'Todos os 7 Mundos e 7 Submundos Definidos por Arquivos JSON de Coordenadas e Edição Estilo Lunar Magic',
+    isFix: true,
+    items: [
+      'Adicionados todos os 7 Mundos Principais (M1–M7) e 7 Submundos interligados (S1–S7) em arquivos JSON individuais de coordenadas (world-1..7.json e subworld-1..7.json) e pacote unificado world-map.json, com portais bidirecionais Mundo ↔ Submundo.',
+      'Editor do Mundo atualizado com modos de camadas estilo Lunar Magic: Camada Níveis & Portais, Camada 1 (Terreno & Cenário arrastável), Camada 2 (Rotas Retas & Eventos), grade 25×20 com snap, leitura ao vivo de coordenadas e painel direto para editar o JSON de cada mundo ou submundo.',
+      'Suporte completo para importar, exportar e editar JSON individual de um único mundo/submundo ou o pacote completo dos 14 mapas tanto no Editor do Mundo quanto direto na tela do Modo World.',
+    ],
+  },
+  {
+    uid: 'R1.26.280.0',
+    version: 'R1.26.280.0',
+    label: 'Correção · Editor do Mundo (SMB3), Mundo JSON & Funções Lunar Magic',
+    title: 'Editor do Mundo Editável via JSON no Estilo Super Mario Bros. 3 (Caminhos Retos) e Novas Funções Lunar Magic',
+    isFix: true,
+    items: [
+      'Novo Editor do Mundo integrado ("MUNDO (SMB3)") dentro do Editor de Fases para criar e editar ilhas, nós de fases/castelos/palácios, decorações, rotas por chave e linhas retas ortogonais, com exportação, importação e aplicação direta no Modo World via arquivo JSON.',
+      'Modo World remodelado para carregar a estrutura diretamente do JSON editável (world-map.json) e exibir o mapa no estilo tabuleiro clássico de Super Mario Bros. 3 com quadrados numerados, cantoneiras, grade pixelada e caminhos exclusivamente por linhas retas.',
+      'Novas funções Lunar Magic no Editor de Fases: Deslocar Mapa (←/→/↑/↓), Espelhar Horizontalmente (↔), Substituir Blocos em Massa, Limpar Tela Atual, Navegador Rápido de Telas (T00..Txx) com "Testar Desta Tela", Direção Inicial de Inimigos (◀/▶), Gravidade Lunar (Baixa), Travar Retorno da Câmera e atalhos rápidos de teclado (B, R, G, I, M, V, E, +/-).',
+    ],
+  },
+  {
     uid: 'R1.25.21X.9',
     version: 'R1.25.21X.9',
     label: 'Correção · Modo World & Rotas / Canos',

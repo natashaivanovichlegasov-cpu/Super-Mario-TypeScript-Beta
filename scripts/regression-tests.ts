@@ -105,6 +105,10 @@ import {
   insertLevelColumnAt,
   deleteLevelColumnAt,
   applyTerrainPresetToLevel,
+  shiftLevelTiles,
+  replaceTileTypeInLevel,
+  mirrorLevelHorizontally,
+  clearLevelScreenAt,
   KEY_CAVE_PIPE_TARGET,
   isPowerUpBoxContent,
   normalizeHexLevelCode,
@@ -123,7 +127,9 @@ import {
   JOHANNNNES_CASTLE_1_BOSS_NAME,
   SMW_ISLANDS,
   SMW_ISLAND2_NODES,
+  SMW_ISLAND2_PATH_SEGMENTS,
   SMW_ISLAND2_UNAVAILABLE_MSG,
+  SMW_PATH_SEGMENTS,
   SMW_WIKIWORLD_NODES,
   SMW_DEV_ONLY_SWITCH_PALACES,
   WORLD_STAGE_JSON_REGISTRY,
@@ -147,8 +153,28 @@ import {
   resolveSmwDirectionalStep,
   isSmwNodeCleared,
   canExitSmwStageWithSelect,
+  buildOrthogonalWaypoints,
+  evaluateSmwPathSegment,
+  getDefaultWorldMapJson,
+  parseWorldMapJson,
+  serializeWorldMapToJson,
+  resolveWorldStageForNode,
+  WORLD_JSON_FILES_REGISTRY,
+  LM_OVERWORLD_GRID_COLS,
+  LM_OVERWORLD_GRID_ROWS,
+  gridCoordToPercent,
+  percentToGridCoord,
+  isSmwPortalNode,
+  parseSingleWorldJson,
+  serializeSingleWorldToJson,
+  mergeSingleWorldIntoPack,
+  getMainWorlds,
+  getSubworlds,
+  getLinkedSubworld,
+  getLinkedParentWorld,
   type SmwBetaProgress,
 } from '../src/game/smwWorldMap.ts';
+import { buildStraightPathSvgData } from '../src/components/Smb3WorldBoardSvg.tsx';
 import { GAME_UPDATES } from '../src/components/UpdatesModal.tsx';
 import {
   isSmartTvUserAgent,
@@ -1572,18 +1598,17 @@ async function runR116FixesTests() {
     assert.ok(reversePath.every(step => step.reverse));
   });
 
-  await test('RW0.15.0.PW.4: Segunda ilha existe com primeira fase exibindo mensagem Beta indisponível', () => {
-    assert.equal(SMW_ISLANDS.length, 2);
+  await test('RW0.15.0.PW.4: Segunda ilha existe com primeira fase 2-1 e fallback Beta para mapas não jogáveis', () => {
+    assert.ok(SMW_ISLANDS.length >= 14);
     const island2 = SMW_ISLANDS.find(isl => isl.id === 'island2');
     assert.ok(island2);
-    assert.equal(island2.playable, false);
+    assert.equal(island2.playable, true);
     assert.equal(SMW_ISLAND2_UNAVAILABLE_MSG, '(Versão Beta) ainda não disponível para jogar');
 
     const firstStage = SMW_ISLAND2_NODES[0];
     assert.ok(firstStage);
     assert.equal(firstStage.code, '2-1');
-    assert.equal(firstStage.subtitle, '(Versão Beta) ainda não disponível para jogar');
-    assert.equal(firstStage.betaPlaceholderMessage, '(Versão Beta) ainda não disponível para jogar');
+    assert.ok(firstStage.subtitle.length > 0);
   });
 
   await test('R1.16.UF.4: Controles interativos no menu com isGameStarted=false não movem o personagem', () => {
@@ -5782,6 +5807,333 @@ async function runR116FixesTests() {
     assert.equal(editorEngine.level.id, editorStage.id, 'Deve retornar à fase personalizada em edição');
 
     assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.25.21X.9'));
+  });
+
+  await test('R1.26.280.0: World Editor SMB3 (JSON editável e carregável com linhas retas) e funções Lunar Magic ausentes no Editor', () => {
+    // 1. world-map.json padrão carrega corretamente com design SMB3 e caminhos em linha reta
+    const defaultWorld = getDefaultWorldMapJson();
+    assert.equal(defaultWorld.format, 'smb-world-map');
+    assert.equal(defaultWorld.design, 'smb3');
+    assert.ok(defaultWorld.islands.length >= 2);
+    assert.ok(SMW_PATH_SEGMENTS.length >= 5);
+    assert.ok(SMW_ISLAND2_PATH_SEGMENTS.length >= 2);
+
+    for (const seg of [...SMW_PATH_SEGMENTS, ...SMW_ISLAND2_PATH_SEGMENTS]) {
+      assert.ok(
+        seg.waypoints && seg.waypoints.length >= 2,
+        'Caminho SMB3 deve possuir pelo menos 2 waypoints'
+      );
+      const d = buildStraightPathSvgData(seg);
+      assert.ok(
+        d.startsWith('M ') && d.includes(' L '),
+        `Caminho ${seg.fromId}->${seg.toId} deve usar comandos retos M/L`
+      );
+      assert.ok(!d.includes(' C ') && !d.includes(' Q '), 'Caminho SMB3 não pode usar curvas Bezier');
+    }
+
+    const orth = buildOrthogonalWaypoints([10, 20], [50, 70], 'hv');
+    assert.equal(orth.length, 3);
+    assert.deepEqual(orth[1], [50, 20]);
+    const midPt = evaluateSmwPathSegment(
+      {
+        fromId: 'a',
+        toId: 'b',
+        fromOrder: 0,
+        toOrder: 1,
+        p0: [10, 20],
+        c1: [50, 20],
+        c2: [50, 20],
+        p1: [50, 70],
+        waypoints: orth,
+        lineStyle: 'orthogonal',
+      },
+      0.5
+    );
+    assert.ok(midPt.x >= 40 && Math.abs(midPt.y - 20) < 12, 'Interpolação linear deve seguir a linha reta');
+
+    // 2. Roundtrip JSON editável do Mundo + resolução de estágios customizados / hex
+    const customStage = createBlankCustomLevel('MUNDO-CUSTOM', 'overworld', 80);
+    customStage.id = 'custom-world-stage-1';
+    defaultWorld.islands[0].nodes.push({
+      id: 'wiki-custom-branch',
+      order: 6,
+      code: 'X1',
+      title: 'Rota Editada',
+      subtitle: 'Via Editor do Mundo',
+      theme: 'overworld',
+      nodeKind: 'stage',
+      stageKey: `custom:${customStage.id}`,
+      mapX: 88,
+      mapY: 78,
+      unlocksAfterSecretNodeId: 'wiki-2-caverna',
+    });
+    const branchWp = buildOrthogonalWaypoints([40, 50], [88, 78], 'vh');
+    defaultWorld.islands[0].paths.push({
+      fromId: 'wiki-2-caverna',
+      toId: 'wiki-custom-branch',
+      fromOrder: 2,
+      toOrder: 6,
+      p0: [40, 50],
+      c1: branchWp[1],
+      c2: branchWp[1],
+      p1: [88, 78],
+      isSecretRoute: true,
+      waypoints: branchWp,
+      lineStyle: 'orthogonal',
+    });
+
+    const serializedWorld = serializeWorldMapToJson(defaultWorld);
+    const parsedWorld = parseWorldMapJson(serializedWorld);
+    assert.equal(parsedWorld.design, 'smb3');
+    const customBranchNode = parsedWorld.islands[0].nodes.find(n => n.id === 'wiki-custom-branch');
+    assert.ok(customBranchNode);
+
+    const resolvedCustomStage = resolveWorldStageForNode(
+      customBranchNode!,
+      [customStage],
+      parsedWorld.islands[0].name
+    );
+    assert.equal(resolvedCustomStage.name, 'MUNDO-CUSTOM');
+    assert.equal(resolvedCustomStage.smwNodeId, 'wiki-custom-branch');
+
+    const resolvedHexNodeStage = resolveWorldStageForNode(
+      {
+        id: 'hex-node-test',
+        order: 1,
+        code: 'H1',
+        title: 'Hex Stage',
+        subtitle: 'Teste',
+        theme: 'underground',
+        stageKey: 'hex:0200',
+        mapX: 20,
+        mapY: 50,
+      },
+      [],
+      'Mundo Teste'
+    );
+    assert.equal(resolvedHexNodeStage.hexId, '0200');
+    assert.equal(resolvedHexNodeStage.smwNodeId, 'hex-node-test');
+
+    let customProgress: SmwBetaProgress = {
+      clearedNodeIds: ['wiki-1-overworld'],
+      secretClearedNodeIds: [],
+      selectedNodeId: 'wiki-2-caverna',
+      storySeen: true,
+      yellowSwitchUnlocked: false,
+    };
+    assert.equal(isSmwNodeUnlocked('wiki-custom-branch', customProgress, parsedWorld.islands[0].nodes), false);
+    customProgress = applySmwStageCompletion(
+      customProgress,
+      'wiki-2-caverna',
+      { secretExit: true },
+      parsedWorld.islands[0].nodes
+    );
+    assert.equal(isSmwNodeUnlocked('wiki-custom-branch', customProgress, parsedWorld.islands[0].nodes), true);
+
+    assert.throws(() => parseWorldMapJson('{"invalid": true}'));
+
+    // 3. Funções Lunar Magic: Shift, Replace Block, Mirror, Clear Screen
+    const lmLevel = createBlankCustomLevel('LUNAR-TOOLS', 'overworld', 64);
+    lmLevel.tiles[10][4] = { type: 'brick', content: 'none', bumpOffset: 0, bumpVel: 0 };
+    lmLevel.tiles[10][5] = { type: 'brick', content: 'none', bumpOffset: 0, bumpVel: 0 };
+    lmLevel.coins.push({ x: 4 * 16 + 8, y: 9 * 16 });
+    lmLevel.enemies.push({ type: 'goomba', x: 6 * 16, y: 12 * 16, facing: 'right' });
+
+    shiftLevelTiles(lmLevel, 2, -1);
+    assert.equal(lmLevel.tiles[9][6]?.type, 'brick', 'Shift +2,-1 deve mover tijolo de (4,10) para (6,9)');
+    assert.equal(lmLevel.tiles[10][4], null);
+    assert.equal(lmLevel.coins[0].x, 6 * 16 + 8);
+    assert.equal(lmLevel.coins[0].y, 8 * 16);
+
+    const replaced = replaceTileTypeInLevel(lmLevel, 'brick', 'hard_block');
+    assert.equal(replaced, 2);
+    assert.equal(lmLevel.tiles[9][6]?.type, 'hard_block');
+
+    mirrorLevelHorizontally(lmLevel);
+    assert.equal(
+      lmLevel.tiles[9][lmLevel.width - 1 - 6]?.type,
+      'hard_block',
+      'Espelhamento deve refletir o bloco para X = width - 1 - 6'
+    );
+
+    clearLevelScreenAt(lmLevel, 0, true);
+    assert.ok(lmLevel.tiles[13][2]?.type === 'ground', 'Limpar tela preservando chão deve manter linha 13');
+    assert.equal(lmLevel.tiles[9][2], null);
+
+    // 4. Comportamento na engine: enemy.facing, lowGravity e lockLeftScroll
+    const lmStage = createBlankCustomLevel('LM-ENGINE', 'overworld', 80);
+    lmStage.lowGravity = true;
+    lmStage.lockLeftScroll = true;
+    lmStage.enemies = [
+      { type: 'goomba', x: 160, y: 192, facing: 'right' },
+      { type: 'goomba', x: 224, y: 192, facing: 'left' },
+    ];
+
+    const lmEngine = createFreshEngine();
+    lmEngine.playCustomLevel(lmStage, true);
+    assert.ok(lmEngine.enemies[0].vx > 0, 'Inimigo com facing="right" deve iniciar andando para a direita');
+    assert.ok(lmEngine.enemies[1].vx < 0, 'Inimigo com facing="left" deve iniciar andando para a esquerda');
+
+    // Testa lowGravity vs gravidade padrão
+    const normalStage = createBlankCustomLevel('NORMAL-GRAV', 'overworld', 80);
+    const normalEngine = createFreshEngine();
+    normalEngine.playCustomLevel(normalStage, true);
+    normalEngine.intermissionTimer = 0;
+    lmEngine.intermissionTimer = 0;
+    normalEngine.marioY = 40;
+    normalEngine.marioVy = 0;
+    normalEngine.marioGrounded = false;
+    lmEngine.marioY = 40;
+    lmEngine.marioVy = 0;
+    lmEngine.marioGrounded = false;
+    stepEngine(normalEngine, 12);
+    stepEngine(lmEngine, 12);
+    assert.ok(
+      lmEngine.marioVy < normalEngine.marioVy,
+      'Gravidade Lunar (lowGravity) deve resultar em velocidade de queda menor'
+    );
+
+    // Testa lockLeftScroll
+    lmEngine.cameraX = 240;
+    lmEngine.marioX = 240;
+    lmEngine.marioGrounded = true;
+    lmEngine.controls.left = true;
+    stepEngine(lmEngine, 20);
+    assert.ok(lmEngine.cameraX >= 240, 'lockLeftScroll não deve permitir que a câmera recue para a esquerda');
+    assert.ok(lmEngine.marioX >= 240, 'lockLeftScroll impede Mario de sair pela esquerda da câmera travada');
+
+    // Roundtrip de serialização de nível preserva facing, lowGravity e lockLeftScroll
+    const exportedJson = serializeLevelToFileJson(lmStage);
+    const reimported = parseImportedLevelFile(exportedJson);
+    assert.equal(reimported.lowGravity, true);
+    assert.equal(reimported.lockLeftScroll, true);
+    assert.equal(reimported.enemies[0].facing, 'right');
+
+    // 5. Verificações de UI e integração
+    const boardSvgSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/Smb3WorldBoardSvg.tsx'), 'utf8');
+    const worldEditorSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/WorldEditorPanel.tsx'), 'utf8');
+    const smwMapSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/SmwOverworldMap.tsx'), 'utf8');
+    const editorSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/LevelEditorModal.tsx'), 'utf8');
+    const canvasSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/GameCanvas.tsx'), 'utf8');
+
+    assert.ok(boardSvgSrc.includes('buildStraightPathSvgData'));
+    assert.ok(worldEditorSrc.includes('Smb3WorldBoardSvg'));
+    assert.ok(worldEditorSrc.includes('Exportar Mundo JSON'));
+    assert.ok(worldEditorSrc.includes('Aplicar &amp; Jogar Mundo') || worldEditorSrc.includes('Aplicar & Jogar Mundo'));
+    assert.ok(smwMapSrc.includes('Smb3WorldBoardSvg'));
+    assert.ok(smwMapSrc.includes('Mundo JSON'));
+    assert.ok(editorSrc.includes('EDITOR DO MUNDO (SMB3)'));
+    assert.ok(editorSrc.includes('shiftLevelTiles'));
+    assert.ok(editorSrc.includes('mirrorLevelHorizontally'));
+    assert.ok(editorSrc.includes('replaceTileTypeInLevel'));
+    assert.ok(editorSrc.includes('clearLevelScreenAt'));
+    assert.ok(editorSrc.includes('Gravidade Lunar (Baixa)'));
+    assert.ok(editorSrc.includes('Travar Retorno da Câmera'));
+    assert.ok(editorSrc.includes('Testar Desta Tela'));
+    assert.ok(canvasSrc.includes('resolveWorldStageForNode'));
+    assert.ok(canvasSrc.includes('worldMapConfig'));
+    assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.26.280.0'));
+  });
+
+  await test('R1.26.1J9.0: 7 Mundos + 7 Submundos (14 mapas) em JSON de coordenadas e edição estilo Lunar Magic', () => {
+    // 1. Verificar arquivos JSON individuais em src/game/worldLevels/worlds/
+    const worldsDir = path.resolve(process.cwd(), 'src/game/worldLevels/worlds');
+    for (let i = 1; i <= 7; i++) {
+      assert.ok(fs.existsSync(path.join(worldsDir, `world-${i}.json`)), `Falta world-${i}.json`);
+      assert.ok(fs.existsSync(path.join(worldsDir, `subworld-${i}.json`)), `Falta subworld-${i}.json`);
+    }
+    assert.equal(Object.keys(WORLD_JSON_FILES_REGISTRY).length, 14);
+
+    // 2. Verificar pacote padrão completo: 7 Mundos Principais + 7 Submundos vinculados
+    const worldPack = getDefaultWorldMapJson();
+    assert.equal(worldPack.islands.length, 14);
+    const mainWorlds = getMainWorlds(worldPack);
+    const subworlds = getSubworlds(worldPack);
+    assert.equal(mainWorlds.length, 7);
+    assert.equal(subworlds.length, 7);
+    assert.equal(LM_OVERWORLD_GRID_COLS, 25);
+    assert.equal(LM_OVERWORLD_GRID_ROWS, 20);
+
+    for (const mainWorld of mainWorlds) {
+      assert.equal(mainWorld.playable, true);
+      assert.ok(mainWorld.nodes.length >= 5);
+      const linkedSub = getLinkedSubworld(worldPack, mainWorld.id);
+      assert.ok(linkedSub, `Submundo vinculado ausente para ${mainWorld.id}`);
+      assert.equal(linkedSub.playable, true);
+      assert.equal(linkedSub.parentWorldId, mainWorld.id);
+      const backParent = getLinkedParentWorld(worldPack, linkedSub.id);
+      assert.equal(backParent?.id, mainWorld.id);
+
+      // Cada mundo principal e submundo deve conter portal bidirecional e coordenadas LM (gridX, gridY)
+      const mainPortal = mainWorld.nodes.find(n => isSmwPortalNode(n));
+      const subPortal = linkedSub.nodes.find(n => isSmwPortalNode(n));
+      assert.ok(mainPortal && mainPortal.targetIslandId === linkedSub.id, `Portal para submundo ausente em ${mainWorld.id}`);
+      assert.ok(subPortal && subPortal.targetIslandId === mainWorld.id, `Portal de retorno ausente em ${linkedSub.id}`);
+
+      for (const node of [...mainWorld.nodes, ...linkedSub.nodes]) {
+        assert.ok(node.mapX >= 0 && node.mapX <= 100);
+        assert.ok(node.mapY >= 0 && node.mapY <= 100);
+        assert.ok(typeof node.gridX === 'number' && node.gridX >= 0 && node.gridX <= LM_OVERWORLD_GRID_COLS);
+        assert.ok(typeof node.gridY === 'number' && node.gridY >= 0 && node.gridY <= LM_OVERWORLD_GRID_ROWS);
+      }
+    }
+
+    // 3. Conversão bidirecional de coordenadas LM Grid <-> % e JSON individual editável
+    const pct = gridCoordToPercent(12, 10);
+    assert.equal(pct.mapX, 48);
+    assert.equal(pct.mapY, 50);
+    const grid = percentToGridCoord(48, 50);
+    assert.equal(grid.gridX, 12);
+    assert.equal(grid.gridY, 10);
+
+    const world3 = mainWorlds.find(w => w.id === 'world-3')!;
+    const singleJsonText = serializeSingleWorldToJson(world3);
+    const parsedSingle = parseSingleWorldJson(singleJsonText);
+    assert.equal(parsedSingle.id, 'world-3');
+    assert.equal(parsedSingle.worldType, 'main');
+
+    // Editar coordenadas no JSON individual e mesclar de volta no pacote
+    const parsedRawSingle = JSON.parse(singleJsonText);
+    const editedSingle = parseSingleWorldJson(
+      JSON.stringify({
+        ...parsedRawSingle,
+        nodes: world3.nodes.map((n, idx) =>
+          idx === 0 ? { ...n, gridX: 5, gridY: 14, mapX: undefined, mapY: undefined } : n,
+        ),
+      }),
+    );
+    assert.equal(editedSingle.nodes[0].gridX, 5);
+    assert.equal(editedSingle.nodes[0].gridY, 14);
+    assert.equal(editedSingle.nodes[0].mapX, 20);
+    assert.equal(editedSingle.nodes[0].mapY, 70);
+
+    const mergedPack = mergeSingleWorldIntoPack(worldPack, editedSingle);
+    assert.equal(mergedPack.islands.length, 14);
+    assert.equal(mergedPack.islands.find(i => i.id === 'world-3')?.nodes[0].mapX, 20);
+
+    // parseWorldMapJson também deve aceitar diretamente um JSON individual de mundo
+    const wrappedFromSingle = parseWorldMapJson(singleJsonText);
+    assert.equal(wrappedFromSingle.islands.length, 1);
+    assert.equal(wrappedFromSingle.defaultIslandId, 'world-3');
+
+    // 4. Verificações de UI para camadas estilo Lunar Magic, grade e portais Mundo <-> Submundo
+    const boardSvgSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/Smb3WorldBoardSvg.tsx'), 'utf8');
+    const worldEditorSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/WorldEditorPanel.tsx'), 'utf8');
+    const smwMapSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/SmwOverworldMap.tsx'), 'utf8');
+    const canvasSrc = fs.readFileSync(path.resolve(process.cwd(), 'src/components/GameCanvas.tsx'), 'utf8');
+
+    assert.ok(boardSvgSrc.includes('showCoordinateGrid'));
+    assert.ok(boardSvgSrc.includes('onDecorPointerDown'));
+    assert.ok(worldEditorSrc.includes('Camada 1 · Terreno & Cenário'));
+    assert.ok(worldEditorSrc.includes('Camada 2 · Rotas & Eventos'));
+    assert.ok(worldEditorSrc.includes('Grade LM (25×20)'));
+    assert.ok(worldEditorSrc.includes('JSON Mapa'));
+    assert.ok(worldEditorSrc.includes('Exportar Mundo JSON'));
+    assert.ok(smwMapSrc.includes('Ir para Submundo'));
+    assert.ok(smwMapSrc.includes('Voltar ao Mundo'));
+    assert.ok(smwMapSrc.includes('ENTRAR NO PORTAL'));
+    assert.ok(canvasSrc.includes('targetNodeId'));
+    assert.ok(GAME_UPDATES.some(u => u.uid === 'R1.26.1J9.0'));
   });
 }
 

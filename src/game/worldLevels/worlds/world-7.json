@@ -1,0 +1,336 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "world-7",
+  "number": 7,
+  "worldType": "main",
+  "subworldId": "subworld-7",
+  "name": "Mundo 7 · Império Vulcânico",
+  "subtitle": "Mundo 7 · Terras Escuras & Castelo Final",
+  "playable": true,
+  "boardPalette": "volcano",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "O Império Vulcânico é o último bastião de Chronus e Bowser! Atravesse muralhas de magma e salve a princesa femboy no Castelo Supremo.",
+  "nodes": [
+    {
+      "id": "w7-1-muralha",
+      "order": 0,
+      "code": "7-1",
+      "title": "Muralha de Magma",
+      "subtitle": "Invasão ao território vulcânico",
+      "theme": "castle",
+      "nodeKind": "stage",
+      "stageKey": "hex:0228",
+      "hexId": "0228",
+      "gridX": 4,
+      "gridY": 13,
+      "mapX": 16,
+      "mapY": 65
+    },
+    {
+      "id": "w7-2-forja",
+      "order": 1,
+      "code": "7-2",
+      "title": "Forja Ardente",
+      "subtitle": "Caldeirões e pontes de aço",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "hex:022E",
+      "hexId": "022E",
+      "gridX": 9,
+      "gridY": 8,
+      "unlocksAfterNodeId": "w7-1-muralha",
+      "mapX": 36,
+      "mapY": 40
+    },
+    {
+      "id": "w7-3-caldeira",
+      "order": 2,
+      "code": "7-3",
+      "title": "Caldeira Subterrânea",
+      "subtitle": "Caverna de lava incandescente",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:0229",
+      "hexId": "0229",
+      "gridX": 14,
+      "gridY": 14,
+      "unlocksAfterNodeId": "w7-2-forja",
+      "mapX": 56,
+      "mapY": 70
+    },
+    {
+      "id": "w7-4-trono",
+      "order": 3,
+      "code": "7-4",
+      "title": "Bastilha de Chronus",
+      "subtitle": "Última linha antes do confronto final",
+      "theme": "castle",
+      "nodeKind": "stage",
+      "stageKey": "hex:022C",
+      "hexId": "022C",
+      "gridX": 18,
+      "gridY": 8,
+      "unlocksAfterNodeId": "w7-3-caldeira",
+      "mapX": 72,
+      "mapY": 40
+    },
+    {
+      "id": "w7-5-castelo",
+      "order": 4,
+      "code": "7-C",
+      "title": "Castelo Supremo Bowser",
+      "subtitle": "7º Chefe Final: Bowser & Chronus",
+      "bossName": "Bowser & Chronus",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:0227",
+      "hexId": "0227",
+      "gridX": 22,
+      "gridY": 11,
+      "isCastle": true,
+      "unlocksAfterNodeId": "w7-4-trono",
+      "mapX": 88,
+      "mapY": 55
+    },
+    {
+      "id": "w7-subworld-portal",
+      "order": 5,
+      "code": "S7",
+      "title": "Portal Submundo 7",
+      "subtitle": "Fenda direta ao Núcleo de Lava",
+      "theme": "castle",
+      "nodeKind": "star_warp",
+      "targetIslandId": "subworld-7",
+      "targetNodeId": "sw7-1-nucleo",
+      "gridX": 14,
+      "gridY": 5,
+      "unlocksAfterNodeId": "w7-3-caldeira",
+      "mapX": 56,
+      "mapY": 25
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "w7-1-muralha",
+      "toId": "w7-2-forja",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        65
+      ],
+      "c1": [
+        16,
+        40
+      ],
+      "c2": [
+        16,
+        40
+      ],
+      "p1": [
+        36,
+        40
+      ],
+      "waypoints": [
+        [
+          16,
+          65
+        ],
+        [
+          16,
+          40
+        ],
+        [
+          36,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w7-2-forja",
+      "toId": "w7-3-caldeira",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        36,
+        40
+      ],
+      "c1": [
+        56,
+        40
+      ],
+      "c2": [
+        56,
+        40
+      ],
+      "p1": [
+        56,
+        70
+      ],
+      "waypoints": [
+        [
+          36,
+          40
+        ],
+        [
+          56,
+          40
+        ],
+        [
+          56,
+          70
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w7-3-caldeira",
+      "toId": "w7-4-trono",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        56,
+        70
+      ],
+      "c1": [
+        56,
+        40
+      ],
+      "c2": [
+        56,
+        40
+      ],
+      "p1": [
+        72,
+        40
+      ],
+      "waypoints": [
+        [
+          56,
+          70
+        ],
+        [
+          56,
+          40
+        ],
+        [
+          72,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w7-4-trono",
+      "toId": "w7-5-castelo",
+      "fromOrder": 3,
+      "toOrder": 4,
+      "p0": [
+        72,
+        40
+      ],
+      "c1": [
+        88,
+        40
+      ],
+      "c2": [
+        88,
+        40
+      ],
+      "p1": [
+        88,
+        55
+      ],
+      "waypoints": [
+        [
+          72,
+          40
+        ],
+        [
+          88,
+          40
+        ],
+        [
+          88,
+          55
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w7-3-caldeira",
+      "toId": "w7-subworld-portal",
+      "fromOrder": 2,
+      "toOrder": 5,
+      "p0": [
+        56,
+        70
+      ],
+      "c1": [
+        56,
+        25
+      ],
+      "c2": [
+        56,
+        70
+      ],
+      "p1": [
+        56,
+        25
+      ],
+      "waypoints": [
+        [
+          56,
+          70
+        ],
+        [
+          56,
+          25
+        ]
+      ],
+      "lineStyle": "straight",
+      "eventId": 8
+    }
+  ],
+  "decorations": [
+    {
+      "id": "w7-rock-1",
+      "kind": "rock",
+      "gridX": 4,
+      "gridY": 6,
+      "x": 16,
+      "y": 30
+    },
+    {
+      "id": "w7-rock-2",
+      "kind": "rock",
+      "gridX": 12,
+      "gridY": 16,
+      "x": 48,
+      "y": 80
+    },
+    {
+      "id": "w7-fort-1",
+      "kind": "castle_fort",
+      "gridX": 22,
+      "gridY": 5,
+      "x": 88,
+      "y": 25
+    },
+    {
+      "id": "w7-patrol-1",
+      "kind": "enemy_patrol",
+      "gridX": 17,
+      "gridY": 15,
+      "label": "Dry Bowser",
+      "x": 68,
+      "y": 75
+    }
+  ]
+}

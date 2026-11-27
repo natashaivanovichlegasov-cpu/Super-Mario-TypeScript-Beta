@@ -1,0 +1,346 @@
+{
+  "format": "smb-world-single",
+  "version": 1,
+  "design": "smb3",
+  "id": "island2",
+  "number": 2,
+  "worldType": "main",
+  "subworldId": "subworld-2",
+  "name": "Mundo 2 · Terras de Chronus",
+  "subtitle": "Mundo 2 · Deserto Dourado & Ruínas Antigas",
+  "playable": true,
+  "boardPalette": "desert",
+  "overworldGrid": {
+    "cols": 25,
+    "rows": 20
+  },
+  "introStory": "Você chegou às Terras Áridas de Chronus! Atravesse dunas, túneis de arenito e a fortaleza solar para abrir caminho rumo ao próximo continente.",
+  "nodes": [
+    {
+      "id": "island2-1-entrada",
+      "order": 0,
+      "code": "2-1",
+      "title": "Dunas de Chronus",
+      "subtitle": "Deserto de areia escaldante",
+      "theme": "overworld",
+      "nodeKind": "stage",
+      "stageKey": "hex:0205",
+      "hexId": "0205",
+      "gridX": 4,
+      "gridY": 13,
+      "mapX": 16,
+      "mapY": 65
+    },
+    {
+      "id": "island2-2-ruinas",
+      "order": 1,
+      "code": "2-2",
+      "title": "Ruínas Subterrâneas",
+      "subtitle": "Catacumbas abaixo da areia",
+      "theme": "underground",
+      "nodeKind": "stage",
+      "stageKey": "hex:0206",
+      "hexId": "0206",
+      "gridX": 9,
+      "gridY": 8,
+      "unlocksAfterNodeId": "island2-1-entrada",
+      "mapX": 36,
+      "mapY": 40
+    },
+    {
+      "id": "w2-3-oasis",
+      "order": 2,
+      "code": "2-3",
+      "title": "Oásis Escondido",
+      "subtitle": "Águas subterrâneas do deserto",
+      "theme": "underwater",
+      "nodeKind": "stage",
+      "stageKey": "hex:0207",
+      "hexId": "0207",
+      "gridX": 14,
+      "gridY": 13,
+      "unlocksAfterNodeId": "island2-2-ruinas",
+      "mapX": 56,
+      "mapY": 65
+    },
+    {
+      "id": "w2-4-templo",
+      "order": 3,
+      "code": "2-4",
+      "title": "Templo Assombrado",
+      "subtitle": "Múmias e espectros das dunas",
+      "theme": "ghost_house",
+      "nodeKind": "stage",
+      "stageKey": "hex:0208",
+      "hexId": "0208",
+      "gridX": 18,
+      "gridY": 8,
+      "unlocksAfterNodeId": "w2-3-oasis",
+      "mapX": 72,
+      "mapY": 40
+    },
+    {
+      "id": "island2-3-fortaleza",
+      "order": 4,
+      "code": "2-C",
+      "title": "Fortaleza de Chronus",
+      "subtitle": "2º Chefe: Guardião de Arenito",
+      "bossName": "Guardião de Arenito",
+      "theme": "castle",
+      "nodeKind": "castle",
+      "stageKey": "hex:0209",
+      "hexId": "0209",
+      "gridX": 22,
+      "gridY": 11,
+      "isCastle": true,
+      "unlocksAfterNodeId": "w2-4-templo",
+      "mapX": 88,
+      "mapY": 55
+    },
+    {
+      "id": "w2-subworld-portal",
+      "order": 5,
+      "code": "S2",
+      "title": "Portal Submundo 2",
+      "subtitle": "Entrada para a Pirâmide Oculta",
+      "theme": "underground",
+      "nodeKind": "subworld_portal",
+      "targetIslandId": "subworld-2",
+      "targetNodeId": "sw2-1-tumba",
+      "gridX": 9,
+      "gridY": 4,
+      "unlocksAfterNodeId": "island2-2-ruinas",
+      "mapX": 36,
+      "mapY": 20
+    }
+  ],
+  "paths": [
+    {
+      "fromId": "island2-1-entrada",
+      "toId": "island2-2-ruinas",
+      "fromOrder": 0,
+      "toOrder": 1,
+      "p0": [
+        16,
+        65
+      ],
+      "c1": [
+        16,
+        40
+      ],
+      "c2": [
+        16,
+        40
+      ],
+      "p1": [
+        36,
+        40
+      ],
+      "waypoints": [
+        [
+          16,
+          65
+        ],
+        [
+          16,
+          40
+        ],
+        [
+          36,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "island2-2-ruinas",
+      "toId": "w2-3-oasis",
+      "fromOrder": 1,
+      "toOrder": 2,
+      "p0": [
+        36,
+        40
+      ],
+      "c1": [
+        56,
+        40
+      ],
+      "c2": [
+        56,
+        40
+      ],
+      "p1": [
+        56,
+        65
+      ],
+      "waypoints": [
+        [
+          36,
+          40
+        ],
+        [
+          56,
+          40
+        ],
+        [
+          56,
+          65
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w2-3-oasis",
+      "toId": "w2-4-templo",
+      "fromOrder": 2,
+      "toOrder": 3,
+      "p0": [
+        56,
+        65
+      ],
+      "c1": [
+        56,
+        40
+      ],
+      "c2": [
+        56,
+        40
+      ],
+      "p1": [
+        72,
+        40
+      ],
+      "waypoints": [
+        [
+          56,
+          65
+        ],
+        [
+          56,
+          40
+        ],
+        [
+          72,
+          40
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "w2-4-templo",
+      "toId": "island2-3-fortaleza",
+      "fromOrder": 3,
+      "toOrder": 4,
+      "p0": [
+        72,
+        40
+      ],
+      "c1": [
+        88,
+        40
+      ],
+      "c2": [
+        88,
+        40
+      ],
+      "p1": [
+        88,
+        55
+      ],
+      "waypoints": [
+        [
+          72,
+          40
+        ],
+        [
+          88,
+          40
+        ],
+        [
+          88,
+          55
+        ]
+      ],
+      "lineStyle": "orthogonal"
+    },
+    {
+      "fromId": "island2-2-ruinas",
+      "toId": "w2-subworld-portal",
+      "fromOrder": 1,
+      "toOrder": 5,
+      "p0": [
+        36,
+        40
+      ],
+      "c1": [
+        36,
+        20
+      ],
+      "c2": [
+        36,
+        40
+      ],
+      "p1": [
+        36,
+        20
+      ],
+      "waypoints": [
+        [
+          36,
+          40
+        ],
+        [
+          36,
+          20
+        ]
+      ],
+      "lineStyle": "straight",
+      "eventId": 3
+    }
+  ],
+  "decorations": [
+    {
+      "id": "w2-hill-1",
+      "kind": "hill",
+      "gridX": 4,
+      "gridY": 5,
+      "x": 16,
+      "y": 25
+    },
+    {
+      "id": "w2-rock-1",
+      "kind": "rock",
+      "gridX": 13,
+      "gridY": 6,
+      "x": 52,
+      "y": 30
+    },
+    {
+      "id": "w2-water-1",
+      "kind": "water",
+      "gridX": 14,
+      "gridY": 16,
+      "width": 14,
+      "height": 12,
+      "x": 56,
+      "y": 80
+    },
+    {
+      "id": "w2-fort-1",
+      "kind": "castle_fort",
+      "gridX": 22,
+      "gridY": 6,
+      "x": 88,
+      "y": 30
+    },
+    {
+      "id": "w2-patrol-1",
+      "kind": "enemy_patrol",
+      "gridX": 11,
+      "gridY": 15,
+      "label": "Fire Snake",
+      "x": 44,
+      "y": 75
+    }
+  ]
+}
