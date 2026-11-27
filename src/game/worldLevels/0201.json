@@ -1,9 +1,9 @@
 {
   "format": "smb-custom-level",
   "version": 1,
-  "exportedAt": "2026-11-27T00:37:52.995Z",
+  "exportedAt": "2026-11-27T00:48:48.668Z",
   "level": {
-    "id": "custom-1795739841305-ycax",
+    "id": "custom-1795740519273-8o2x",
     "name": "EX 0201 GRUTA",
     "theme": "underground",
     "biomeLabel": "EXEMPLO HEX 0201 · GRUTA",
@@ -591,12 +591,7 @@
         }
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -651,12 +646,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -711,12 +701,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -771,12 +756,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -831,12 +811,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -891,12 +866,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -961,12 +931,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -1066,12 +1031,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -1176,12 +1136,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -1261,12 +1216,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
@@ -1351,12 +1301,7 @@
         null
       ],
       [
-        {
-          "type": "underground_brick",
-          "content": "none",
-          "bumpOffset": 0,
-          "bumpVel": 0
-        },
+        null,
         null,
         null,
         null,
